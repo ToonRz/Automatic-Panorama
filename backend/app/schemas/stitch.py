@@ -46,4 +46,4 @@ class ErrorDetail(BaseModel):
 
     code: str
     message: str
-    context: dict[str, str | int | float] | None = None
+    context: dict[str, str | int | float | list[int]] | None = None

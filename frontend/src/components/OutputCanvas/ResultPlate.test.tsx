@@ -27,9 +27,8 @@ describe("ResultPlate", () => {
 
   it("draws one seam label per pair reading the inlier count from inliers_per_pair, not the sample count", () => {
     render(<ResultPlate result={successWithOverlayFixture} />);
-    // Pair 0 has 101 inliers but only 2 sampled correspondences in the fixture.
-    expect(screen.getByText(/SEAM 01 · 101 inliers/)).toBeInTheDocument();
-    expect(screen.getByText(/SEAM 02 · 87 inliers/)).toBeInTheDocument();
+    expect(screen.getByText(/SEAM 01 · 457 inliers/)).toBeInTheDocument();
+    expect(screen.getByText(/SEAM 02 · 568 inliers/)).toBeInTheDocument();
   });
 
   it("renders no toggle and no overlay when the fields are absent, with no error", () => {
@@ -41,7 +40,7 @@ describe("ResultPlate", () => {
 
   it("states the output dimensions on the download button", () => {
     render(<ResultPlate result={successWithOverlayFixture} />);
-    expect(screen.getByRole("button", { name: /download png · 3840 × 1380/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /download png · 1448 × 588/i })).toBeInTheDocument();
   });
 
   it("downloads the clean image under the lowercased section 6.3 filename (A6)", async () => {
@@ -53,7 +52,7 @@ describe("ResultPlate", () => {
 
     expect(clickSpy).toHaveBeenCalledTimes(1);
     const anchor = clickSpy.mock.instances[0] as HTMLAnchorElement;
-    expect(anchor.download).toBe("panorama-sift-3840x1380.png");
+    expect(anchor.download).toBe("panorama-sift-1448x588.png");
     expect(anchor.href).toBe(successWithOverlayFixture.image.data_url);
 
     clickSpy.mockRestore();

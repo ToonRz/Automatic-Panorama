@@ -14,5 +14,6 @@ export const PIPELINE_STAGES: readonly PipelineStage[] = [
   { key: "matching", label: "KNN match & ratio test" },
   { key: "homography", label: "RANSAC homography per pair" },
   { key: "warp", label: "Warp onto the shared canvas" },
-  { key: "blend", label: "Feather blend, crop, encode" },
+  { key: "blend", label: "Blend and crop" },
+  { key: "encode", label: "Encode PNG" },
 ];

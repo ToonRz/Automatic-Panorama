@@ -13,6 +13,11 @@ describe("StageChart", () => {
     expect(screen.getByText("postprocess")).toBeInTheDocument();
   });
 
+  it("recognises encode as the seventh backend stage", () => {
+    render(<StageChart stageTimingsMs={{ encode: 4.2 }} />);
+    expect(screen.getByText("encode")).toBeInTheDocument();
+  });
+
   it("states the sum of every stage as the chart total, including the unrecognised key", () => {
     render(<StageChart stageTimingsMs={successWithoutOverlayFixture.diagnostics.stage_timings_ms} />);
     // 18.0+62.1+6.4+2.2+41.0+37.9+15.4 = 183.0

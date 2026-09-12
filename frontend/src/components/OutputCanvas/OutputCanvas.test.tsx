@@ -13,7 +13,7 @@ describe("OutputCanvas", () => {
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
-  it("shows the six-stage checklist and no numeric timing while working (A2)", () => {
+  it("shows the seven-stage checklist and no numeric timing while working (A2)", () => {
     render(
       <OutputCanvas
         state="working"
@@ -24,7 +24,8 @@ describe("OutputCanvas", () => {
       />,
     );
     expect(screen.getByText(/decode & normalize frames/i)).toBeInTheDocument();
-    expect(screen.getByText(/feather blend, crop, encode/i)).toBeInTheDocument();
+    expect(screen.getByText(/blend and crop/i)).toBeInTheDocument();
+    expect(screen.getByText(/encode png/i)).toBeInTheDocument();
     expect(screen.queryByText(/ms/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/cold start|waking/i)).not.toBeInTheDocument();
   });

@@ -1,0 +1,16 @@
+{
+  "detail": {
+    "code": "INSUFFICIENT_INLIERS",
+    "context": {
+      "inlier_ratio": 0.093,
+      "inliers": 9,
+      "pair": [
+        0,
+        1
+      ],
+      "pair_index": 0,
+      "required": 12
+    },
+    "message": "Images 1 and 2 do not have enough geometric agreement."
+  }
+}

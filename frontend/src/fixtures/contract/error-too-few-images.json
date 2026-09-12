@@ -1,0 +1,10 @@
+{
+  "detail": {
+    "code": "TOO_FEW_IMAGES",
+    "context": {
+      "received": 1,
+      "required": 2
+    },
+    "message": "Upload at least two overlapping images."
+  }
+}

@@ -30,19 +30,19 @@ Lands first: 08a-08e use these snapshots as fixtures.
 
 ## Acceptance
 
-- [ ] `npm run dev` sends a real request to `VITE_API_BASE_URL`; `npm run dev:mock`
+- [x] `npm run dev` sends a real request to `VITE_API_BASE_URL`; `npm run dev:mock`
       sends none and shows the state switcher;
-- [ ] `vite build` with `VITE_MOCK_API=true` in production mode exits non-zero;
-- [ ] `PIPELINE_STAGES` has seven keys in backend order, and the stage chart for
+- [x] `vite build` with `VITE_MOCK_API=true` in production mode exits non-zero;
+- [x] `PIPELINE_STAGES` has seven keys in backend order, and the stage chart for
       `stitch-success.json` renders no unknown row;
-- [ ] `make contract-snapshots` writes the four files in spec section 9.3, and
+- [x] `make contract-snapshots` writes the four files in spec section 9.3, and
       rerunning it without code changes produces no diff other than timings;
-- [ ] renaming a diagnostics key in `services/stitcher.py` without regenerating
+- [x] renaming a diagnostics key in `services/stitcher.py` without regenerating
       makes `test_contract_snapshots.py` fail with a message naming the file;
-- [ ] `contract.test.ts` validates each snapshot's shape and renders `complete`
+- [x] `contract.test.ts` validates each snapshot's shape and renders `complete`
       and `failed` from them;
-- [ ] `successWithOverlayFixture` and `insufficientInliersError` are derived
+- [x] `successWithOverlayFixture` and `insufficientInliersError` are derived
       from snapshots; the existing frontend tests still pass;
-- [ ] `ErrorDetail.context` accepts `list[int]`;
-- [ ] `README.md` says to delete a stale `VITE_MOCK_API` line from
+- [x] `ErrorDetail.context` accepts `list[int]`;
+- [x] `README.md` says to delete a stale `VITE_MOCK_API` line from
       `frontend/.env.development.local`.

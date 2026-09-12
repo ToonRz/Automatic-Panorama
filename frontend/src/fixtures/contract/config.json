@@ -1,0 +1,19 @@
+{
+  "default_detector": "SIFT",
+  "max_input_long_edge_by_count": {
+    "2": 1600,
+    "3": 1600,
+    "4": 1498,
+    "5": 1353,
+    "6": 1243,
+    "7": 1156,
+    "8": 1085
+  },
+  "max_total_upload_mb": 48,
+  "max_upload_files": 8,
+  "max_upload_mb": 12,
+  "min_inlier_ratio": 0.25,
+  "min_inliers": 12,
+  "ransac_reproj_threshold": 5.0,
+  "ratio_threshold": 0.75
+}

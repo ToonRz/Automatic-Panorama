@@ -1,7 +1,7 @@
 PYTHON ?= python3
 PIP ?= $(PYTHON) -m pip
 
-.PHONY: install backend-install frontend-install test lint typecheck frontend-build run-backend run-frontend
+.PHONY: install backend-install frontend-install test lint typecheck frontend-build contract-snapshots run-backend run-frontend
 
 install: backend-install frontend-install
 
@@ -23,6 +23,9 @@ typecheck:
 
 frontend-build:
 	cd frontend && npm run build
+
+contract-snapshots:
+	PYTHONPATH=backend $(PYTHON) backend/scripts/export_contract_snapshots.py
 
 run-backend:
 	PYTHONPATH=backend $(PYTHON) -m uvicorn app.main:app --reload --port 8000

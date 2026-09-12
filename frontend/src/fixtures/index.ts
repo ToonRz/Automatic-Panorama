@@ -9,69 +9,14 @@
  * with one-based `message` text.
  */
 import type { ApiErrorDetail, StitchResponse } from "../types";
+import insufficientInliersSnapshot from "./contract/error-insufficient-inliers.json";
+import successSnapshot from "./contract/stitch-success.json";
 
 /** A 1x1 transparent PNG. Stands in for a real panorama in fixtures/tests. */
 const PLACEHOLDER_PNG_DATA_URL =
   "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=";
 
-export const successWithOverlayFixture: StitchResponse = {
-  status: "complete",
-  image: {
-    data_url: PLACEHOLDER_PNG_DATA_URL,
-    mime_type: "image/png",
-    width: 3840,
-    height: 1380,
-  },
-  diagnostics: {
-    detector: "SIFT",
-    image_count: 3,
-    image_order: [0, 1, 2],
-    reference_index: 1,
-    input_long_edge_budget: 1600,
-    source_dimensions: [
-      [4032, 3024],
-      [4032, 3024],
-      [4032, 3024],
-    ],
-    processed_dimensions: [
-      [1600, 1200],
-      [1600, 1200],
-      [1600, 1200],
-    ],
-    input_scale_factor: [0.3968, 0.3968, 0.3968],
-    keypoints_per_image: [812, 765, 930],
-    candidate_pair_count: 2,
-    ratio_passed_matches_per_pair: [146, 128],
-    inliers_per_pair: [101, 87],
-    inlier_ratio_per_pair: [0.69, 0.68],
-    reprojection_error_per_pair: [1.42, 1.88],
-    output_width: 3840,
-    output_height: 1380,
-    stage_timings_ms: {
-      decode: 31.2,
-      features: 418.5,
-      matching: 12.3,
-      homography: 4.8,
-      warp: 96.4,
-      blend: 83.7,
-      encode: 40.1,
-    },
-    seam_lines: [
-      { top: [1104.0, 0.0], bottom: [1118.0, 1380.0] },
-      { top: [2216.0, 0.0], bottom: [2201.0, 1380.0] },
-    ],
-    sample_correspondences_per_pair: [
-      [
-        { from: [1042.0, 470.0], to: [1164.0, 508.0] },
-        { from: [1000.0, 896.0], to: [1206.0, 862.0] },
-      ],
-      [
-        { from: [2144.0, 486.0], to: [2272.0, 528.0] },
-        { from: [2108.0, 908.0], to: [2310.0, 880.0] },
-      ],
-    ],
-  },
-};
+export const successWithOverlayFixture = successSnapshot as unknown as StitchResponse;
 
 export const successWithoutOverlayFixture: StitchResponse = {
   status: "complete",
@@ -115,17 +60,7 @@ export interface MockErrorFixture {
 
 export const insufficientInliersError: MockErrorFixture = {
   status: 422,
-  detail: {
-    code: "INSUFFICIENT_INLIERS",
-    message: "Images 2 and 3 do not have enough geometric agreement.",
-    context: {
-      pair: [1, 2],
-      pair_index: 1,
-      inliers: 5,
-      required: 12,
-      inlier_ratio: 0.26,
-    },
-  },
+  detail: insufficientInliersSnapshot.detail as ApiErrorDetail,
 };
 
 export const imageTooLargeError: MockErrorFixture = {

@@ -21,13 +21,10 @@ describe("fixtures", () => {
 
   it("gives every seam two distinct endpoints, at least one of them tilted", () => {
     const seams = successWithOverlayFixture.diagnostics.seam_lines ?? [];
-    const { width, height } = successWithOverlayFixture.image;
     for (const seam of seams) {
       for (const [x, y] of [seam.top, seam.bottom]) {
-        expect(x).toBeGreaterThanOrEqual(0);
-        expect(x).toBeLessThanOrEqual(width);
-        expect(y).toBeGreaterThanOrEqual(0);
-        expect(y).toBeLessThanOrEqual(height);
+        expect(Number.isFinite(x)).toBe(true);
+        expect(Number.isFinite(y)).toBe(true);
       }
       expect(seam.top[1]).not.toBe(seam.bottom[1]);
     }

@@ -77,9 +77,18 @@ npm install
 npm run dev
 ```
 
-Open `http://localhost:5173`. The UI is already wired to the backend contract;
-the submit action will show the intentional scaffold response until the CV
-pipeline is implemented.
+Open `http://localhost:5173`. Plain `npm run dev` always talks to the real API
+at `VITE_API_BASE_URL` (default `http://localhost:8000`). Use `npm run dev:mock`
+only when you need the fixture state switcher without a backend. If an older
+`frontend/.env.development.local` sets `VITE_MOCK_API`, delete that line; mode
+selection now owns the flag.
+
+Regenerate the frontend's committed API response fixtures after a backend
+contract change:
+
+```bash
+make contract-snapshots
+```
 
 ### Quality checks
 
