@@ -2,7 +2,6 @@
 
 - Owner: Member D
 - Reviewers: Member B, Member C
-- Branch: `feature/04c-ui-result-canvas`
 - Depends on: 04b; consumes the fields added by task 06
 - Spec: `docs/ui-spec.md` sections 6.2, 6.3
 

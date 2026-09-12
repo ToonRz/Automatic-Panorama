@@ -2,7 +2,6 @@
 
 - Owner: Member D
 - Reviewers: Member C, Member E
-- Branch: `feature/04b-ui-state-and-input`
 - Depends on: 04a, 04e
 - Spec: `docs/ui-spec.md` sections 4, 5, 7, 8, 9, 11
 

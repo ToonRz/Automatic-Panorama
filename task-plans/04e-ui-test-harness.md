@@ -2,7 +2,6 @@
 
 - Owner: Member E
 - Reviewers: Member D, Member C
-- Branch: `feature/04e-ui-test-harness`
 - Depends on: scaffold
 - Spec: `docs/ui-spec.md` section 10
 

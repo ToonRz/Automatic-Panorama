@@ -2,7 +2,6 @@
 
 - Owner: Member A
 - Reviewers: Member B, Member E
-- Branch: `feature/01-sift-orb-contract`
 - Depends on: scaffold
 
 ## Acceptance

@@ -2,7 +2,6 @@
 
 - Owner: Member D
 - Reviewers: Member E, Member C
-- Branch: `feature/04a-ui-design-system`
 - Depends on: 04e
 - Spec: `docs/ui-spec.md` sections 2, 3, 11
 

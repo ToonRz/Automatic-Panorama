@@ -2,7 +2,6 @@
 
 - Owner: Member B
 - Reviewers: Member A, Member E
-- Branch: `feature/02-ransac-warp-blend`
 - Depends on: Task 01
 
 ## Acceptance

@@ -2,7 +2,6 @@
 
 - Owner: Member E
 - Reviewers: Member C, Member D
-- Branch: `deploy/05-ci-and-public-smoke`
 - Depends on: scaffold; final API/UI for public smoke test
 
 ## Acceptance

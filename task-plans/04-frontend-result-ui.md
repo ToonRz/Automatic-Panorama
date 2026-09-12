@@ -2,13 +2,12 @@
 
 - Owner: Member D
 - Reviewers: Member C, Member E
-- Branch: `feature/04-upload-result-ui`
 - Depends on: Task 03 contract
 
 This task is a parent. The interface drawn in `docs/mockups/ui-mock.html` and
 specified in `docs/ui-spec.md` is too large for one pull request, so it ships as
-five slices. Each child below is its own branch, owner, and pull request. This
-file tracks the whole and is closed only when every child is merged.
+five slices. Each child below is its own owner and pull request. This file
+tracks the whole and is closed only when every child is merged.
 
 ## Children
 

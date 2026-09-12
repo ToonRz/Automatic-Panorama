@@ -2,7 +2,6 @@
 
 - Owner: Member C
 - Reviewers: Member B, Member D
-- Branch: `feature/06-overlay-diagnostics`
 - Depends on: Tasks 02 and 03
 - Spec: `docs/ui-spec.md` section 6.2
 

@@ -2,7 +2,6 @@
 
 - Owner: Member C
 - Reviewers: Member A, Member E
-- Branch: `feature/03-stitch-api`
 - Depends on: Tasks 01 and 02
 
 ## Acceptance

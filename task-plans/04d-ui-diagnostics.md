@@ -2,7 +2,6 @@
 
 - Owner: Member D
 - Reviewers: Member B, Member A
-- Branch: `feature/04d-ui-diagnostics`
 - Depends on: 04b
 - Spec: `docs/ui-spec.md` section 6.1
 
