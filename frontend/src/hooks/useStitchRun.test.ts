@@ -2,6 +2,7 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import * as api from "../api";
+import type { StitchResponse } from "../types";
 import { useStitchRun } from "./useStitchRun";
 
 function fakeFile(name = "a.jpg"): File {
@@ -25,11 +26,11 @@ describe("useStitchRun", () => {
   });
 
   it("enters working while the request is in flight, then complete on success", async () => {
-    let resolveSubmit!: (value: unknown) => void;
+    let resolveSubmit!: (value: StitchResponse) => void;
     vi.spyOn(api, "submitStitch").mockReturnValue(
-      new Promise((resolve) => {
+      new Promise<StitchResponse>((resolve) => {
         resolveSubmit = resolve;
-      }) as ReturnType<typeof api.submitStitch>,
+      }),
     );
 
     const { result } = renderHook(() => useStitchRun());
@@ -37,7 +38,7 @@ describe("useStitchRun", () => {
     act(() => result.current.submit());
     expect(result.current.state).toBe("working");
 
-    const fakeResponse = {
+    const fakeResponse: StitchResponse = {
       status: "complete",
       image: { data_url: "data:image/png;base64,x", mime_type: "image/png", width: 1, height: 1 },
       diagnostics: {

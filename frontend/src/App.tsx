@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { ControlRail } from "./components/ControlRail/ControlRail";
+import { Diagnostics } from "./components/Diagnostics/Diagnostics";
 import { OutputCanvas } from "./components/OutputCanvas/OutputCanvas";
 import { StatusPill } from "./components/StatusPill";
 import type { DebugStateKey } from "./dev/debugStates";
@@ -58,6 +59,8 @@ export default function App() {
           isStale={run.isStale}
         />
       </div>
+
+      {run.result && <Diagnostics result={run.result} />}
 
       <footer className="appfoot">
         <span>Stateless v1 · no database, no stored uploads</span>
