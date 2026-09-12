@@ -24,13 +24,19 @@ cancelled.
 
 ## Acceptance
 
-- [ ] `STITCH_REQUEST_TIMEOUT_MS` is derived from the three named constants and
+- [x] `STITCH_REQUEST_TIMEOUT_MS` is derived from the three named constants and
       equals 120 000 at defaults;
-- [ ] with fake timers, a request that never resolves enters `failed` with
+- [x] with fake timers, a request that never resolves enters `failed` with
       `REQUEST_TIMEOUT` after the timeout;
-- [ ] Cancel appears only in `working`, aborts the request, returns to `ready`
+- [x] Cancel appears only in `working`, aborts the request, returns to `ready`
       with files and settings intact, and shows the section 8.2 note;
-- [ ] the note clears on the next submit or selection;
-- [ ] a 200 resolving after cancel does not change the `ready` state;
-- [ ] Cancel is reachable by keyboard and has a visible focus ring;
-- [ ] screenshot of the working state with Cancel and of the cancelled note.
+- [x] the note clears on the next submit or selection;
+- [x] a 200 resolving after cancel does not change the `ready` state;
+- [x] Cancel is reachable by keyboard and has a visible focus ring (the
+      page's default `:focus-visible` outline, same as every other control);
+- [x] screenshot of the working state with Cancel and of the cancelled note —
+      captured against the real backend: submit and Cancel fired back to
+      back from the browser console, landing on the `ready` placeholder with
+      the section 8.2 note and the original two-file selection intact; the
+      run the server kept processing afterwards was confirmed not to
+      resurrect the `complete` screen.

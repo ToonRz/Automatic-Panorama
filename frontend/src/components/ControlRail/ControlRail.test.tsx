@@ -23,6 +23,8 @@ const baseProps = {
   ransacThreshold: 5,
   onRansacChange: vi.fn(),
   onSubmit: vi.fn(),
+  onCancel: vi.fn(),
+  cancelledNote: null,
 };
 
 describe("ControlRail primary button", () => {
@@ -47,6 +49,29 @@ describe("ControlRail primary button", () => {
   it("disables with 'Stitching…' while working", () => {
     render(<ControlRail {...baseProps} state="working" />);
     expect(screen.getByRole("button", { name: /stitching/i })).toBeDisabled();
+  });
+
+  it("shows Cancel only while working, and calls onCancel (I13)", async () => {
+    const onCancel = vi.fn();
+    const user = userEvent.setup();
+    const { rerender } = render(<ControlRail {...baseProps} state="ready" onCancel={onCancel} />);
+    expect(screen.queryByRole("button", { name: /^cancel$/i })).not.toBeInTheDocument();
+
+    rerender(<ControlRail {...baseProps} state="working" onCancel={onCancel} />);
+    const cancelButton = screen.getByRole("button", { name: /^cancel$/i });
+    await user.click(cancelButton);
+    expect(onCancel).toHaveBeenCalledOnce();
+  });
+
+  it("shows the cancelled note in the rail", () => {
+    render(
+      <ControlRail
+        {...baseProps}
+        state="ready"
+        cancelledNote="Cancelled. The server may still be finishing that run, so the next try might report busy for a moment."
+      />,
+    );
+    expect(screen.getByText(/the next try might report busy/i)).toBeInTheDocument();
   });
 
   it("offers 'Stitch again' when complete", () => {

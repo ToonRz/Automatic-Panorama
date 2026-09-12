@@ -92,7 +92,7 @@ combination of booleans may produce a screen that is not one of these.
 | `ready` | 2-8 files chosen | placeholder and the pipeline ribbon | enabled, "Stitch panorama" |
 | `working` | request in flight | stage checklist, section 5 | disabled, "Stitching..." |
 | `complete` | HTTP 200 | panorama, overlay toggle, download | enabled, "Stitch again" |
-| `failed` | HTTP 400, 413, 422, 500, 503, 504 | error block, section 7 | enabled, "Retry with ORB" when the detector was SIFT, otherwise "Try again" |
+| `failed` | HTTP 400, 413, 422, 500, 503, 504, or a client-side failure (network drop, unreachable server, client timeout) | error block, section 7 | enabled, "Retry with ORB" when the detector was SIFT, otherwise "Try again"; `Try again in {s}s` while a `SERVICE_BUSY` countdown is running |
 
 Transitions out of a settled state:
 
@@ -105,7 +105,17 @@ Transitions out of a settled state:
   abandons preparation already in flight, and enters `preparing` before returning
   to `empty` or `ready`. The old panorama does not describe the new frames;
 - submitting from `complete` or `failed` clears the previous result
-  before entering `working`.
+  before entering `working`;
+- in `working`, a secondary Cancel button aborts the request through the same
+  `AbortController` and returns to `empty` or `ready` with the selection and
+  settings intact, showing an inline note that clears on the next submit or
+  selection (docs/integration-spec.md section 8.2). Server work is not
+  cancelled;
+- a stitch request left unanswered for `STITCH_REQUEST_TIMEOUT_MS` (120 s at
+  defaults, docs/integration-spec.md section 8.1) is aborted client-side and
+  lands in `failed` with `REQUEST_TIMEOUT`. A response that arrives after
+  cancel, timeout, or a new selection is dropped by the same request-id guard
+  that already protects a stale request.
 
 Before a request, `useClientConfig` starts from `FALLBACK_CONFIG` and replaces
 it once `GET /api/v1/config` succeeds after the availability state becomes
@@ -147,6 +157,10 @@ are a picture of the finished run, not a live feed.
 
 If the request has been in flight longer than the cold-start threshold in
 section 9, the cold-start message appears below the checklist.
+
+A Cancel button sits under the primary button for the duration of `working`
+only (docs/integration-spec.md section 8.2). It is reachable by keyboard and
+shares the page's default focus ring.
 
 ## 6. The complete state
 

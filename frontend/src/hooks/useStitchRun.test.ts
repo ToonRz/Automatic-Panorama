@@ -2,6 +2,7 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import * as api from "../api";
+import { STITCH_REQUEST_TIMEOUT_MS } from "../constants/availability";
 import { FALLBACK_CONFIG } from "../constants/config";
 import type { StitchResponse } from "../types";
 import type { PreparedImage } from "../utils/prepareImage";
@@ -195,6 +196,112 @@ describe("useStitchRun", () => {
     act(() => result.current.submit());
     await waitFor(() => expect(result.current.state).toBe("failed"));
     expect(result.current.error?.detail.code).toBe("NETWORK_ERROR");
+  });
+
+  it("aborts a request that never resolves after STITCH_REQUEST_TIMEOUT_MS and lands on REQUEST_TIMEOUT (I12)", async () => {
+    expect(STITCH_REQUEST_TIMEOUT_MS).toBe(120_000);
+    vi.useFakeTimers();
+    try {
+      vi.spyOn(api, "submitStitch").mockImplementation(
+        (_files, _options, signal?: AbortSignal) =>
+          new Promise((_resolve, reject) => {
+            signal?.addEventListener("abort", () => reject(new DOMException("", "AbortError")));
+          }),
+      );
+      const { result } = renderHook(() => useStitchRun(FALLBACK_CONFIG, prepare));
+      await act(async () => {
+        result.current.setFiles([fakeFile("a.jpg"), fakeFile("b.jpg")]);
+        await vi.runAllTimersAsync();
+      });
+      act(() => result.current.submit());
+      expect(result.current.state).toBe("working");
+
+      await act(async () => vi.advanceTimersByTimeAsync(STITCH_REQUEST_TIMEOUT_MS));
+      expect(result.current.state).toBe("failed");
+      expect(result.current.error?.detail.code).toBe("REQUEST_TIMEOUT");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("cancel returns to ready with files and settings intact, and shows the note (I13)", async () => {
+    let rejectSubmit!: (reason: unknown) => void;
+    vi.spyOn(api, "submitStitch").mockReturnValue(
+      new Promise((_resolve, reject) => {
+        rejectSubmit = reject;
+      }),
+    );
+    const { result } = renderHook(() => useStitchRun(FALLBACK_CONFIG, prepare));
+    await selectFiles(result, [fakeFile("a.jpg"), fakeFile("b.jpg")]);
+    act(() => result.current.setDetector("ORB"));
+    act(() => result.current.submit());
+    expect(result.current.state).toBe("working");
+
+    act(() => result.current.cancel());
+    expect(result.current.state).toBe("ready");
+    expect(result.current.files).toHaveLength(2);
+    expect(result.current.detector).toBe("ORB");
+    expect(result.current.cancelledNote).toMatch(/cancelled/i);
+
+    // A late rejection (the abort settling, or the server finishing anyway)
+    // must not resurrect the cancelled request.
+    act(() => rejectSubmit(new DOMException("", "AbortError")));
+    expect(result.current.state).toBe("ready");
+  });
+
+  it("clears the cancelled note on the next submit", async () => {
+    let rejectSubmit!: (reason: unknown) => void;
+    vi.spyOn(api, "submitStitch").mockImplementation(
+      () =>
+        new Promise((_resolve, reject) => {
+          rejectSubmit = reject;
+        }),
+    );
+    const { result } = renderHook(() => useStitchRun(FALLBACK_CONFIG, prepare));
+    await selectFiles(result, [fakeFile("a.jpg"), fakeFile("b.jpg")]);
+    act(() => result.current.submit());
+    act(() => result.current.cancel());
+    expect(result.current.cancelledNote).not.toBeNull();
+
+    act(() => result.current.submit());
+    expect(result.current.cancelledNote).toBeNull();
+    rejectSubmit(new Error("cleanup"));
+  });
+
+  it("a late 200 after cancel does not overwrite the ready state", async () => {
+    let resolveSubmit!: (value: StitchResponse) => void;
+    vi.spyOn(api, "submitStitch").mockReturnValue(
+      new Promise((resolve) => {
+        resolveSubmit = resolve;
+      }),
+    );
+    const { result } = renderHook(() => useStitchRun(FALLBACK_CONFIG, prepare));
+    await selectFiles(result, [fakeFile("a.jpg"), fakeFile("b.jpg")]);
+    act(() => result.current.submit());
+    act(() => result.current.cancel());
+    expect(result.current.state).toBe("ready");
+
+    act(() =>
+      resolveSubmit({
+        status: "complete",
+        image: { data_url: "x", mime_type: "image/png", width: 1, height: 1 },
+        diagnostics: {
+          detector: "SIFT",
+          image_count: 2,
+          image_order: [0, 1],
+          keypoints_per_image: [1, 1],
+          ratio_passed_matches_per_pair: [1],
+          inliers_per_pair: [1],
+          inlier_ratio_per_pair: [1],
+          reprojection_error_per_pair: [0.1],
+          output_width: 1,
+          output_height: 1,
+          stage_timings_ms: {},
+        },
+      }),
+    );
+    expect(result.current.state).toBe("ready");
+    expect(result.current.result).toBeNull();
   });
 
   it("does not reset a slider the user touched when server config arrives", () => {

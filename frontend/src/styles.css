@@ -441,6 +441,24 @@ input[type="range"] {
 .cta.ghost:hover:not(:disabled) {
   box-shadow: 0 10px 26px rgba(255, 132, 105, 0.18);
 }
+.cancel {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px 16px;
+  border: 1px solid var(--line-soft);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--muted);
+  text-align: center;
+}
+.cancel:hover {
+  color: var(--ink);
+  border-color: var(--muted);
+}
+.cancelled-note {
+  color: var(--muted);
+}
 .fineprint {
   margin: 12px 0 0;
   text-align: center;

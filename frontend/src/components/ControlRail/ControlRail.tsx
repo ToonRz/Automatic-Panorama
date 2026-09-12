@@ -24,6 +24,8 @@ export interface ControlRailProps {
   ransacThreshold: number;
   onRansacChange: (value: number) => void;
   onSubmit: (overrides?: { detector?: Detector }) => void;
+  onCancel: () => void;
+  cancelledNote: string | null;
   hasPreflightErrors: boolean;
 }
 
@@ -84,6 +86,8 @@ export function ControlRail({
   ransacThreshold,
   onRansacChange,
   onSubmit,
+  onCancel,
+  cancelledNote,
   hasPreflightErrors,
 }: ControlRailProps) {
   const primary = primaryButtonSpec(state, detector, hasPreflightErrors, busySecondsLeft);
@@ -113,6 +117,7 @@ export function ControlRail({
 
       {showDropzone && <Dropzone onFilesSelected={onFilesSelected} config={config} />}
       {selectionError && <p className="selection-error" role="alert">{selectionError}</p>}
+      {cancelledNote && <p className="cancelled-note">{cancelledNote}</p>}
       <FileList
         files={files}
         preparedImages={preparedImages}
@@ -142,6 +147,11 @@ export function ControlRail({
       <button className={primary.ghost ? "cta ghost" : "cta"} type="submit" disabled={primary.disabled}>
         {primary.label} <span aria-hidden="true">{primary.disabled && state === "working" ? "◍" : "→"}</span>
       </button>
+      {state === "working" && (
+        <button type="button" className="cancel" onClick={onCancel}>
+          Cancel
+        </button>
+      )}
     </form>
   );
 }

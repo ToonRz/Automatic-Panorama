@@ -59,6 +59,8 @@ export default function App() {
           ransacThreshold={run.ransacThreshold}
           onRansacChange={run.setRansacThreshold}
           onSubmit={run.submit}
+          onCancel={run.cancel}
+          cancelledNote={run.cancelledNote}
         />
         <OutputCanvas
           state={run.state}

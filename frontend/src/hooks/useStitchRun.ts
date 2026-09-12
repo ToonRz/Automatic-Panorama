@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { ApiError, submitStitch } from "../api";
-import { COLD_START_THRESHOLD_MS } from "../constants/availability";
+import { COLD_START_THRESHOLD_MS, STITCH_REQUEST_TIMEOUT_MS } from "../constants/availability";
 import { FALLBACK_CONFIG } from "../constants/config";
 import { MIN_FILES } from "../constants/thresholds";
 import type { DebugStateKey } from "../dev/debugStates";
@@ -62,6 +62,17 @@ function makeFakeFiles(count: number): File[] {
   );
 }
 
+/**
+ * `fetch` rejects an aborted request with this, whether the abort came from
+ * the timeout timer or from `cancel()` (docs/integration-spec.md section
+ * 8.1). A `cancel()` bumps `requestIdRef` first, so by the time this would
+ * matter here the request-id guard has already discarded it — anything that
+ * reaches this check is therefore the timeout, not a user cancel.
+ */
+function isAbortError(error: unknown): boolean {
+  return error instanceof DOMException && error.name === "AbortError";
+}
+
 export interface UseStitchRunResult {
   state: ScreenState;
   files: File[];
@@ -89,6 +100,10 @@ export interface UseStitchRunResult {
   busySecondsLeft: number | null;
   isColdStart: boolean;
   submit: (overrides?: Partial<RunSettings>) => void;
+  /** docs/integration-spec.md section 8.2: only meaningful during `working`. */
+  cancel: () => void;
+  /** The section 8.2 note; cleared by the next submit or selection. */
+  cancelledNote: string | null;
   /** Dev-only, mock-mode-only escape hatch for the state switcher. */
   forceDebugState: (key: DebugStateKey) => void;
 }
@@ -116,7 +131,9 @@ export function useStitchRun(
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
   const [isColdStart, setIsColdStart] = useState(false);
   const [busySecondsLeft, setBusySecondsLeft] = useState<number | null>(null);
+  const [cancelledNote, setCancelledNote] = useState<string | null>(null);
   const requestIdRef = useRef(0);
+  const abortControllerRef = useRef<AbortController | null>(null);
   const detectorTouchedRef = useRef(false);
   const ratioTouchedRef = useRef(false);
   const ransacTouchedRef = useRef(false);
@@ -165,6 +182,7 @@ export function useStitchRun(
   }, [phase]);
 
   function setFiles(nextFiles: File[]) {
+    setCancelledNote(null);
     const selection = validateSelection(nextFiles, config);
     if (selection.selectionError) {
       setSelectionError(selection.selectionError);
@@ -241,6 +259,7 @@ export function useStitchRun(
       return;
     }
 
+    setCancelledNote(null);
     const settings: RunSettings = {
       detector: overrides?.detector ?? detector,
       ratioThreshold: overrides?.ratioThreshold ?? ratioThreshold,
@@ -249,19 +268,47 @@ export function useStitchRun(
     if (overrides?.detector) setDetector(overrides.detector);
 
     const requestId = ++requestIdRef.current;
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
     setPhase({ kind: "working", startedAt: Date.now() });
 
-    submitStitch(preparedImages.map((item) => item?.upload).filter((file): file is File => !!file), {
-      detector: settings.detector,
-      ratioThreshold: settings.ratioThreshold,
-      ransacReprojThreshold: settings.ransacThreshold,
-    }).then(
+    // docs/integration-spec.md section 8.1: a sleeping instance can otherwise
+    // hang past any point the user will wait for, with no explanation.
+    const timeoutTimer = setTimeout(() => controller.abort(), STITCH_REQUEST_TIMEOUT_MS);
+
+    submitStitch(
+      preparedImages.map((item) => item?.upload).filter((file): file is File => !!file),
+      {
+        detector: settings.detector,
+        ratioThreshold: settings.ratioThreshold,
+        ransacReprojThreshold: settings.ransacThreshold,
+      },
+      controller.signal,
+    ).then(
       (result) => {
+        clearTimeout(timeoutTimer);
         if (requestIdRef.current !== requestId) return;
         setPhase({ kind: "complete", result, settings });
       },
       (caughtError: unknown) => {
+        clearTimeout(timeoutTimer);
+        // A cancelled request bumps requestIdRef before aborting (see
+        // `cancel`), so anything reaching this point that still matches was
+        // aborted by the timeout, not the user.
         if (requestIdRef.current !== requestId) return;
+        if (isAbortError(caughtError)) {
+          setPhase({
+            kind: "failed",
+            error: {
+              status: 0,
+              detail: {
+                code: "REQUEST_TIMEOUT",
+                message: "The server took too long to answer.",
+              },
+            },
+          });
+          return;
+        }
         if (caughtError instanceof ApiError) {
           setPhase({
             kind: "failed",
@@ -294,6 +341,24 @@ export function useStitchRun(
         });
       },
     );
+  }
+
+  /**
+   * docs/integration-spec.md section 8.2: aborts the in-flight request and
+   * returns to the pre-submit state with the selection and settings intact.
+   * Server work is not cancelled. Bumping `requestIdRef` first means the
+   * request's own `.then`/`.catch` always no-ops, whatever order the abort
+   * rejection and this update land in.
+   */
+  function cancel() {
+    if (phase.kind !== "working") return;
+    requestIdRef.current += 1;
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+    setCancelledNote(
+      "Cancelled. The server may still be finishing that run, so the next try might report busy for a moment.",
+    );
+    setPhase({ kind: "idle" });
   }
 
   function forceDebugState(key: DebugStateKey) {
@@ -422,6 +487,8 @@ export function useStitchRun(
     busySecondsLeft,
     isColdStart,
     submit,
+    cancel,
+    cancelledNote,
     forceDebugState,
   };
 }

@@ -120,6 +120,7 @@ function isClientConfig(value: unknown): value is ClientConfig {
 export async function submitStitch(
   files: File[],
   options: StitchOptions,
+  signal?: AbortSignal,
 ): Promise<StitchResponse> {
   if (isMockApiEnabled()) {
     return submitStitchMock();
@@ -134,6 +135,7 @@ export async function submitStitch(
   const response = await fetch(`${API_BASE_URL}/api/v1/stitch`, {
     method: "POST",
     body: form,
+    signal,
   });
   if (!response.ok) {
     throw new ApiError(response.status, await errorDetailFromResponse(response));
