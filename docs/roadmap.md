@@ -13,13 +13,16 @@ Exit criteria:
   instructions exist;
 - Render/Vercel deployment configuration is documented but not yet claimed as
   live;
-- `/api/v1/stitch` returns an honest `501` until implementation lands.
+- `/api/v1/stitch` returns an honest `501` until implementation lands;
+- the backend contract is specified in full in `docs/backend-spec.md`, and the
+  ten implementation slices are planned under
+  `task-plans/07-backend-pipeline.md`.
 
 ## Phase 1 - pairwise CV baseline
 
-Owner: CV core + QA. Deliver a local function that takes two synthetic
-overlapping images and returns a Homography, inlier mask, and reprojection
-metrics.
+Owner: CV core + QA. Slices `07a`, `07d`, `07e`, `07f`. Deliver a local
+function that takes two synthetic overlapping images and returns a Homography,
+inlier mask, and reprojection metrics.
 
 Exit criteria:
 
@@ -30,8 +33,9 @@ Exit criteria:
 
 ## Phase 2 - multi-image composition
 
-Owners: CV core + backend. Add ordering/reference selection, transform
-composition, canvas calculation, and perspective warping for three images.
+Owners: CV core + backend. Slices `07b`, `07c`, `07g`, `07h`. Add ordering and
+reference selection, transform composition, the per-request input budget,
+canvas calculation, and perspective warping for three images.
 
 Exit criteria:
 
@@ -41,8 +45,9 @@ Exit criteria:
 
 ## Phase 3 - blending and result contract
 
-Owners: CV core + backend + frontend. Add masks, feather blending, crop/encode,
-and the JSON/image response consumed by the UI.
+Owners: CV core + backend + frontend. Slices `07i` and `07j`, plus the `04`
+family. Add masks, feather blending, crop and encode, and the JSON/image
+response consumed by the UI. `07j` is where the 501 goes away.
 
 Exit criteria:
 

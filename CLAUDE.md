@@ -22,7 +22,8 @@ about its unimplemented status until the algorithm has tests and demo evidence.
 | --- | --- |
 | What the assignment grades | `docs/assignment-alignment.md` |
 | How components fit together | `docs/architecture.md` |
-| CV method and acceptance thresholds | `docs/cv-pipeline.md` |
+| The backend contract, errors, settings | `docs/backend-spec.md` |
+| Why the CV stages work as they do | `docs/cv-pipeline.md` |
 | What the interface must do | `docs/ui-spec.md`, `docs/mockups/ui-mock.html` |
 | Technology and hosting choices | `docs/tech-stack.md`, `docs/deployment-plan.md` |
 | What to build next | `docs/roadmap.md`, `task-plans/` |

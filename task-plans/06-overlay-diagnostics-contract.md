@@ -1,38 +1,16 @@
 # Task 06 - overlay geometry in the diagnostics contract
 
-- Owner: Member C
-- Reviewers: Member B, Member D
-- Depends on: Tasks 02 and 03
-- Spec: `docs/ui-spec.md` section 6.2
+Superseded. The overlay fields are part of the response contract rather than an
+addition to it, and they are produced by the stages that already compute the
+geometry.
 
-## Scope
+- `seam_lines`: `task-plans/07h-canvas-and-warp.md`
+- `sample_correspondences_per_pair`: `task-plans/07i-blend-crop-encode.md`
+- schema and response plumbing: `task-plans/07j-response-assembly.md`
 
-The UI draws the seam and inlier overlay itself, which needs geometry the
-success response does not currently carry. Add two fields to `diagnostics`.
-Member B supplies the values from the geometry stage; Member C carries them
-through the schema and the response.
-
-Both fields are in output-image pixel coordinates, the same space as
-`image.width` and `image.height`, so the frontend draws them directly. The
-transform arithmetic stays in `backend/app/cv/`.
-
-| Field | Shape | Notes |
-| --- | --- | --- |
-| `seam_positions_x` | list of numbers, one per pair | x of the vertical seam on the output canvas |
-| `sample_correspondences_per_pair` | list per pair of at most 12 point pairs | a drawn illustration, not the inlier set |
-
-The sample field is named for what it is. Nothing downstream may count it; the
-inlier count is `inliers_per_pair` and nowhere else.
-
-## Acceptance
-
-- [ ] both fields are added to the response schema and to
-      `docs/api-contract.md`, which currently marks them pending;
-- [ ] lengths match the pair count, which is the image count minus one;
-- [ ] sampling is capped at 12 per pair and is deterministic for a given input,
-      so a rerun during the demo does not redraw different points;
-- [ ] every coordinate falls inside the output canvas bounds;
-- [ ] the fields are optional in the frontend types, and a response without them
-      still renders;
-- [ ] API tests cover the field shapes and the bounds;
-- [ ] `frontend/src/types.ts` is updated in the same pull request.
+One field changed shape. `seam_positions_x` sent a single x per pair, which is
+correct only under pure horizontal translation. It is replaced by `seam_lines`,
+a two-point line per pair, because under real perspective the shared boundary
+tilts and a vertical line would contradict the measurement the overlay exists
+to illustrate. `docs/backend-spec.md` section 8 has the reasoning and the
+shape; `docs/ui-spec.md` section 6.2 has the drawing rules.

@@ -1,13 +1,14 @@
 # Task 02 - geometry, warp, and blend
 
-- Owner: Member B
-- Reviewers: Member A, Member E
-- Depends on: Task 01
+Superseded. This slice was too coarse to review and is now split.
 
-## Acceptance
+- RANSAC and pair acceptance: `task-plans/07f-ransac-pair-acceptance.md`
+- Ordering and composition: `task-plans/07g-ordering-and-composition.md`
+- Canvas, warp, seam lines: `task-plans/07h-canvas-and-warp.md`
+- Blend, crop, encode: `task-plans/07i-blend-crop-encode.md`
 
-- [ ] RANSAC Homography returns an inlier mask and error metrics;
-- [ ] weak/degenerate pairs are rejected;
-- [ ] three images compose into a common canvas;
-- [ ] warped masks and feather blending remove black borders;
-- [ ] golden output and failure cases are documented.
+Member B owns 07f, 07h, and 07i. Ordering moved to member A, because it
+decides from the pairwise match scores member A produces. The parent is
+`task-plans/07-backend-pipeline.md` and the contract is
+`docs/backend-spec.md`. The number is kept because
+`docs/contribution-plan.md` and `docs/ui-spec.md` section 7.1 refer to it.

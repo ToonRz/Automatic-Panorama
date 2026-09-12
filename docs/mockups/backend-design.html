@@ -94,6 +94,11 @@
     background: rgba(239, 201, 107, 0.07);
   }
   .banner .dot { color: var(--amber); font-family: var(--mono); }
+    .banner.superseded { border-color: rgba(255, 132, 105, 0.45); background: rgba(255, 132, 105, 0.07); }
+    .banner.superseded .dot { color: var(--coral); }
+    .banner.superseded b { color: var(--coral); }
+    .banner.superseded ul { margin: 10px 0 0; padding-left: 18px; font-size: 0.84rem; }
+    .banner.superseded li { margin-bottom: 4px; }
   .banner p { margin: 0; font-size: 0.88rem; }
   .banner b { color: var(--amber); font-weight: 600; }
 
@@ -268,6 +273,22 @@
       <div><span>Vision</span><strong>opencv-python-headless</strong></div>
       <div><span>Host</span><strong>Render Free</strong></div>
       <div><span>State</span><strong>none · per-request</strong></div>
+    </div>
+
+    <div class="banner superseded">
+      <span class="dot" aria-hidden="true">■</span>
+      <div>
+        <p><b>Superseded by docs/backend-spec.md.</b> This page is the design draft the specification grew out of. Build against the specification, not against this page. Six things on it are now wrong:</p>
+        <ul>
+          <li><b>Nine gates</b> is now an admission check plus ten gates. Section 3 of the spec.</li>
+          <li><b>Fourteen error codes</b> is now eighteen, adding <code>TOTAL_UPLOAD_TOO_LARGE</code>, <code>SERVICE_BUSY</code>, and <code>STITCH_TIMEOUT</code>. Section 9.</li>
+          <li><b>Ten settings</b> is now twenty, including the concurrency, timeout, and input-budget controls. Section 10.</li>
+          <li><b><code>max_output_pixels</code> 25 MP</b> is now 8 MP, because the image travels as base64 inside JSON. Section 7.4.</li>
+          <li><b>A fixed input size</b> is now a per-request budget derived from the frame count, so eight frames stay usable. Section 5.2.</li>
+          <li><b><code>seam_positions_x</code></b>, a single x per pair, is now <code>seam_lines</code>, a two-point line, because a real seam tilts. Section 8.</li>
+        </ul>
+        <p style="margin-top:10px">The layer contract also moved <code>cv/pipeline.py</code> to member A. <code>task-plans/07j</code> owns bringing this page back in line once the pipeline is real.</p>
+      </div>
     </div>
 
     <div class="banner">
@@ -753,6 +774,6 @@
 <footer class="docfoot">
   <div>
     <span>Automatic Panorama Stitcher · backend design v1 · pairs with the interface mock</span>
-    <span>Source of truth: docs/architecture.md · docs/api-contract.md · docs/cv-pipeline.md</span>
+    <span>Source of truth: docs/backend-spec.md · docs/architecture.md · docs/api-contract.md · docs/cv-pipeline.md</span>
   </div>
 </footer>

@@ -1,7 +1,12 @@
-# CV pipeline design
+# CV pipeline notes
 
-This is the implementation contract for the Automatic Panorama Stitcher. The
-code stubs under `backend/app/cv/` deliberately mirror these stages.
+This file explains *why* each stage does what it does, and how its thresholds
+were chosen. It is not the contract.
+
+The contract, the field definitions, the error catalogue, the settings, and the
+numeric acceptance thresholds are in **`docs/backend-spec.md`**. Where the two
+disagree, the specification wins. Numbers appearing below are illustrative
+starting points for tuning, not the values the tests assert.
 
 ## 1. Decode and normalize
 
@@ -40,8 +45,10 @@ For candidate image pairs:
 3. Record raw pairs, ratio-passed matches, and the threshold.
 4. Use L2 for SIFT and Hamming for ORB.
 
-Start with `ratio_threshold = 0.75` and tune against the golden fixtures. The
-threshold is configuration, not a hidden constant.
+0.75 is Lowe's own suggestion and a reasonable place to start tuning against
+the fixtures. Raising it admits more matches and more false ones, which is the
+right trade on a low-texture scene and the wrong one on repeated texture. The
+threshold is configuration and is exposed to the user, not a hidden constant.
 
 ## 4. Homography and RANSAC
 
@@ -56,29 +63,35 @@ H, inlier_mask = cv2.findHomography(
 )
 ```
 
-Acceptance must consider all of:
+Acceptance considers four things together, because each one alone can be
+fooled. A high inlier count means little on a pair with thousands of matches; a
+good ratio means little on a pair with six. The thresholds and the exact
+rejection codes are in `docs/backend-spec.md` sections 9 and 10.
 
 - at least four non-collinear correspondences;
-- configured minimum inlier count (initial target: 12);
-- inlier ratio (initial target: >= 0.25, tune with fixtures);
-- finite, non-degenerate `H` and a valid projected quadrilateral;
-- median/mean reprojection error below a documented threshold.
+- a minimum inlier count;
+- a minimum inlier ratio, which catches a lucky fit among many bad matches;
+- a finite, non-degenerate `H` whose projected quadrilateral stays convex;
+- a reprojection error below the configured ceiling.
 
 Keep the inlier mask for the UI/demo so the team can show why an alignment was
 accepted or rejected.
 
 ## 5. Multi-image ordering and transform composition
 
-The first implementation should use a deterministic, explainable strategy:
+The strategy is deterministic and explainable on purpose, because the demo has
+to justify it out loud in under a minute.
 
-- compute pairwise overlap scores for neighboring candidates;
-- choose a reference image near the center of the sequence or the image with
-  the strongest valid connections;
-- compose transforms into the reference coordinate system;
-- reject disconnected images with a per-image reason.
+v1 chains the frames in upload order and takes the middle frame as the
+reference. Upload order is capture order, and composing outward from the middle
+halves the worst accumulated distortion compared with anchoring on the first
+frame. The interface states that order matters rather than hiding it behind a
+reorder control that would not change the chain.
 
-If the UI permits manual ordering, make that explicit. Automatic ordering is a
-stretch goal after the sequential three-image path is reliable.
+Automatic ordering from the pairwise overlap scores is a later change. It was
+designed so the response shape does not move when it lands: `image_order` is
+already published and is simply identity today. See `docs/backend-spec.md`
+section 7.2.
 
 ## 6. Warping
 
@@ -86,7 +99,10 @@ stretch goal after the sequential three-image path is reliable.
 - Compute the union bounding rectangle across all projected corners.
 - Translate the canvas so coordinates are non-negative.
 - Call `cv2.warpPerspective` for every image and its validity mask.
-- Guard output width, height, and total pixels to avoid free-tier memory spikes.
+- Guard output width, height, and total pixels to avoid free-tier memory
+  spikes. An oversized canvas is rejected, never scaled down to fit: after the
+  per-request input budget, an overflow means the geometry is wrong, and
+  shrinking it would deliver a distorted result that looks normal.
 
 ## 7. Seamless blending
 
@@ -109,26 +125,18 @@ comparison. Do not claim “seamless” if the result simply pastes the last ima
 
 - find the largest meaningful connected content region or crop transparent/
   empty borders from the final mask;
-- encode PNG for lossless grading evidence, with JPEG as an optional download;
+- encode PNG for lossless grading evidence. JPEG is not offered; one format
+  that is right beats a half-built second one;
 - return dimensions and diagnostics.
 
-## Diagnostics contract
+## Diagnostics
 
-The result should contain:
-
-```text
-detector
-image_count
-image_order
-keypoints_per_image
-candidate_pair_count
-ratio_passed_matches_per_pair
-inliers_per_pair
-inlier_ratio_per_pair
-reprojection_error_per_pair
-output_width / output_height
-stage_timings_ms
-```
+Every stage below is measured on the success path, not only on failure. The
+exact field names, shapes, and formulas are in `docs/backend-spec.md` section
+7. Two of them are easy to compute two different ways, so they are pinned
+there rather than here: the inlier ratio's denominator is the ratio-passed
+match count, and the reprojection error is the median symmetric transfer error
+over inliers only.
 
 ## Failure cases to test
 
@@ -150,6 +158,7 @@ features -> matching -> homography -> warping -> blending
                          \-> pipeline ordering/composition -> result
 ```
 
-Each seam should eventually have unit tests with synthetic images or small
-licensed fixtures. A full end-to-end test should assert both image dimensions
-and geometric diagnostics, not only that an HTTP request returned `200`.
+Each seam has unit tests against fixtures generated in code from a known
+homography, so a test asserts distance from ground truth rather than absence of
+a crash. `docs/backend-spec.md` section 12 has the fixture set and the numbers
+a slice must hit to merge.

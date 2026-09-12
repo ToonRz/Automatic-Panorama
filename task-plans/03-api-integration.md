@@ -1,13 +1,12 @@
 # Task 03 - API integration
 
-- Owner: Member C
-- Reviewers: Member A, Member E
-- Depends on: Tasks 01 and 02
+Superseded. This slice was too coarse to review and is now split.
 
-## Acceptance
+- Request gates, settings, concurrency: `task-plans/07b-request-gates.md`
+- Decode, normalize, downscale: `task-plans/07c-decode-and-downscale.md`
+- Response assembly and 501 removal: `task-plans/07j-response-assembly.md`
 
-- [ ] upload validation is bounded and typed;
-- [ ] service calls the pipeline without OpenCV logic in routes;
-- [ ] success response includes image and diagnostics;
-- [ ] failure envelope has stable error codes;
-- [ ] API tests cover success and bad-overlap paths.
+Member C still owns all three, under the parent
+`task-plans/07-backend-pipeline.md`. The contract is
+`docs/backend-spec.md`. The number is kept because
+`docs/contribution-plan.md` refers to it.

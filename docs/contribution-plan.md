@@ -8,8 +8,8 @@ vertical slice, a review responsibility, and a timed demo segment.
 
 | Member | Primary ownership | Deliverables | Reviews |
 | --- | --- | --- | --- |
-| A - CV lead | Feature extraction, descriptor matching, ratio test | `cv/features.py`, `cv/matching.py`, pairwise metrics/tests | B and E review algorithm contracts |
-| B - Geometry/blending | Homography/RANSAC, transform composition, warp, blend | `cv/homography.py`, `cv/warping.py`, `cv/blending.py`, golden outputs | A and E review numerical behavior |
+| A - CV lead | Feature extraction, descriptor matching, ratio test, image ordering and reference choice | `cv/features.py`, `cv/matching.py`, `cv/pipeline.py`, pairwise metrics/tests | B and E review algorithm contracts |
+| B - Geometry/blending | Homography/RANSAC, canvas bounds, warp, seam lines, blend | `cv/homography.py`, `cv/warping.py`, `cv/blending.py`, golden outputs | A and E review numerical behavior |
 | C - Backend/API | FastAPI routes, validation, service orchestration, response errors | `api/`, `services/`, schemas, API tests, Render runtime | A reviews pipeline integration; E reviews deploy compatibility |
 | D - Frontend/product | Upload UX, previews, result/diagnostics UI, accessibility | `frontend/src/`, API client, UI tests/evidence | C reviews API integration; E reviews demo flow |
 | E - QA/deployment/release | CI, fixtures, smoke tests, Vercel/Render, README/demo evidence | `.github/`, `render.yaml`, deployment docs, release checklist | C reviews runtime; A/B review test coverage |
@@ -23,20 +23,32 @@ single reviewed PR; do not put personal contact data in the public repository.
 
 Each slice should be mergeable and demonstrable:
 
-1. A: synthetic pair -> keypoints/descriptors -> ratio-passed matches.
-2. B: matched points -> RANSAC Homography -> warped pair -> blended output.
+1. A: synthetic pair -> keypoints/descriptors -> ratio-passed matches -> chain
+   order and reference frame.
+2. B: matched points -> RANSAC Homography -> warped canvas -> blended output.
 3. C: uploaded files -> validated service call -> typed result/error.
 4. D: browser upload -> progress/error state -> output + diagnostics.
 5. E: fresh clone -> CI -> public deployment -> smoke test and submission pack.
 
 ## Branch suggestions
 
+The backend work is now ten reviewed slices under
+`task-plans/07-backend-pipeline.md`, three each for A, B, and C, plus the
+fixture slice for E. Tasks 01, 02, and 03 are stubs pointing there.
+
 ```text
-feature/01-sift-orb-matching        # A
-feature/02-ransac-warp-blend        # B
-feature/03-stitch-api               # C
-feature/04-upload-result-ui         # D
-deploy/05-ci-and-public-smoke       # E
+test/07a-cv-fixtures                 # E
+feature/07b-request-gates            # C
+feature/07c-decode-and-downscale     # C
+feature/07d-feature-extraction       # A
+feature/07e-matching-ratio-test      # A
+feature/07f-ransac-pair-acceptance   # B
+feature/07g-ordering-and-composition # A
+feature/07h-canvas-and-warp          # B
+feature/07i-blend-crop-encode        # B
+feature/07j-response-assembly        # C
+feature/04-upload-result-ui          # D, see task-plans/04
+deploy/05-ci-and-public-smoke        # E
 ```
 
 Use a new branch per slice, not one branch per person. A member may contribute
