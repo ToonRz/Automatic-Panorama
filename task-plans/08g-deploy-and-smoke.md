@@ -20,13 +20,23 @@ public URL with real photos. Takes over the deployment bullets of
 
 ## Acceptance
 
+This build environment has no Render or Vercel account, so nothing below that
+needs live hosting access could be completed or verified here. What could be
+built and proven locally was: `scripts/smoke_public.py` exists, and running it
+against a local `uvicorn` instance (`python scripts/smoke_public.py
+http://localhost:8000`) checks `/healthz`, `/api/v1/config`, and a synthetic
+three-frame stitch, and passes. `docs/deployment-plan.md` and this file record
+that status and list the remaining steps. Every item below needs a human with
+Render and Vercel access:
+
 - [ ] Render service healthy on `/healthz`; `BACKEND_CORS_ORIGINS` is the exact
       Vercel origin plus `http://localhost:5173`;
 - [ ] Vercel build has `VITE_API_BASE_URL` set to the Render URL and
       `VITE_MOCK_API` unset;
 - [ ] `python scripts/smoke_public.py <api-url>` passes health, config, and a
       synthetic three-frame stitch, and its output is pasted in the pull
-      request;
+      request (proven locally against `http://localhost:8000`; not yet run
+      against a public Render URL);
 - [ ] a browser request from the Vercel origin succeeds and one from another
       origin is blocked by CORS;
 - [ ] manual pass on the public URL with screenshots: three 12 MP phone photos;

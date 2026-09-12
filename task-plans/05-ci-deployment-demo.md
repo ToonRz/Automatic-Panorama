@@ -4,10 +4,16 @@
 - Reviewers: Member C, Member D
 - Depends on: scaffold; final API/UI for public smoke test
 
+The deployment, CORS/cold-start/stateless smoke test, and public-URL bullets
+this task originally owned moved to `task-plans/08g-deploy-and-smoke.md`
+(`docs/integration-spec.md` section 1.2), once the pipeline and the
+integration slices were far enough along to make a real deploy worth doing.
+This task keeps CI.
+
 ## Acceptance
 
 - [ ] GitHub Actions runs backend tests/lint and frontend build;
-- [ ] Render Blueprint deploys a healthy backend on the free plan;
-- [ ] Vercel project serves the frontend with the correct API origin;
-- [ ] CORS, cold start, and stateless-storage assumptions are smoke-tested;
-- [ ] demo timer, public URLs, and contribution evidence are ready.
+- [ ] demo timer and contribution evidence are ready.
+
+See `task-plans/08g-deploy-and-smoke.md` for Render/Vercel deployment, the
+scripted and manual smoke checks, and the public URLs.

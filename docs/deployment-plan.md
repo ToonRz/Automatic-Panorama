@@ -109,19 +109,37 @@ privacy decision. Stateless processing is the safest fit for the assignment.
 
 ## Deployment smoke test
 
-After both services deploy:
+After both services deploy, run the scripted check
+(`task-plans/08g-deploy-and-smoke.md`, `docs/integration-spec.md` section 10):
 
 ```bash
-curl -fsS https://<render-service>.onrender.com/healthz
-curl -fsS -X POST https://<render-service>.onrender.com/api/v1/stitch \
-  -H 'Origin: https://<vercel-project>.vercel.app' \
-  -F 'files=@path/to/left.jpg' \
-  -F 'files=@path/to/right.jpg'
+python scripts/smoke_public.py https://<render-service>.onrender.com
 ```
 
-The second command must return a valid panorama response and diagnostics.
-Record the final public URLs and the
-submission commit in the release checklist; do not put secrets in this file.
+It checks `/healthz`, `/api/v1/config`, and a synthetic three-frame stitch,
+and prints the diagnostics summary to paste into the pull request. It has
+been run against a local `uvicorn` instance (`http://localhost:8000`) and
+passes; it has not yet been run against a public Render URL, since this
+build environment has no Render or Vercel account. A person with hosting
+access still needs to:
+
+- deploy the backend to Render from `render.yaml` and the frontend to Vercel
+  with root `frontend/`;
+- set `BACKEND_CORS_ORIGINS` to the exact Vercel production origin plus
+  `http://localhost:5173`, and `VITE_API_BASE_URL` to the Render URL;
+- run the command above against the real Render URL and paste its output;
+- do the manual pass over section 10's real-photo and HEIC cases, and record
+  the URLs and served commit below.
+
+## Public URLs
+
+Not yet deployed. Recorded here once a person with Render and Vercel access
+completes the steps above:
+
+| Service | URL | Served commit |
+| --- | --- | --- |
+| Frontend (Vercel) | _pending_ | _pending_ |
+| Backend (Render) | _pending_ | _pending_ |
 
 ## Official references checked 2026-09-12
 
