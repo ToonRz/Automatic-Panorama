@@ -16,11 +16,35 @@ services:
         value: "8"
       - key: MAX_UPLOAD_MB
         value: "12"
+      - key: MAX_TOTAL_UPLOAD_MB
+        value: "48"
+      - key: MAX_IMAGE_PIXELS
+        value: "12000000"
+      - key: MAX_OUTPUT_PIXELS
+        value: "8000000"
+      - key: CANVAS_BUDGET_FRACTION
+        value: "0.75"
+      - key: INPUT_LONG_EDGE_CAP
+        value: "1600"
+      - key: INPUT_LONG_EDGE_FLOOR
+        value: "640"
       - key: DEFAULT_DETECTOR
         value: SIFT
+      - key: DETECTOR_NFEATURES
+        value: "2000"
       - key: RATIO_THRESHOLD
         value: "0.75"
+      - key: MIN_RATIO_PASSED_MATCHES
+        value: "20"
       - key: RANSAC_REPROJ_THRESHOLD
         value: "5.0"
       - key: MIN_INLIERS
         value: "12"
+      - key: MIN_INLIER_RATIO
+        value: "0.25"
+      - key: MAX_REPROJECTION_ERROR
+        value: "3.0"
+      - key: STITCH_TIMEOUT_SECONDS
+        value: "60"
+      - key: MAX_CONCURRENT_STITCHES
+        value: "1"
