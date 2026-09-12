@@ -2,14 +2,13 @@
 
 CP461: Introduction to Computer Vision - Semester 1/2026
 
-This repository is the planning and implementation scaffold for a five-person
-group project that builds an **Automatic Panorama Stitcher**. The target is a
+This repository contains a working **Automatic Panorama Stitcher** built by a
+five-person group. The target is a
 Tier 3 submission: a clean GitHub repository, reproducible local execution, a
 public web application, and a strict 10-minute demonstration.
 
-> Status: scaffold complete; the production panorama algorithm is intentionally
-> not implemented yet. The backend returns a clear `501 Not Implemented` from
-> `/api/v1/stitch` until the CV work is merged and tested.
+> Status: the React interface calls the live FastAPI/OpenCV pipeline. It accepts
+> overlapping frames, returns a stitched PNG, and reports alignment diagnostics.
 
 ## What the project will demonstrate
 

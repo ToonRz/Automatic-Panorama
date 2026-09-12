@@ -7,7 +7,7 @@ import type { ApiErrorDetail } from "../types";
  * change.
  */
 export const GENERIC_REMEDY: readonly string[] = [
-  "This error code is not recognised yet. Note the code above and check docs/backend-spec.md for updates.",
+  "Try again. If it keeps happening, try different photos or fewer frames.",
 ];
 
 export const REMEDY_BY_CODE: Readonly<Record<string, readonly string[]>> = {

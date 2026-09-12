@@ -31,16 +31,16 @@ Code comments and team documents (`assignment-alignment.md`,
 
 ## Acceptance
 
-- [ ] every row in spec section 3.2 is applied;
-- [ ] the copy guard renders all screen states and fails on the pattern in spec
+- [x] every row in spec section 3.2 is applied;
+- [x] the copy guard renders all screen states and fails on the pattern in spec
       section 3.3; it is shown failing on the old copy in the pull request;
-- [ ] a backend test asserts the OpenAPI title and description match none of
+- [x] a backend test asserts the OpenAPI title and description match none of
       the guarded terms;
-- [ ] `README.md` status block and local workflow describe a working stitcher;
-- [ ] `CLAUDE.md` no longer says the repository is a scaffold or that the stitch
+- [x] `README.md` status block and local workflow describe a working stitcher;
+- [x] `CLAUDE.md` no longer says the repository is a scaffold or that the stitch
       route is unimplemented, and its document map lists
       `docs/integration-spec.md`;
-- [ ] `PIPELINE_NOT_IMPLEMENTED` appears in no document except the removed-state
+- [x] `PIPELINE_NOT_IMPLEMENTED` appears in no document except the removed-state
       note in `docs/ui-spec.md` section 8;
-- [ ] screenshots of the header, empty state, working state with the cold-start
+- [x] screenshots of the header, empty state, working state with the cold-start
       note, status pill in each state, and footer.

@@ -62,7 +62,7 @@ describe("OutputCanvas", () => {
         isStale={false}
       />,
     );
-    expect(screen.getByText(/not recognised yet/i)).toBeInTheDocument();
+    expect(screen.getByText(/try different photos or fewer frames/i)).toBeInTheDocument();
   });
 
   it("marks a complete result as produced with previous settings when stale", () => {

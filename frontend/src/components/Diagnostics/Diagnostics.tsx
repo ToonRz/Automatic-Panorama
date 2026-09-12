@@ -18,7 +18,7 @@ export function Diagnostics({ result }: DiagnosticsProps) {
     <section className="diagnostics">
       <div className="panel-head" style={{ marginBottom: 0 }}>
         <div>
-          <span className="kicker">Evidence</span>
+          <span className="kicker">Details</span>
           <h2>Run diagnostics</h2>
         </div>
         <span className="counter">

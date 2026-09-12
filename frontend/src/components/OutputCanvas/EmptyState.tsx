@@ -7,7 +7,7 @@ export function EmptyState() {
       <h3>The panorama lands here</h3>
       <p>
         Alongside it: keypoint counts, surviving matches, inlier ratio, and reprojection error for
-        every image pair — the evidence the report asks for.
+        every image pair, so you can see why the frames lined up.
       </p>
       <div className="ribbon">
         <span>features</span>

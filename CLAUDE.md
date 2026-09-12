@@ -5,16 +5,11 @@ Stitcher repository.
 
 ## Project
 
-CP461 group project: an end-to-end Computer Vision application that turns two
-or more overlapping photographs into one panorama. The assignment requires
-exactly five group members, keypoint extraction (SIFT/SURF/ORB), matching, and
-geometric transformation (Homography/Affine/RANSAC). Tier 3 also requires a
-public URL, a clean repository with `requirements.txt` and clear execution
-instructions, and a video no longer than 10 minutes.
-
-The current repository is a scaffold. Do not describe the placeholder route as
-a working stitcher. The `POST /api/v1/stitch` endpoint must remain explicit
-about its unimplemented status until the algorithm has tests and demo evidence.
+This is an end-to-end Computer Vision application that turns two or more
+overlapping photographs into one panorama. The React interface calls a live
+FastAPI/OpenCV pipeline with SIFT or ORB matching, RANSAC homographies,
+warping, blending, PNG output, and alignment diagnostics. The application is
+stateless and its pipeline is covered by synthetic and end-to-end tests.
 
 ## Document map
 
@@ -23,6 +18,7 @@ about its unimplemented status until the algorithm has tests and demo evidence.
 | What the assignment grades | `docs/assignment-alignment.md` |
 | How components fit together | `docs/architecture.md` |
 | The backend contract, errors, settings | `docs/backend-spec.md` |
+| How the frontend and backend integrate | `docs/integration-spec.md` |
 | Why the CV stages work as they do | `docs/cv-pipeline.md` |
 | What the interface must do | `docs/ui-spec.md`, `docs/mockups/ui-mock.html` |
 | Technology and hosting choices | `docs/tech-stack.md`, `docs/deployment-plan.md` |

@@ -25,8 +25,7 @@ export function WorkingState({ isColdStart }: WorkingStateProps) {
       </div>
       {isColdStart && (
         <p className="cold-start-note">
-          The free backend may be waking up — the first run after idle can take significantly
-          longer than usual.
+          The server may be waking up. The first run can take up to a minute.
         </p>
       )}
     </div>

@@ -243,7 +243,6 @@ and nothing for the geometric failures that actually need advice.
 | `UNSUPPORTED_IMAGE_TYPE` | live | - | convert to JPG or PNG and retry |
 | `EMPTY_IMAGE` | live | - | the named file has no bytes; re-export it |
 | `IMAGE_TOO_LARGE` | live | - | downscale the named file below the stated limit |
-| `PIPELINE_NOT_IMPLEMENTED` | live | - | handled by section 8, not by this table |
 | `TOTAL_UPLOAD_TOO_LARGE` | owed | task 07b | the whole upload is over the request limit; remove a frame or downscale before uploading |
 | `SERVICE_BUSY` | owed | task 07b | one panorama is already being stitched; the button re-enables itself after the stated wait |
 | `STITCH_TIMEOUT` | owed | task 07b | the run passed the time limit; retry with fewer frames, or switch to ORB for a faster pass |
@@ -274,7 +273,7 @@ single health check at page load will report a sleeping backend as offline,
 which is wrong, and a stitch request sent to a cold service will hang with no
 explanation. This is the most likely way the live demo fails.
 
-The status pill has four states.
+The status pill has four states and names only the server state, not its host.
 
 | Pill | Condition |
 | --- | --- |
@@ -282,6 +281,9 @@ The status pill has four states.
 | waking | health request failed or timed out, retries still in progress |
 | online | health request succeeded |
 | offline | retries exhausted |
+
+The visible labels are `Connecting…`, `Server waking up…`, `Server online`,
+and `Server offline` respectively.
 
 Health is requested once at page load, which doubles as the warm-up ping, then
 retried with backoff while the pill reads waking. Retries stop after a bounded
@@ -312,8 +314,7 @@ must carry visual evidence.
 
 Required fixtures: a three-image success including the overlay fields from
 section 6.2, a success without the overlay fields, an `INSUFFICIENT_INLIERS`
-rejection, an `IMAGE_TOO_LARGE` rejection, an unrecognised code, and the
-`PIPELINE_NOT_IMPLEMENTED` response.
+rejection, an `IMAGE_TOO_LARGE` rejection, and an unrecognised code.
 
 ## 11. Code structure
 

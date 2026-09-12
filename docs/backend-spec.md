@@ -18,10 +18,10 @@ Implementation is split across `task-plans/07a` through `task-plans/07j`, with
 - the admission check and the ten request gates;
 - the full success response, every diagnostics field and how it is computed;
 - the overlay geometry the result UI draws;
-- all eighteen error codes, their HTTP status, and the `context` each carries;
+- all current error codes, their HTTP status, and the `context` each carries;
 - every setting, its default, its range, and what it protects;
 - the golden fixtures and the numeric thresholds a slice must hit to merge;
-- when `501 PIPELINE_NOT_IMPLEMENTED` is allowed to disappear.
+- the live pipeline contract exposed by `POST /api/v1/stitch`.
 
 Out of scope: frontend behaviour (`docs/ui-spec.md`), hosting configuration
 (`docs/deployment-plan.md`), and why classical CV was chosen at all
@@ -97,9 +97,6 @@ or exits with a named code. Cheap gates run before anything large is decoded.
 
 The whole of gates 4 through 9 runs under one deadline. Exceeding it exits with
 `STITCH_TIMEOUT`; see section 4.
-
-Until `task-plans/07j` merges, the route stops after gate 3 and returns
-`PIPELINE_NOT_IMPLEMENTED`. See section 13.
 
 ### 3.1 Media type is a claim, not a fact
 
@@ -461,7 +458,6 @@ interface counts frames the way a person does.
 | `DISCONNECTED_IMAGES` | 422 | 8 | `image` | Image n shares no view with the others. |
 | `CANVAS_TOO_LARGE` | 422 | 8 | `pixels`, `limit`, `width`, `height` | The combined canvas exceeds the 8 MP output limit. |
 | `STITCH_TIMEOUT` | 504 | 4-9 | `elapsed_seconds`, `limit_seconds` | Stitching took longer than the service allows. |
-| `PIPELINE_NOT_IMPLEMENTED` | 501 | after 3 | none | The CV pipeline is scaffolded but not implemented yet. |
 | unexpected | 500 | any | none | An unexpected error occurred. |
 
 `DEGENERATE_HOMOGRAPHY` `reason` is one of `non_finite`, `singular`,
@@ -575,21 +571,12 @@ either fail ORB unfairly or let SIFT regress unnoticed.
 Thresholds live in this table and in `backend/app/tests/conftest.py`, nowhere
 else. Retuning one is a reviewed change to this document.
 
-## 13. Merge choreography
+## 13. Merge history
 
-Ten slices merge into `develop` one at a time. The route must not become
-accidentally half-real along the way.
-
-**Slices 07a through 07i do not touch `api/routes.py`.** They add library code
-under `backend/app/cv/` and `backend/app/services/`, with unit tests against
-the fixtures. During all of them `POST /api/v1/stitch` still validates gates 0
-through 3 and still returns `501 PIPELINE_NOT_IMPLEMENTED`.
-
-**`07j` is the only slice that changes the route.** It wires the service in,
-assembles the response, maps pipeline exceptions to the section 9 codes, and
-removes the 501. Its pull request must attach a real stitched panorama and its
-diagnostics JSON. The scaffold state in `docs/ui-spec.md` section 8 is removed
-in that same pull request, not before.
+Tasks 07a through 07i built and tested the pipeline stages. Task 07j wired the
+service into `POST /api/v1/stitch`, assembled the response, and mapped pipeline
+exceptions to the section 9 codes. The route is live; future work must preserve
+the contract and thin-handler boundary documented above.
 
 A feature flag was considered and rejected. It would add a second code path to
 test for the six weeks the project has, and buys nothing that ordering the

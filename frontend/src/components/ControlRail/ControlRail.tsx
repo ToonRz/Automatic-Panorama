@@ -100,7 +100,6 @@ export function ControlRail({
       <button className={primary.ghost ? "cta ghost" : "cta"} type="submit" disabled={primary.disabled}>
         {primary.label} <span aria-hidden="true">{primary.disabled && state === "working" ? "◍" : "→"}</span>
       </button>
-      <p className="fineprint">Frames are processed in memory. Nothing is stored.</p>
     </form>
   );
 }

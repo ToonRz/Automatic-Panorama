@@ -27,10 +27,10 @@ design makes that acceptable for a course demo.
 **Reason:** The assignment evaluates the algorithm and public UX, not accounts,
 history, or storage. Avoiding persistence lowers privacy and hosting risk.
 
-## D-004: Honest scaffold response
+## D-004: Honest pre-pipeline response
 
-**Decision:** Return `501 PIPELINE_NOT_IMPLEMENTED` until the CV implementation
-has tests.
+**Decision:** Before the CV implementation landed, return an explicit not-ready
+error until the pipeline had tests.
 
 **Reason:** A runnable shell is useful for parallel work, but the repository must
 not imply that the core algorithm is complete before it exists.

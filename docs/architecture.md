@@ -94,7 +94,6 @@ single response.
 | Degenerate/weak Homography | `422` with inlier statistics |
 | Render/output size too large | `413` or `422` with the configured limit |
 | Unexpected server error | `500` with a request ID; details only in server logs |
-| Scaffold route before implementation | `501` with `PIPELINE_NOT_IMPLEMENTED` |
 
 The UI must never present an error response as a successful panorama.
 

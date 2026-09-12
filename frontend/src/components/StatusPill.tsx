@@ -1,10 +1,10 @@
 export type BackendStatus = "checking" | "waking" | "online" | "offline";
 
 const LABEL: Record<BackendStatus, string> = {
-  checking: "Checking backend…",
-  waking: "Backend waking · Render free tier",
-  online: "Backend online · Render",
-  offline: "Backend offline",
+  checking: "Connecting…",
+  waking: "Server waking up…",
+  online: "Server online",
+  offline: "Server offline",
 };
 
 export function StatusPill({ status }: { status: BackendStatus }) {

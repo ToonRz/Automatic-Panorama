@@ -30,7 +30,6 @@ export default function App() {
       {mockApiEnabled && <StateSwitcher current={debugState} onSelect={handleDebugSelect} />}
 
       <header className="hero">
-        <div className="kicker">CP461 · Computer Vision · Semester 1 2026</div>
         <h1>Automatic Panorama Stitcher</h1>
         <p>
           Turn overlapping photographs into one wide view with an explainable SIFT/ORB pipeline.
@@ -62,16 +61,7 @@ export default function App() {
 
       {run.result && <Diagnostics result={run.result} />}
 
-      <footer className="appfoot">
-        <span>Stateless v1 · no database, no stored uploads</span>
-        <a
-          href="https://github.com/ToonRz/Automatic-Panorama/tree/main/docs"
-          target="_blank"
-          rel="noreferrer"
-        >
-          Project docs ↗
-        </a>
-      </footer>
+      <footer className="appfoot">Images are processed in memory and never stored.</footer>
     </main>
   );
 }

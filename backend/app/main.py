@@ -31,7 +31,7 @@ def create_app() -> FastAPI:
     settings = get_settings()
     application = FastAPI(
         title="Automatic Panorama Stitcher API",
-        description="CP461 FastAPI service for SIFT/ORB feature matching and panorama composition.",
+        description="Feature-matching panorama stitching service.",
         version="1.0.0",
     )
     application.add_middleware(

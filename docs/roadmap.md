@@ -15,7 +15,7 @@ Exit criteria:
   live;
 - the backend contract is specified in full in `docs/backend-spec.md`, and all
   ten implementation slices under `task-plans/07-backend-pipeline.md` are
-  merged; `/api/v1/stitch` runs the real pipeline and no longer returns `501`.
+  merged; `/api/v1/stitch` runs the real pipeline.
 
 ## Phase 1 - pairwise CV baseline (complete)
 
@@ -46,7 +46,7 @@ Exit criteria:
 
 Owners: CV core + backend + frontend. Slices `07i` and `07j`, plus the `04`
 family. Add masks, feather blending, crop and encode, and the JSON/image
-response consumed by the UI. `07j` is where the 501 goes away.
+response consumed by the UI. `07j` is where the live route was connected.
 
 Exit criteria:
 

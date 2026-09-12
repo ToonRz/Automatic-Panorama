@@ -119,9 +119,8 @@ curl -fsS -X POST https://<render-service>.onrender.com/api/v1/stitch \
   -F 'files=@path/to/right.jpg'
 ```
 
-Before Phase 3, the second command should return the intentional `501` with
-`PIPELINE_NOT_IMPLEMENTED`. After implementation, it must return a valid
-panorama response and diagnostics. Record the final public URLs and the
+The second command must return a valid panorama response and diagnostics.
+Record the final public URLs and the
 submission commit in the release checklist; do not put secrets in this file.
 
 ## Official references checked 2026-09-12
