@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: automatic-panorama-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /healthz
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: BACKEND_CORS_ORIGINS
+        sync: false
+      - key: MAX_UPLOAD_FILES
+        value: "8"
+      - key: MAX_UPLOAD_MB
+        value: "12"
+      - key: DEFAULT_DETECTOR
+        value: SIFT
+      - key: RATIO_THRESHOLD
+        value: "0.75"
+      - key: RANSAC_REPROJ_THRESHOLD
+        value: "5.0"
+      - key: MIN_INLIERS
+        value: "12"

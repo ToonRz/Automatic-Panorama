@@ -1,0 +1,887 @@
+<title>Stitcher Interface Mock</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,600&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=JetBrains+Mono:wght@400;600&display=swap">
+
+<style>
+  :root {
+    /* Committed dark identity: the product is a dark-room optical tool.
+       Tokens extend frontend/src/styles.css rather than replace it. */
+    --ground:      #0a1421;
+    --ground-lift: #0e1a2b;
+    --panel:       #13243c;
+    --panel-soft:  #1a2f4a;
+    --ink:         #f3f0e8;
+    --muted:       #8ba0b9;
+    --line:        rgba(243, 240, 232, 0.13);
+    --line-soft:   rgba(243, 240, 232, 0.07);
+    --aqua:        #6fe3cf;
+    --aqua-deep:   #2f8d7e;
+    --coral:       #ff8469;
+    --amber:       #efc96b;
+
+    --display: "Fraunces", Georgia, "Times New Roman", serif;
+    --body: "DM Sans", "Avenir Next", Avenir, system-ui, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 15px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button, input, select { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 2px solid var(--aqua); outline-offset: 2px; }
+
+  .sheet {
+    max-width: 1240px;
+    margin: 0 auto;
+    padding: 40px clamp(16px, 4vw, 48px) 72px;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  /* ---------- mock chrome (not part of the product) ---------- */
+
+  .mockbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 20px;
+    padding-bottom: 22px;
+    border-bottom: 1px solid var(--line);
+  }
+  .mockbar h1 {
+    margin: 0;
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: 1.6rem;
+    letter-spacing: -0.02em;
+  }
+  .mockbar p { margin: 4px 0 0; color: var(--muted); font-size: 0.82rem; max-width: 46ch; }
+  .kicker {
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--aqua);
+  }
+
+  .statebar { display: flex; flex-wrap: wrap; gap: 6px; }
+  .statebar button {
+    padding: 7px 13px;
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    background: transparent;
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    transition: color 140ms ease, border-color 140ms ease, background 140ms ease;
+  }
+  .statebar button:hover { color: var(--ink); border-color: rgba(111, 227, 207, 0.45); }
+  .statebar button[aria-pressed="true"] {
+    color: var(--ground);
+    background: var(--aqua);
+    border-color: var(--aqua);
+    font-weight: 600;
+  }
+
+  /* ---------- device frame ---------- */
+
+  .device {
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--ground-lift);
+    overflow: hidden;
+    box-shadow: 0 40px 90px rgba(0, 0, 0, 0.55);
+  }
+  .browserbar {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 11px 16px;
+    border-bottom: 1px solid var(--line-soft);
+    background: #0c1727;
+  }
+  .dots { display: flex; gap: 6px; }
+  .dots i { width: 9px; height: 9px; border-radius: 50%; background: rgba(243,240,232,0.18); }
+  .urlpill {
+    flex: 1;
+    padding: 5px 12px;
+    border-radius: 999px;
+    background: rgba(243, 240, 232, 0.05);
+    color: var(--muted);
+    font-family: var(--mono);
+    font-size: 0.7rem;
+  }
+  .urlpill b { color: var(--ink); font-weight: 400; }
+
+  .app { padding: clamp(24px, 3.4vw, 46px); }
+
+  /* ---------- hero ---------- */
+
+  .hero { max-width: 660px; }
+  .hero h2 {
+    margin: 12px 0 10px;
+    font-family: var(--display);
+    font-size: clamp(2.6rem, 5.6vw, 4.4rem);
+    font-weight: 300;
+    line-height: 0.95;
+    letter-spacing: -0.045em;
+    text-wrap: balance;
+  }
+  .hero h2 em { font-style: italic; font-weight: 400; color: var(--aqua); }
+  .hero p { margin: 0; color: var(--muted); max-width: 52ch; }
+
+  .status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 20px;
+    padding: 6px 12px 6px 10px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .status-pill i { width: 7px; height: 7px; border-radius: 50%; background: var(--aqua); box-shadow: 0 0 10px var(--aqua); }
+
+  /* ---------- workspace ---------- */
+
+  .workspace {
+    display: grid;
+    grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+    gap: 18px;
+    margin-top: 38px;
+    align-items: start;
+  }
+  @media (max-width: 900px) { .workspace { grid-template-columns: minmax(0, 1fr); } }
+
+  .panel {
+    border: 1px solid var(--line);
+    background: var(--panel);
+    padding: clamp(18px, 2.2vw, 28px);
+  }
+  .panel-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .panel-head h3 {
+    margin: 6px 0 0;
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: 1.35rem;
+    letter-spacing: -0.02em;
+  }
+  .counter { font-family: var(--mono); font-size: 0.7rem; color: var(--muted); }
+
+  .stack { display: flex; flex-direction: column; }
+
+  /* drop zone */
+  .dropzone {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    min-height: 168px;
+    padding: 22px;
+    border: 1px dashed rgba(111, 227, 207, 0.4);
+    background: rgba(111, 227, 207, 0.04);
+    text-align: center;
+    transition: background 150ms ease, border-color 150ms ease;
+  }
+  .dropzone:hover { background: rgba(111, 227, 207, 0.09); border-color: var(--aqua); }
+  .dropzone .mark {
+    display: grid;
+    place-items: center;
+    width: 38px; height: 38px;
+    border: 1px solid rgba(111, 227, 207, 0.5);
+    border-radius: 50%;
+    color: var(--aqua);
+    font-size: 1.1rem;
+  }
+  .dropzone strong { font-weight: 500; }
+  .hint { color: var(--muted); font-size: 0.76rem; line-height: 1.45; }
+
+  /* file list */
+  .files { display: flex; flex-direction: column; background: var(--panel-soft); padding: 4px 12px; }
+  .file {
+    display: grid;
+    grid-template-columns: 42px 22px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 0;
+    border-bottom: 1px solid var(--line-soft);
+    font-size: 0.79rem;
+  }
+  .file:last-child { border-bottom: 0; }
+  .file svg { width: 42px; height: 28px; display: block; border-radius: 2px; }
+  .file .n { font-family: var(--mono); font-size: 0.7rem; color: var(--aqua); }
+  .file .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .file .size { font-family: var(--mono); font-size: 0.68rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .files-total {
+    padding: 10px 0 8px;
+    text-align: right;
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    color: var(--muted);
+  }
+
+  .rule { height: 1px; background: var(--line); margin: 26px 0; }
+
+  /* fields */
+  .field { margin-bottom: 20px; }
+  .field-label {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 8px;
+    font-size: 0.8rem;
+    font-weight: 500;
+  }
+  .field-label output { font-family: var(--mono); color: var(--aqua); font-variant-numeric: tabular-nums; }
+  select {
+    width: 100%;
+    padding: 11px 12px;
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    background: #172a43;
+  }
+  input[type="range"] { width: 100%; accent-color: var(--aqua); }
+  .field .hint { display: block; margin-top: 6px; }
+
+  .cta {
+    display: flex;
+    width: 100%;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 8px;
+    padding: 14px 16px;
+    border: 0;
+    border-radius: 2px;
+    background: var(--aqua);
+    color: #07131f;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    transition: transform 150ms ease, box-shadow 150ms ease;
+  }
+  .cta:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 26px rgba(111, 227, 207, 0.22); }
+  .cta:disabled { opacity: 0.34; cursor: not-allowed; }
+  .cta.ghost { background: transparent; border: 1px solid var(--coral); color: var(--coral); }
+  .cta.ghost:hover { box-shadow: 0 10px 26px rgba(255, 132, 105, 0.18); }
+  .fineprint { margin: 12px 0 0; text-align: center; color: var(--muted); font-size: 0.72rem; }
+
+  /* ---------- canvas states ---------- */
+
+  .canvas-panel { min-height: 560px; display: flex; flex-direction: column; }
+
+  .tag {
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 5px 9px;
+    border: 1px solid currentColor;
+  }
+  .tag.ok { color: var(--aqua); }
+  .tag.busy { color: var(--amber); }
+  .tag.bad { color: var(--coral); }
+
+  .empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 40px;
+    border: 1px solid var(--line-soft);
+    background: linear-gradient(150deg, rgba(111, 227, 207, 0.04), rgba(255, 132, 105, 0.035));
+    text-align: center;
+  }
+  .empty h4 { margin: 8px 0 0; font-family: var(--display); font-weight: 400; font-size: 1.5rem; }
+  .empty p { margin: 0; max-width: 42ch; color: var(--muted); font-size: 0.86rem; }
+  .ribbon {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 9px;
+    margin-top: 18px;
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .ribbon b { color: var(--aqua); font-weight: 400; }
+
+  /* result image */
+  .plate { position: relative; border: 1px solid var(--line-soft); background: #060d16; overflow: hidden; }
+  .plate svg.pano { display: block; width: 100%; height: auto; }
+  .plate-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 12px;
+  }
+  .toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    padding: 7px 12px;
+    border: 1px solid var(--line);
+    border-radius: 2px;
+    background: transparent;
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .toggle[aria-pressed="true"] { color: var(--aqua); border-color: rgba(111, 227, 207, 0.5); }
+  .toggle i { width: 22px; height: 12px; border-radius: 999px; background: rgba(243,240,232,0.16); position: relative; transition: background 160ms ease; }
+  .toggle i::after {
+    content: "";
+    position: absolute; top: 2px; left: 2px;
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--muted);
+    transition: transform 160ms ease, background 160ms ease;
+  }
+  .toggle[aria-pressed="true"] i { background: rgba(111, 227, 207, 0.3); }
+  .toggle[aria-pressed="true"] i::after { transform: translateX(10px); background: var(--aqua); }
+  .download {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 14px;
+    border: 1px solid var(--aqua);
+    border-radius: 2px;
+    background: transparent;
+    color: var(--aqua);
+    font-size: 0.78rem;
+    font-weight: 500;
+  }
+
+  /* processing */
+  .progress { flex: 1; display: flex; flex-direction: column; justify-content: center; gap: 4px; padding: 6px 0; }
+  .step {
+    display: grid;
+    grid-template-columns: 20px minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 4px;
+    border-bottom: 1px solid var(--line-soft);
+    font-size: 0.88rem;
+  }
+  .step .glyph { font-family: var(--mono); font-size: 0.8rem; color: var(--aqua-deep); }
+  .step .t { font-family: var(--mono); font-size: 0.72rem; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .step.done .glyph { color: var(--aqua); }
+  .step.now { color: var(--ink); }
+  .step.now .glyph { color: var(--amber); }
+  .step.now .t { color: var(--amber); }
+  .step.todo { color: var(--muted); }
+  .scanline {
+    height: 3px;
+    margin-top: 20px;
+    background: rgba(243,240,232,0.08);
+    overflow: hidden;
+  }
+  .scanline span {
+    display: block; height: 100%; width: 38%;
+    background: linear-gradient(90deg, transparent, var(--aqua), transparent);
+    animation: sweep 1.6s ease-in-out infinite;
+  }
+  @keyframes sweep { 0% { transform: translateX(-100%); } 100% { transform: translateX(340%); } }
+  @media (prefers-reduced-motion: reduce) {
+    .scanline span { animation: none; width: 100%; opacity: 0.5; }
+    .cta:hover:not(:disabled) { transform: none; }
+  }
+
+  /* error */
+  .alert {
+    border: 1px solid rgba(255, 132, 105, 0.45);
+    border-left-width: 3px;
+    background: rgba(255, 132, 105, 0.07);
+    padding: 20px 22px;
+  }
+  .alert h4 { margin: 0 0 6px; font-family: var(--display); font-weight: 400; font-size: 1.3rem; color: var(--coral); }
+  .alert code { font-family: var(--mono); font-size: 0.74rem; color: var(--coral); }
+  .alert p { margin: 8px 0 0; color: var(--ink); font-size: 0.9rem; }
+  .alert .ctx {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(255, 132, 105, 0.22);
+    display: flex; flex-wrap: wrap; gap: 26px;
+    font-family: var(--mono); font-size: 0.74rem; color: var(--muted);
+  }
+  .alert .ctx b { display: block; color: var(--ink); font-size: 1.05rem; font-weight: 600; }
+  .remedy { margin-top: 18px; display: flex; flex-direction: column; gap: 9px; }
+  .remedy li { color: var(--muted); font-size: 0.85rem; }
+
+  /* ---------- diagnostics ---------- */
+
+  .diagnostics { margin-top: 18px; border: 1px solid var(--line); background: var(--panel); padding: clamp(18px, 2.2vw, 28px); }
+  .diag-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1px;
+    background: var(--line-soft);
+    border: 1px solid var(--line-soft);
+    margin-top: 18px;
+  }
+  .diag-grid div { background: var(--panel); padding: 15px 16px; display: flex; flex-direction: column; gap: 4px; }
+  .diag-grid span {
+    font-family: var(--mono); font-size: 0.64rem;
+    letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted);
+  }
+  .diag-grid strong {
+    font-family: var(--mono); font-size: 1.15rem; font-weight: 600;
+    font-variant-numeric: tabular-nums; letter-spacing: -0.01em;
+  }
+  .diag-grid em { font-style: normal; font-size: 0.72rem; color: var(--muted); font-family: var(--mono); }
+
+  /* pair table */
+  .tablewrap { overflow-x: auto; margin-top: 24px; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  caption {
+    caption-side: top; text-align: left; padding-bottom: 10px;
+    font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.12em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  th, td { padding: 10px 14px 10px 0; text-align: left; border-bottom: 1px solid var(--line-soft); white-space: nowrap; }
+  th { font-family: var(--mono); font-size: 0.66rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-weight: 400; }
+  td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  td.pass { color: var(--aqua); }
+
+  /* timing chart */
+  .chart { margin-top: 28px; }
+  .bars { display: grid; grid-template-columns: 90px minmax(0, 1fr) 62px; gap: 8px 14px; align-items: center; }
+  .bars .lab { font-family: var(--mono); font-size: 0.72rem; color: var(--muted); }
+  .bars .track { height: 13px; background: rgba(243, 240, 232, 0.05); }
+  .bars .fill { height: 100%; background: var(--aqua-deep); border-radius: 0 3px 3px 0; }
+  .bars .fill.peak { background: var(--aqua); }
+  .bars .val { font-family: var(--mono); font-size: 0.72rem; font-variant-numeric: tabular-nums; text-align: right; }
+  .axis {
+    display: grid; grid-template-columns: 90px minmax(0, 1fr) 62px; gap: 14px;
+    margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--line-soft);
+  }
+  .ticks { display: flex; justify-content: space-between; font-family: var(--mono); font-size: 0.64rem; color: var(--muted); }
+
+  /* ---------- app footer ---------- */
+  .appfoot {
+    display: flex; flex-wrap: wrap; gap: 12px;
+    align-items: center; justify-content: space-between;
+    margin-top: 30px; padding-top: 18px;
+    border-top: 1px solid var(--line-soft);
+    font-size: 0.76rem; color: var(--muted);
+  }
+  .appfoot a { color: var(--aqua); text-decoration: none; }
+  .appfoot a:hover { text-decoration: underline; }
+
+  /* ---------- design notes ---------- */
+  .notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 22px; }
+  .note h4 {
+    margin: 0 0 10px;
+    font-family: var(--mono); font-size: 0.66rem;
+    letter-spacing: 0.14em; text-transform: uppercase; color: var(--aqua);
+  }
+  .note p { margin: 0 0 10px; color: var(--muted); font-size: 0.85rem; }
+  .note ul { margin: 0; padding-left: 18px; color: var(--muted); font-size: 0.85rem; }
+  .note li { margin-bottom: 5px; }
+  .swatches { display: flex; flex-wrap: wrap; gap: 8px; }
+  .swatch { display: flex; flex-direction: column; gap: 5px; font-family: var(--mono); font-size: 0.6rem; color: var(--muted); }
+  .swatch i { display: block; width: 52px; height: 34px; border: 1px solid var(--line-soft); }
+</style>
+
+<!-- Shared artwork: one synthetic panorama, cropped three ways for the frame strip.
+     Placeholder only - the demo uses the team's own photographs. -->
+<svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#101c33"/>
+      <stop offset="42%" stop-color="#2a4162"/>
+      <stop offset="72%" stop-color="#7e6c7c"/>
+      <stop offset="100%" stop-color="#d99a76"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0%" stop-color="#ffd9a0" stop-opacity="0.85"/>
+      <stop offset="100%" stop-color="#ffd9a0" stop-opacity="0"/>
+    </radialGradient>
+    <symbol id="pano" viewBox="0 0 2400 720">
+      <rect x="0" y="0" width="2400" height="720" fill="url(#sky)"/>
+      <circle cx="1560" cy="452" r="190" fill="url(#glow)"/>
+      <circle cx="1560" cy="452" r="34" fill="#ffe3b4"/>
+      <circle cx="240" cy="96" r="2.6" fill="#f3f0e8" opacity="0.7"/>
+      <circle cx="620" cy="62" r="2" fill="#f3f0e8" opacity="0.5"/>
+      <circle cx="1010" cy="130" r="2.4" fill="#f3f0e8" opacity="0.6"/>
+      <circle cx="1880" cy="78" r="2.2" fill="#f3f0e8" opacity="0.55"/>
+      <circle cx="2210" cy="140" r="2.6" fill="#f3f0e8" opacity="0.65"/>
+      <polygon fill="#41597b" points="0,486 180,432 340,470 520,398 690,454 880,404 1060,462 1250,420 1430,468 1620,412 1810,458 2010,418 2200,466 2400,430 2400,720 0,720"/>
+      <polygon fill="#2b405e" points="0,548 210,496 400,540 600,478 790,534 980,494 1180,546 1380,500 1570,548 1780,506 1990,552 2200,512 2400,550 2400,720 0,720"/>
+      <polygon fill="#1a2a41" points="0,606 230,566 430,604 640,558 850,602 1060,566 1280,610 1490,570 1700,612 1920,574 2140,616 2400,580 2400,720 0,720"/>
+      <polygon fill="#0d1725" points="0,664 260,638 500,668 760,634 1020,670 1290,640 1550,674 1820,644 2090,676 2400,646 2400,720 0,720"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="sheet">
+
+  <div class="mockbar">
+    <div>
+      <div class="kicker">CP461 · design mock · v1</div>
+      <h1>Automatic Panorama Stitcher — interface</h1>
+      <p>Static mock with sample data. Switch states to review every screen the demo has to survive.</p>
+    </div>
+    <div class="statebar" role="group" aria-label="Mock state">
+      <button type="button" data-go="empty">Empty</button>
+      <button type="button" data-go="ready">Frames loaded</button>
+      <button type="button" data-go="working">Stitching</button>
+      <button type="button" data-go="complete" aria-pressed="true">Complete</button>
+      <button type="button" data-go="failed">Rejected</button>
+    </div>
+  </div>
+
+  <div class="device">
+    <div class="browserbar">
+      <div class="dots"><i></i><i></i><i></i></div>
+      <div class="urlpill">https://<b>automatic-panorama.vercel.app</b></div>
+      <div class="kicker" style="color:var(--muted)">1440 × 900</div>
+    </div>
+
+    <div class="app">
+
+      <header class="hero">
+        <div class="kicker">Computer Vision · Semester 1 / 2026</div>
+        <h2>Overlapping frames, <em>one wide view</em>.</h2>
+        <p>Upload two to eight photographs that share a horizon. The pipeline extracts features, filters matches, fits a homography with RANSAC, and shows you the evidence behind the result.</p>
+        <div class="status-pill"><i></i> Backend online · Render</div>
+      </header>
+
+      <div class="workspace">
+
+        <!-- ============ control rail ============ -->
+        <form class="panel stack" onsubmit="return false">
+          <div class="panel-head">
+            <div>
+              <div class="kicker">Input</div>
+              <h3>Source frames</h3>
+            </div>
+            <span class="counter" data-count>3 / 8</span>
+          </div>
+
+          <label class="dropzone" data-when="empty ready failed" hidden>
+            <span class="mark" aria-hidden="true">↗</span>
+            <strong>Drop overlapping images</strong>
+            <span class="hint">JPG · PNG · WEBP · BMP · TIFF<br>2–8 frames, 12 MB each</span>
+          </label>
+
+          <div data-when="ready working complete failed" style="margin-top:14px">
+            <div class="files">
+              <div class="file">
+                <svg viewBox="0 0 700 720" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Frame 1 thumbnail"><use href="#pano" width="2400" height="720"/></svg>
+                <span class="n">01</span><span class="name">IMG_4412.jpg</span><span class="size">3.1 MB</span>
+              </div>
+              <div class="file">
+                <svg viewBox="800 0 700 720" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Frame 2 thumbnail"><use href="#pano" width="2400" height="720"/></svg>
+                <span class="n">02</span><span class="name">IMG_4413.jpg</span><span class="size">3.0 MB</span>
+              </div>
+              <div class="file">
+                <svg viewBox="1660 0 700 720" preserveAspectRatio="xMidYMid slice" role="img" aria-label="Frame 3 thumbnail"><use href="#pano" width="2400" height="720"/></svg>
+                <span class="n">03</span><span class="name">IMG_4414.jpg</span><span class="size">3.2 MB</span>
+              </div>
+            </div>
+            <div class="files-total">Upload total · 9.3 MB</div>
+          </div>
+
+          <div class="rule"></div>
+
+          <div class="panel-head">
+            <div>
+              <div class="kicker">Method</div>
+              <h3>Pipeline settings</h3>
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="detector">Feature detector</label>
+            <select id="detector">
+              <option>SIFT · scale-invariant, slower</option>
+              <option>ORB · binary, faster</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="ratio">Lowe ratio test <output for="ratio">0.75</output></label>
+            <input id="ratio" type="range" min="0.55" max="0.9" step="0.01" value="0.75">
+            <span class="hint">Lower keeps only descriptor matches that are clearly better than their runner-up.</span>
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="ransac">RANSAC tolerance <output for="ransac">5.0 px</output></label>
+            <input id="ransac" type="range" min="1" max="12" step="0.5" value="5">
+            <span class="hint">Largest reprojection error a correspondence may have and still count as an inlier.</span>
+          </div>
+
+          <button class="cta" type="submit" data-when="ready" disabled hidden>Stitch panorama <span aria-hidden="true">→</span></button>
+          <button class="cta" type="submit" data-when="empty" disabled hidden>Add two frames to start <span aria-hidden="true">→</span></button>
+          <button class="cta" type="submit" data-when="working" disabled hidden>Stitching… <span aria-hidden="true">◍</span></button>
+          <button class="cta" type="submit" data-when="complete">Stitch again <span aria-hidden="true">→</span></button>
+          <button class="cta ghost" type="submit" data-when="failed" hidden>Retry with ORB <span aria-hidden="true">→</span></button>
+
+          <p class="fineprint">Frames are processed in memory. Nothing is stored.</p>
+        </form>
+
+        <!-- ============ canvas ============ -->
+        <section class="panel canvas-panel" aria-live="polite">
+          <div class="panel-head">
+            <div>
+              <div class="kicker">Output</div>
+              <h3 data-title>Panorama</h3>
+            </div>
+            <span class="tag ok" data-when="complete">Complete</span>
+            <span class="tag busy" data-when="working" hidden>Running</span>
+            <span class="tag bad" data-when="failed" hidden>422 Rejected</span>
+          </div>
+
+          <!-- empty / ready -->
+          <div class="empty" data-when="empty ready" hidden>
+            <div style="font-size:3.6rem;line-height:1;color:var(--aqua);font-weight:200" aria-hidden="true">◎</div>
+            <h4>The panorama lands here</h4>
+            <p>Alongside it: keypoint counts, surviving matches, inlier ratio, and reprojection error for every image pair — the evidence the report asks for.</p>
+            <div class="ribbon">
+              <span>features</span><b>→</b><span>matches</span><b>→</b><span>RANSAC</span><b>→</b><span>warp</span><b>→</b><span>blend</span>
+            </div>
+          </div>
+
+          <!-- working -->
+          <div class="progress" data-when="working" hidden>
+            <div class="step done"><span class="glyph">✓</span><span>Decode &amp; normalize 3 frames</span><span class="t">31 ms</span></div>
+            <div class="step done"><span class="glyph">✓</span><span>SIFT keypoints &amp; descriptors</span><span class="t">419 ms</span></div>
+            <div class="step done"><span class="glyph">✓</span><span>KNN match, ratio 0.75</span><span class="t">12 ms</span></div>
+            <div class="step done"><span class="glyph">✓</span><span>RANSAC homography per pair</span><span class="t">5 ms</span></div>
+            <div class="step now"><span class="glyph">◍</span><span>Warp onto the shared canvas</span><span class="t">running</span></div>
+            <div class="step todo"><span class="glyph">○</span><span>Feather blend, crop, encode</span><span class="t">queued</span></div>
+            <div class="scanline"><span></span></div>
+          </div>
+
+          <!-- complete -->
+          <div data-when="complete">
+            <div class="plate">
+              <svg class="pano" viewBox="0 0 2400 720" role="img" aria-label="Stitched panorama of a dusk mountain horizon, 2400 by 720 pixels">
+                <use href="#pano" width="2400" height="720"/>
+                <g data-overlay>
+                  <g stroke="#6fe3cf" stroke-width="2.5" stroke-dasharray="14 12" opacity="0.85">
+                    <line x1="806" y1="0" x2="806" y2="720"/>
+                    <line x1="1608" y1="0" x2="1608" y2="720"/>
+                  </g>
+                  <g fill="none" stroke="#ff8469" stroke-width="2" opacity="0.75">
+                    <circle cx="742" cy="470" r="9"/><circle cx="864" cy="508" r="9"/>
+                    <circle cx="700" cy="596" r="9"/><circle cx="906" cy="562" r="9"/>
+                    <circle cx="1544" cy="486" r="9"/><circle cx="1672" cy="528" r="9"/>
+                    <circle cx="1508" cy="608" r="9"/><circle cx="1710" cy="580" r="9"/>
+                  </g>
+                  <g stroke="#ffd9a0" stroke-width="1.6" opacity="0.6">
+                    <line x1="742" y1="470" x2="864" y2="508"/>
+                    <line x1="700" y1="596" x2="906" y2="562"/>
+                    <line x1="1544" y1="486" x2="1672" y2="528"/>
+                    <line x1="1508" y1="608" x2="1710" y2="580"/>
+                  </g>
+                  <g fill="#6fe3cf" font-family="JetBrains Mono, monospace" font-size="22" letter-spacing="2">
+                    <text x="822" y="46">SEAM 01 · 101 inliers</text>
+                    <text x="1624" y="46">SEAM 02 · 87 inliers</text>
+                  </g>
+                </g>
+              </svg>
+            </div>
+            <div class="plate-foot">
+              <button class="toggle" type="button" data-overlay-toggle aria-pressed="true"><i aria-hidden="true"></i> Seams &amp; inliers</button>
+              <button class="download" type="button">↓ Download PNG · 2400 × 720</button>
+            </div>
+          </div>
+
+          <!-- failed -->
+          <div data-when="failed" hidden>
+            <div class="alert" role="alert">
+              <h4>Frames 2 and 3 do not agree</h4>
+              <code>422 · INSUFFICIENT_INLIERS</code>
+              <p>RANSAC found 5 consistent correspondences between <b>IMG_4413.jpg</b> and <b>IMG_4414.jpg</b>. Twelve are required before a homography can be trusted, so no image was produced.</p>
+              <div class="ctx">
+                <span>inliers<b>5</b></span>
+                <span>required<b>12</b></span>
+                <span>ratio-passed matches<b>19</b></span>
+                <span>inlier ratio<b>0.26</b></span>
+              </div>
+            </div>
+            <ul class="remedy">
+              <li>Re-shoot frame 3 with roughly 30–50% overlap against frame 2.</li>
+              <li>Raise the ratio test toward 0.80 to keep more candidate matches.</li>
+              <li>Try ORB if the scene is low-texture — sky, water, blank walls.</li>
+            </ul>
+            <p class="hint" style="margin-top:18px">A distorted panorama is never returned in place of an error. The pair that failed is always named.</p>
+          </div>
+        </section>
+      </div>
+
+      <!-- ============ diagnostics ============ -->
+      <section class="diagnostics" data-when="complete">
+        <div class="panel-head" style="margin-bottom:0">
+          <div>
+            <div class="kicker">Evidence</div>
+            <h3>Run diagnostics</h3>
+          </div>
+          <span class="counter">SIFT · 3 frames · order 0 → 1 → 2</span>
+        </div>
+
+        <div class="diag-grid">
+          <div><span>Keypoints</span><strong>2,507</strong><em>812 / 765 / 930</em></div>
+          <div><span>Ratio-passed</span><strong>274</strong><em>146 + 128 matches</em></div>
+          <div><span>Inliers</span><strong>188</strong><em>101 + 87 correspondences</em></div>
+          <div><span>Inlier ratio</span><strong>0.69</strong><em>lowest pair · floor 0.25</em></div>
+          <div><span>Reprojection</span><strong>1.88 px</strong><em>worst pair · tol 5.0</em></div>
+          <div><span>Output</span><strong>2400 × 720</strong><em>1.73 MP · PNG</em></div>
+        </div>
+
+        <div class="tablewrap">
+          <table>
+            <caption>Per-pair geometry</caption>
+            <thead>
+              <tr><th>Pair</th><th>Ratio-passed</th><th>Inliers</th><th>Inlier ratio</th><th>Reproj. error</th><th>Verdict</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>0 → 1</td><td class="num">146</td><td class="num">101</td><td class="num">0.69</td><td class="num">1.42 px</td><td class="pass">accepted</td></tr>
+              <tr><td>1 → 2</td><td class="num">128</td><td class="num">87</td><td class="num">0.68</td><td class="num">1.88 px</td><td class="pass">accepted</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="chart">
+          <div class="kicker" style="color:var(--muted)">Stage timings · 646.9 ms total</div>
+          <div class="bars" style="margin-top:14px">
+            <span class="lab">decode</span><div class="track"><div class="fill" style="width:6.9%"></div></div><span class="val">31.2</span>
+            <span class="lab">features</span><div class="track"><div class="fill peak" style="width:93.0%"></div></div><span class="val">418.5</span>
+            <span class="lab">matching</span><div class="track"><div class="fill" style="width:2.7%"></div></div><span class="val">12.3</span>
+            <span class="lab">homography</span><div class="track"><div class="fill" style="width:1.1%"></div></div><span class="val">4.8</span>
+            <span class="lab">warp</span><div class="track"><div class="fill" style="width:21.4%"></div></div><span class="val">96.4</span>
+            <span class="lab">blend</span><div class="track"><div class="fill" style="width:18.6%"></div></div><span class="val">83.7</span>
+          </div>
+          <div class="axis">
+            <span></span>
+            <div class="ticks"><span>0</span><span>150</span><span>300</span><span>450 ms</span></div>
+            <span></span>
+          </div>
+          <p class="hint" style="margin-top:12px">Feature extraction dominates. Switching to ORB is the lever that matters if the demo runs long.</p>
+        </div>
+      </section>
+
+      <footer class="appfoot">
+        <span>Stateless v1 · no database, no stored uploads</span>
+        <a href="#notes">Design notes ↓</a>
+      </footer>
+    </div>
+  </div>
+
+  <!-- ============ design notes ============ -->
+  <section class="notes" id="notes">
+    <div class="note">
+      <h4>Palette</h4>
+      <p>Dark-committed. The app is an optical instrument, read in a lecture hall with the lights down.</p>
+      <div class="swatches">
+        <span class="swatch"><i style="background:#0a1421"></i>ground</span>
+        <span class="swatch"><i style="background:#13243c"></i>panel</span>
+        <span class="swatch"><i style="background:#6fe3cf"></i>aqua</span>
+        <span class="swatch"><i style="background:#efc96b"></i>amber</span>
+        <span class="swatch"><i style="background:#ff8469"></i>coral</span>
+      </div>
+    </div>
+    <div class="note">
+      <h4>Type</h4>
+      <p>Fraunces for display, DM Sans for prose, JetBrains Mono for every number, code, and label.</p>
+      <ul>
+        <li>Measurements are always mono and tabular so columns line up.</li>
+        <li>Uppercase mono labels carry 0.12em tracking.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h4>Rules this mock encodes</h4>
+      <ul>
+        <li>Aqua means accepted, amber means running, coral means rejected. No other use.</li>
+        <li>Every failure names the pair, the measured value, and the threshold it missed.</li>
+        <li>Diagnostics are part of the result, not a debug panel.</li>
+        <li>Nothing on the success screen is reachable before the backend returns 200.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h4>Still to decide</h4>
+      <ul>
+        <li>Drag-to-reorder frames, or trust the server's ordering?</li>
+        <li>Side-by-side match visualization as a second tab.</li>
+        <li>Mobile layout: the canvas stacks under the rail below 900px.</li>
+      </ul>
+      <p style="margin-top:10px">Artwork here is drawn, not photographed. The demo uses the team's own images.</p>
+    </div>
+  </section>
+</div>
+
+<script>
+  (function () {
+    var buttons = document.querySelectorAll(".statebar button");
+    var slots = document.querySelectorAll("[data-when]");
+    var titles = { empty: "Panorama", ready: "Panorama", working: "Stitching", complete: "Panorama", failed: "Not stitched" };
+    var counts = { empty: "0 / 8", ready: "3 / 8", working: "3 / 8", complete: "3 / 8", failed: "3 / 8" };
+
+    function go(state) {
+      slots.forEach(function (el) {
+        el.hidden = el.getAttribute("data-when").split(" ").indexOf(state) === -1;
+      });
+      buttons.forEach(function (b) {
+        b.setAttribute("aria-pressed", String(b.getAttribute("data-go") === state));
+      });
+      document.querySelector("[data-title]").textContent = titles[state];
+      document.querySelector("[data-count]").textContent = counts[state];
+    }
+
+    buttons.forEach(function (b) {
+      b.addEventListener("click", function () { go(b.getAttribute("data-go")); });
+    });
+
+    var overlayBtn = document.querySelector("[data-overlay-toggle]");
+    var overlay = document.querySelector("[data-overlay]");
+    overlayBtn.addEventListener("click", function () {
+      var on = overlayBtn.getAttribute("aria-pressed") !== "true";
+      overlayBtn.setAttribute("aria-pressed", String(on));
+      overlay.style.display = on ? "" : "none";
+    });
+
+    var ratio = document.getElementById("ratio");
+    var ransac = document.getElementById("ransac");
+    ratio.addEventListener("input", function () {
+      document.querySelector('output[for="ratio"]').textContent = Number(ratio.value).toFixed(2);
+    });
+    ransac.addEventListener("input", function () {
+      document.querySelector('output[for="ransac"]').textContent = Number(ransac.value).toFixed(1) + " px";
+    });
+
+    go("complete");
+  })();
+</script>

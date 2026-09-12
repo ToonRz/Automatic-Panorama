@@ -1,0 +1,758 @@
+<title>Stitcher Backend Blueprint</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,600&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700&family=JetBrains+Mono:wght@400;600&display=swap">
+
+<style>
+  :root {
+    /* Same committed dark identity as the interface mock. */
+    --ground:      #0a1421;
+    --panel:       #13243c;
+    --panel-soft:  #172b46;
+    --ink:         #f3f0e8;
+    --muted:       #8ba0b9;
+    --line:        rgba(243, 240, 232, 0.13);
+    --line-soft:   rgba(243, 240, 232, 0.07);
+    --aqua:        #6fe3cf;
+    --aqua-deep:   #2f8d7e;
+    --coral:       #ff8469;
+    --amber:       #efc96b;
+
+    --display: "Fraunces", Georgia, "Times New Roman", serif;
+    --body: "DM Sans", "Avenir Next", Avenir, system-ui, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 15px;
+    line-height: 1.62;
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible { outline: 2px solid var(--aqua); outline-offset: 3px; }
+
+  .kicker {
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--aqua);
+  }
+
+  /* ---------- masthead ---------- */
+
+  .masthead {
+    border-bottom: 1px solid var(--line);
+    padding: clamp(44px, 6vw, 84px) clamp(20px, 5vw, 64px) 40px;
+  }
+  .masthead-inner { max-width: 1120px; margin: 0 auto; }
+  .masthead h1 {
+    margin: 14px 0 12px;
+    font-family: var(--display);
+    font-weight: 300;
+    font-size: clamp(2.4rem, 5.4vw, 4.1rem);
+    line-height: 0.98;
+    letter-spacing: -0.045em;
+    max-width: 16ch;
+    text-wrap: balance;
+  }
+  .masthead h1 em { font-style: italic; font-weight: 400; color: var(--aqua); }
+  .masthead .lede { margin: 0; max-width: 62ch; color: var(--muted); font-size: 1.02rem; }
+
+  .meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0;
+    margin-top: 34px;
+    border: 1px solid var(--line-soft);
+  }
+  .meta div {
+    flex: 1 1 170px;
+    padding: 14px 18px;
+    border-right: 1px solid var(--line-soft);
+    display: flex; flex-direction: column; gap: 3px;
+  }
+  .meta div:last-child { border-right: 0; }
+  .meta span {
+    font-family: var(--mono); font-size: 0.62rem;
+    letter-spacing: 0.13em; text-transform: uppercase; color: var(--muted);
+  }
+  .meta strong { font-family: var(--mono); font-size: 0.85rem; font-weight: 600; }
+
+  .banner {
+    display: flex; gap: 14px; align-items: flex-start;
+    margin-top: 26px; padding: 16px 20px;
+    border: 1px solid rgba(239, 201, 107, 0.4);
+    border-left-width: 3px;
+    background: rgba(239, 201, 107, 0.07);
+  }
+  .banner .dot { color: var(--amber); font-family: var(--mono); }
+  .banner p { margin: 0; font-size: 0.88rem; }
+  .banner b { color: var(--amber); font-weight: 600; }
+
+  /* ---------- doc layout ---------- */
+
+  .doc {
+    display: grid;
+    grid-template-columns: 190px minmax(0, 1fr);
+    gap: clamp(28px, 5vw, 64px);
+    max-width: 1120px;
+    margin: 0 auto;
+    padding: 52px clamp(20px, 5vw, 64px) 90px;
+  }
+  @media (max-width: 860px) { .doc { grid-template-columns: minmax(0, 1fr); } nav.index { display: none; } }
+
+  nav.index { position: sticky; top: 28px; align-self: start; }
+  nav.index ol { list-style: none; margin: 14px 0 0; padding: 0; display: flex; flex-direction: column; }
+  nav.index a {
+    display: block;
+    padding: 7px 0 7px 12px;
+    border-left: 1px solid var(--line);
+    color: var(--muted);
+    font-size: 0.8rem;
+    text-decoration: none;
+    transition: color 140ms ease, border-color 140ms ease;
+  }
+  nav.index a:hover { color: var(--aqua); border-color: var(--aqua); }
+  nav.index a b { font-family: var(--mono); font-size: 0.66rem; color: var(--aqua-deep); margin-right: 7px; }
+
+  main { display: flex; flex-direction: column; gap: 62px; min-width: 0; }
+  section { scroll-margin-top: 24px; }
+  h2 {
+    margin: 0 0 6px;
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: clamp(1.7rem, 3vw, 2.25rem);
+    letter-spacing: -0.03em;
+  }
+  h3 {
+    margin: 34px 0 10px;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--aqua);
+    font-weight: 600;
+  }
+  p { margin: 0 0 14px; max-width: 68ch; }
+  p.sub { color: var(--muted); }
+  ul { margin: 0 0 14px; padding-left: 20px; max-width: 68ch; color: var(--muted); }
+  li { margin-bottom: 7px; }
+  li b, td b { color: var(--ink); font-weight: 600; }
+  code {
+    font-family: var(--mono);
+    font-size: 0.86em;
+    color: var(--aqua);
+    background: rgba(111, 227, 207, 0.08);
+    padding: 1px 5px;
+  }
+  a { color: var(--aqua); }
+
+  /* ---------- figures ---------- */
+
+  figure { margin: 26px 0 0; }
+  figure svg { display: block; width: 100%; max-width: 100%; height: auto; color: var(--ink); }
+  figcaption {
+    margin-top: 14px;
+    padding-left: 14px;
+    border-left: 2px solid var(--aqua-deep);
+    color: var(--muted);
+    font-size: 0.82rem;
+    max-width: 66ch;
+  }
+  .figframe { border: 1px solid var(--line-soft); background: var(--panel); padding: clamp(14px, 2.4vw, 28px); overflow-x: auto; }
+
+  /* ---------- tables ---------- */
+
+  .tablewrap { overflow-x: auto; margin-top: 8px; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.84rem; min-width: 520px; }
+  th, td {
+    padding: 11px 16px 11px 0;
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  th {
+    font-family: var(--mono); font-size: 0.64rem;
+    letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--muted); font-weight: 400;
+    border-bottom-color: var(--line);
+  }
+  td.mono, th.mono { font-family: var(--mono); font-size: 0.78rem; white-space: nowrap; }
+  td.num { font-family: var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  td.muted { color: var(--muted); }
+
+  .status {
+    font-family: var(--mono); font-size: 0.72rem; font-weight: 600;
+    padding: 2px 7px; border: 1px solid currentColor; white-space: nowrap;
+  }
+  .s400 { color: var(--amber); }
+  .s422 { color: var(--coral); }
+  .s413 { color: var(--coral); }
+  .s200 { color: var(--aqua); }
+  .s501 { color: var(--muted); }
+
+  .live { font-family: var(--mono); font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; }
+  .live.now { color: var(--aqua); }
+  .live.later { color: var(--muted); }
+
+  /* ---------- endpoint cards ---------- */
+
+  .endpoints { display: flex; flex-direction: column; gap: 14px; margin-top: 8px; }
+  .endpoint { border: 1px solid var(--line-soft); background: var(--panel); }
+  .endpoint header {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 12px;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--line-soft);
+  }
+  .verb {
+    font-family: var(--mono); font-size: 0.68rem; font-weight: 600;
+    letter-spacing: 0.1em; padding: 3px 8px;
+    color: var(--ground); background: var(--aqua);
+  }
+  .verb.post { background: var(--amber); }
+  .path { font-family: var(--mono); font-size: 0.86rem; }
+  .endpoint .why { margin-left: auto; color: var(--muted); font-size: 0.78rem; }
+  .endpoint .bodyrow { padding: 16px 20px; }
+  .endpoint .bodyrow p { margin: 0; font-size: 0.86rem; color: var(--muted); }
+
+  pre {
+    margin: 12px 0 0;
+    padding: 16px 18px;
+    background: #08111d;
+    border: 1px solid var(--line-soft);
+    overflow-x: auto;
+    font-family: var(--mono);
+    font-size: 0.76rem;
+    line-height: 1.65;
+    color: var(--muted);
+  }
+  pre b { color: var(--ink); font-weight: 400; }
+  pre i { color: var(--aqua); font-style: normal; }
+  pre u { color: var(--amber); text-decoration: none; }
+
+  /* ---------- rules ---------- */
+  .rules { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 1px; background: var(--line-soft); border: 1px solid var(--line-soft); margin-top: 8px; }
+  .rule { background: var(--panel); padding: 20px; }
+  .rule h4 { margin: 0 0 8px; font-family: var(--display); font-weight: 400; font-size: 1.12rem; letter-spacing: -0.01em; }
+  .rule p { margin: 0; font-size: 0.84rem; color: var(--muted); }
+  .rule .no { font-family: var(--mono); font-size: 0.62rem; letter-spacing: 0.14em; color: var(--aqua-deep); display: block; margin-bottom: 10px; }
+
+  footer.docfoot {
+    border-top: 1px solid var(--line);
+    padding: 26px clamp(20px, 5vw, 64px) 60px;
+  }
+  footer.docfoot div {
+    max-width: 1120px; margin: 0 auto;
+    display: flex; flex-wrap: wrap; gap: 12px; justify-content: space-between;
+    color: var(--muted); font-size: 0.78rem;
+  }
+</style>
+
+<header class="masthead">
+  <div class="masthead-inner">
+    <div class="kicker">CP461 · backend design · v1</div>
+    <h1>How a photograph becomes <em>evidence</em>.</h1>
+    <p class="lede">The stitcher's server is one stateless FastAPI process. It validates an upload, runs a classical OpenCV pipeline in memory, and answers with a panorama plus the geometric numbers that prove the alignment was real. This page is the contract the five of us build against.</p>
+
+    <div class="meta">
+      <div><span>Runtime</span><strong>Python 3.11+</strong></div>
+      <div><span>Framework</span><strong>FastAPI + Uvicorn</strong></div>
+      <div><span>Vision</span><strong>opencv-python-headless</strong></div>
+      <div><span>Host</span><strong>Render Free</strong></div>
+      <div><span>State</span><strong>none · per-request</strong></div>
+    </div>
+
+    <div class="banner">
+      <span class="dot" aria-hidden="true">▲</span>
+      <p><b>Scaffold status.</b> Validation and the request contract are live. The pipeline stages are designed here but not implemented, so <code>POST /api/v1/stitch</code> still answers <code>501 PIPELINE_NOT_IMPLEMENTED</code> after validating. Nothing on this page may be described as working until its tests are merged.</p>
+    </div>
+  </div>
+</header>
+
+<div class="doc">
+
+  <nav class="index" aria-label="Sections">
+    <div class="kicker">Contents</div>
+    <ol>
+      <li><a href="#system"><b>01</b>System view</a></li>
+      <li><a href="#layers"><b>02</b>Layer contract</a></li>
+      <li><a href="#lifecycle"><b>03</b>Request lifecycle</a></li>
+      <li><a href="#endpoints"><b>04</b>Endpoints</a></li>
+      <li><a href="#response"><b>05</b>Success shape</a></li>
+      <li><a href="#errors"><b>06</b>Error catalogue</a></li>
+      <li><a href="#settings"><b>07</b>Settings</a></li>
+      <li><a href="#rules"><b>08</b>Standing rules</a></li>
+      <li><a href="#deploy"><b>09</b>Deployment</a></li>
+    </ol>
+  </nav>
+
+  <main>
+
+    <!-- 01 -->
+    <section id="system">
+      <div class="kicker">01</div>
+      <h2>System view</h2>
+      <p class="sub">Three processes, one hop. The browser talks to the API directly; Vercel never proxies image payloads and the API owns no storage.</p>
+
+      <figure>
+        <div class="figframe">
+          <svg viewBox="0 0 900 310" role="img" aria-label="The browser posts images straight to the FastAPI service, which calls the OpenCV pipeline in the same process and returns a panorama with diagnostics. No database or object store is involved.">
+            <defs>
+              <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <polygon points="0,0 10,5 0,10" fill="currentColor"/>
+              </marker>
+              <marker id="arAqua" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <polygon points="0,0 10,5 0,10" fill="#6fe3cf"/>
+              </marker>
+            </defs>
+
+            <g fill="none" stroke="currentColor" stroke-width="1.4" opacity="0.55">
+              <rect x="20" y="70" width="215" height="96"/>
+              <rect x="342" y="70" width="215" height="96"/>
+              <rect x="664" y="70" width="215" height="96"/>
+            </g>
+
+            <g font-family="DM Sans, sans-serif" fill="currentColor">
+              <text x="40" y="104" font-size="16">React + TypeScript SPA</text>
+              <text x="362" y="104" font-size="16">FastAPI service</text>
+              <text x="684" y="104" font-size="16">OpenCV pipeline</text>
+            </g>
+            <g font-family="JetBrains Mono, monospace" font-size="11.5" fill="currentColor" opacity="0.62">
+              <text x="40" y="128">vercel · static</text>
+              <text x="40" y="147">no image math</text>
+              <text x="362" y="128">render free · uvicorn</text>
+              <text x="362" y="147">validate · orchestrate</text>
+              <text x="684" y="128">same process</text>
+              <text x="684" y="147">numpy arrays only</text>
+            </g>
+
+            <g stroke="currentColor" stroke-width="1.4" opacity="0.75" marker-end="url(#ar)" fill="none">
+              <line x1="240" y1="118" x2="333" y2="118"/>
+              <line x1="562" y1="118" x2="655" y2="118"/>
+            </g>
+            <g font-family="JetBrains Mono, monospace" font-size="11" fill="currentColor" opacity="0.75" text-anchor="middle">
+              <text x="287" y="104">POST</text>
+              <text x="287" y="142">multipart</text>
+              <text x="609" y="104">decoded</text>
+              <text x="609" y="142">ndarray[]</text>
+            </g>
+
+            <path d="M 771 175 L 771 232 L 128 232 L 128 175" fill="none" stroke="#6fe3cf" stroke-width="1.6" marker-end="url(#arAqua)"/>
+            <text x="450" y="254" font-family="JetBrains Mono, monospace" font-size="11.5" fill="#6fe3cf" text-anchor="middle">200 OK · data:image/png;base64 + diagnostics</text>
+
+            <line x1="20" y1="280" x2="879" y2="280" stroke="currentColor" stroke-width="1" opacity="0.15"/>
+            <text x="20" y="300" font-family="JetBrains Mono, monospace" font-size="11" fill="currentColor" opacity="0.55">no database · no object store · uploads never touch disk</text>
+          </svg>
+        </div>
+        <figcaption>The arrow that does not exist is the point: there is no persistence hop, so a Render Free restart loses nothing a user cares about.</figcaption>
+      </figure>
+    </section>
+
+    <!-- 02 -->
+    <section id="layers">
+      <div class="kicker">02</div>
+      <h2>Layer contract</h2>
+      <p class="sub">Each layer has one job and one thing it is forbidden to do. Reviews check the forbidden column first.</p>
+
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr><th>Layer</th><th>Owns</th><th>Must never</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="mono">api/routes.py</td>
+              <td>File count, media types, byte limits, settings parsing, error envelopes</td>
+              <td class="muted">Import cv2 or touch pixel data</td>
+            </tr>
+            <tr>
+              <td class="mono">services/stitcher.py</td>
+              <td>Decode, stage ordering, diagnostics aggregation, request-scoped cleanup</td>
+              <td class="muted">Know about HTTP, status codes, or multipart</td>
+            </tr>
+            <tr>
+              <td class="mono">cv/features.py</td>
+              <td>Detector construction, keypoints and descriptors for one image</td>
+              <td class="muted">Decide the image order or the reference frame</td>
+            </tr>
+            <tr>
+              <td class="mono">cv/matching.py</td>
+              <td>KNN matching, distance metric per detector, Lowe ratio filtering</td>
+              <td class="muted">Estimate geometry or reject a pair</td>
+            </tr>
+            <tr>
+              <td class="mono">cv/homography.py</td>
+              <td>RANSAC estimation, inlier mask, reprojection error</td>
+              <td class="muted">Warp anything</td>
+            </tr>
+            <tr>
+              <td class="mono">cv/warping.py</td>
+              <td>Transform composition, canvas bounds, perspective warp</td>
+              <td class="muted">Blend or crop</td>
+            </tr>
+            <tr>
+              <td class="mono">cv/blending.py</td>
+              <td>Valid masks, exposure compensation, feather seam, border crop</td>
+              <td class="muted">Hide a bad alignment behind a soft seam</td>
+            </tr>
+            <tr>
+              <td class="mono">cv/pipeline.py</td>
+              <td>Multi-image ordering, reference choice, stage timing</td>
+              <td class="muted">Contain stage math of its own</td>
+            </tr>
+            <tr>
+              <td class="mono">core/config.py</td>
+              <td>Every threshold and limit, read from the environment once</td>
+              <td class="muted">Be bypassed by a literal in route or stage code</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 03 -->
+    <section id="lifecycle">
+      <div class="kicker">03</div>
+      <h2>Request lifecycle</h2>
+      <p class="sub">Nine gates. Each one either passes the request down or exits with a named code, and the cheap gates run before anything large is decoded.</p>
+
+      <figure>
+        <div class="figframe">
+          <svg viewBox="0 0 900 690" role="img" aria-label="Nine sequential gates from request validation to encoded response. Gates one to three are implemented; the route currently stops after gate three with a 501. Gates four to nine are designed and each names the error code it raises.">
+            <defs>
+              <marker id="ar2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <polygon points="0,0 10,5 0,10" fill="currentColor"/>
+              </marker>
+              <marker id="arErr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse">
+                <polygon points="0,0 10,5 0,10" fill="#ff8469"/>
+              </marker>
+              <marker id="arOk" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+                <polygon points="0,0 10,5 0,10" fill="#6fe3cf"/>
+              </marker>
+            </defs>
+
+            <text x="20" y="18" font-family="JetBrains Mono, monospace" font-size="10.5" fill="currentColor" opacity="0.5">GATE</text>
+            <text x="470" y="18" font-family="JetBrains Mono, monospace" font-size="10.5" fill="#ff8469" opacity="0.85">EXIT</text>
+
+            <!-- gate boxes: x 20..430, rows every 66 starting y=34 -->
+            <g fill="none" stroke="currentColor" stroke-width="1.3" opacity="0.5">
+              <rect x="20" y="34"  width="410" height="42"/>
+              <rect x="20" y="100" width="410" height="42"/>
+              <rect x="20" y="166" width="410" height="42"/>
+              <rect x="20" y="298" width="410" height="42"/>
+              <rect x="20" y="364" width="410" height="42"/>
+              <rect x="20" y="430" width="410" height="42"/>
+              <rect x="20" y="496" width="410" height="42"/>
+              <rect x="20" y="562" width="410" height="42"/>
+              <rect x="20" y="628" width="410" height="42"/>
+            </g>
+
+            <g font-family="DM Sans, sans-serif" font-size="14" fill="currentColor">
+              <text x="36" y="61">1 · count 2–8 files</text>
+              <text x="36" y="127">2 · media type &amp; byte size</text>
+              <text x="36" y="193">3 · parse StitchSettings</text>
+              <text x="36" y="325">4 · decode &amp; normalize</text>
+              <text x="36" y="391">5 · detect features</text>
+              <text x="36" y="457">6 · match + ratio test</text>
+              <text x="36" y="523">7 · RANSAC homography</text>
+              <text x="36" y="589">8 · compose &amp; warp canvas</text>
+              <text x="36" y="655">9 · blend, crop, encode</text>
+            </g>
+            <g font-family="JetBrains Mono, monospace" font-size="10" fill="currentColor" opacity="0.5" text-anchor="end">
+              <text x="414" y="61">routes</text>
+              <text x="414" y="127">routes</text>
+              <text x="414" y="193">routes</text>
+              <text x="414" y="325">services</text>
+              <text x="414" y="391">cv/features</text>
+              <text x="414" y="457">cv/matching</text>
+              <text x="414" y="523">cv/homography</text>
+              <text x="414" y="589">cv/warping</text>
+              <text x="414" y="655">cv/blending</text>
+            </g>
+
+            <!-- spine -->
+            <g stroke="currentColor" stroke-width="1.3" opacity="0.65" marker-end="url(#ar2)">
+              <line x1="120" y1="76"  x2="120" y2="96"/>
+              <line x1="120" y1="142" x2="120" y2="162"/>
+              <line x1="120" y1="208" x2="120" y2="228"/>
+              <line x1="120" y1="340" x2="120" y2="360"/>
+              <line x1="120" y1="406" x2="120" y2="426"/>
+              <line x1="120" y1="472" x2="120" y2="492"/>
+              <line x1="120" y1="538" x2="120" y2="558"/>
+              <line x1="120" y1="604" x2="120" y2="624"/>
+            </g>
+
+            <!-- today's stop -->
+            <rect x="20" y="228" width="410" height="44" fill="none" stroke="#efc96b" stroke-width="1.4" stroke-dasharray="8 6"/>
+            <text x="36" y="248" font-family="JetBrains Mono, monospace" font-size="11.5" fill="#efc96b">TODAY THE ROUTE STOPS HERE</text>
+            <text x="36" y="264" font-family="JetBrains Mono, monospace" font-size="11.5" fill="#efc96b" opacity="0.75">501 PIPELINE_NOT_IMPLEMENTED</text>
+            <line x1="120" y1="272" x2="120" y2="294" stroke="currentColor" stroke-width="1.3" stroke-dasharray="5 5" opacity="0.4" marker-end="url(#ar2)"/>
+
+            <!-- error exits -->
+            <g stroke="#ff8469" stroke-width="1.2" opacity="0.8" marker-end="url(#arErr)">
+              <line x1="434" y1="55" x2="486" y2="55"/>
+              <line x1="434" y1="121" x2="486" y2="121"/>
+              <line x1="434" y1="187" x2="486" y2="187"/>
+              <line x1="434" y1="319" x2="486" y2="319"/>
+              <line x1="434" y1="385" x2="486" y2="385"/>
+              <line x1="434" y1="451" x2="486" y2="451"/>
+              <line x1="434" y1="517" x2="486" y2="517"/>
+              <line x1="434" y1="583" x2="486" y2="583"/>
+            </g>
+            <g font-family="JetBrains Mono, monospace" font-size="11" fill="#ff8469">
+              <text x="494" y="51">400 TOO_FEW_IMAGES</text>
+              <text x="494" y="67">400 TOO_MANY_IMAGES</text>
+              <text x="494" y="110">400 UNSUPPORTED_IMAGE_TYPE</text>
+              <text x="494" y="126">413 IMAGE_TOO_LARGE</text>
+              <text x="494" y="142">422 EMPTY_IMAGE</text>
+              <text x="494" y="191">422 INVALID_STITCH_SETTINGS</text>
+              <text x="494" y="315">422 DECODE_FAILED</text>
+              <text x="494" y="331">422 IMAGE_TOO_MANY_PIXELS</text>
+              <text x="494" y="389">422 NO_DESCRIPTORS</text>
+              <text x="494" y="455">422 INSUFFICIENT_MATCHES</text>
+              <text x="494" y="513">422 INSUFFICIENT_INLIERS</text>
+              <text x="494" y="529">422 DEGENERATE_HOMOGRAPHY</text>
+              <text x="494" y="587">422 CANVAS_TOO_LARGE</text>
+            </g>
+
+            <!-- success exit -->
+            <line x1="434" y1="649" x2="486" y2="649" stroke="#6fe3cf" stroke-width="1.6" marker-end="url(#arOk)"/>
+            <text x="494" y="645" font-family="JetBrains Mono, monospace" font-size="11.5" fill="#6fe3cf">200 OK</text>
+            <text x="494" y="661" font-family="JetBrains Mono, monospace" font-size="11" fill="#6fe3cf" opacity="0.7">image + diagnostics</text>
+          </svg>
+        </div>
+        <figcaption>Gates 1–3 are merged and tested. Everything below the dashed line is designed, not written; the codes are reserved here so the frontend can build its error copy before the algorithm lands.</figcaption>
+      </figure>
+    </section>
+
+    <!-- 04 -->
+    <section id="endpoints">
+      <div class="kicker">04</div>
+      <h2>Endpoints</h2>
+      <p class="sub">Three routes, one of them the whole product.</p>
+
+      <div class="endpoints">
+        <article class="endpoint">
+          <header>
+            <span class="verb">GET</span>
+            <span class="path">/healthz</span>
+            <span class="why">Render probe · frontend status pill</span>
+          </header>
+          <div class="bodyrow">
+            <p>Never touches OpenCV, so a cold Render instance answers as soon as the process is up.</p>
+            <pre>{ <i>"status"</i>: <b>"ok"</b>, <i>"service"</i>: <b>"automatic-panorama-api"</b>, <i>"environment"</i>: <b>"production"</b> }</pre>
+          </div>
+        </article>
+
+        <article class="endpoint">
+          <header>
+            <span class="verb">GET</span>
+            <span class="path">/api/v1/config</span>
+            <span class="why">Server policy, so the UI stops guessing</span>
+          </header>
+          <div class="bodyrow">
+            <p>The upload limits and default thresholds live in one place. The interface reads them instead of hard-coding 8 files and 12 MB.</p>
+            <pre>{ <i>"max_upload_files"</i>: <b>8</b>, <i>"max_upload_mb"</i>: <b>12</b>, <i>"default_detector"</i>: <b>"SIFT"</b>,
+  <i>"ratio_threshold"</i>: <b>0.75</b>, <i>"ransac_reproj_threshold"</i>: <b>5.0</b> }</pre>
+          </div>
+        </article>
+
+        <article class="endpoint">
+          <header>
+            <span class="verb post">POST</span>
+            <span class="path">/api/v1/stitch</span>
+            <span class="why">multipart/form-data</span>
+          </header>
+          <div class="bodyrow">
+            <div class="tablewrap">
+              <table>
+                <thead>
+                  <tr><th>Field</th><th>Type</th><th>Default</th><th>Constraint</th></tr>
+                </thead>
+                <tbody>
+                  <tr><td class="mono">files</td><td>repeated file</td><td class="muted">required</td><td>2–8 raster images, ≤ 12 MB each</td></tr>
+                  <tr><td class="mono">detector</td><td>string</td><td class="mono">SIFT</td><td class="mono">SIFT | ORB</td></tr>
+                  <tr><td class="mono">ratio_threshold</td><td>float</td><td class="num">0.75</td><td>exclusive 0 – 1</td></tr>
+                  <tr><td class="mono">ransac_reproj_threshold</td><td>float</td><td class="num">5.0</td><td>positive pixels, ≤ 50</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- 05 -->
+    <section id="response">
+      <div class="kicker">05</div>
+      <h2>Success shape</h2>
+      <p class="sub">Diagnostics are not a debug extra. They are the assignment's evidence requirement, so they are part of the response contract and not a log line.</p>
+
+      <pre>{
+  <i>"status"</i>: <b>"complete"</b>,
+  <i>"image"</i>: {
+    <i>"data_url"</i>: <b>"data:image/png;base64,…"</b>,
+    <i>"mime_type"</i>: <b>"image/png"</b>, <i>"width"</i>: <b>2400</b>, <i>"height"</i>: <b>720</b>
+  },
+  <i>"diagnostics"</i>: {
+    <i>"detector"</i>: <b>"SIFT"</b>,
+    <i>"image_count"</i>: <b>3</b>,
+    <i>"image_order"</i>: <b>[0, 1, 2]</b>,                        <u>// reference frame first</u>
+    <i>"keypoints_per_image"</i>: <b>[812, 765, 930]</b>,
+    <i>"ratio_passed_matches_per_pair"</i>: <b>[146, 128]</b>,
+    <i>"inliers_per_pair"</i>: <b>[101, 87]</b>,
+    <i>"inlier_ratio_per_pair"</i>: <b>[0.69, 0.68]</b>,           <u>// floor 0.25</u>
+    <i>"reprojection_error_per_pair"</i>: <b>[1.42, 1.88]</b>,     <u>// pixels</u>
+    <i>"output_width"</i>: <b>2400</b>, <i>"output_height"</i>: <b>720</b>,
+    <i>"stage_timings_ms"</i>: {
+      <i>"decode"</i>: <b>31.2</b>, <i>"features"</i>: <b>418.5</b>, <i>"matching"</i>: <b>12.3</b>,
+      <i>"homography"</i>: <b>4.8</b>, <i>"warp"</i>: <b>96.4</b>, <i>"blend"</i>: <b>83.7</b>
+    }
+  }
+}</pre>
+
+      <h3>Why each field is in the contract</h3>
+      <ul>
+        <li><b>Keypoints per image</b> tells you whether a frame was too flat for the detector before you blame the matcher.</li>
+        <li><b>Ratio-passed against inliers</b> separates a descriptor problem from a geometry problem.</li>
+        <li><b>Reprojection error</b> in pixels is the number the report argues from, and the one the RANSAC tolerance is set against.</li>
+        <li><b>Stage timings</b> decide whether the demo runs SIFT or ORB on the day.</li>
+      </ul>
+
+      <p class="sub">If base64 in JSON turns out too heavy under profiling, the transport becomes a binary image plus a diagnostics sidecar. The logical fields above do not change.</p>
+    </section>
+
+    <!-- 06 -->
+    <section id="errors">
+      <div class="kicker">06</div>
+      <h2>Error catalogue</h2>
+      <p class="sub">Every failure is <code>{"detail": {"code", "message", "context"}}</code>. The code is stable and machine-readable, the message is written for a person, and the context carries the measurement that failed.</p>
+
+      <pre>{
+  <i>"detail"</i>: {
+    <i>"code"</i>: <b>"INSUFFICIENT_INLIERS"</b>,
+    <i>"message"</i>: <b>"Images 2 and 3 do not have enough geometric agreement."</b>,
+    <i>"context"</i>: { <i>"pair"</i>: <b>[1, 2]</b>, <i>"inliers"</i>: <b>5</b>, <i>"required"</i>: <b>12</b>, <i>"inlier_ratio"</i>: <b>0.26</b> }
+  }
+}</pre>
+
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr><th>Code</th><th>HTTP</th><th>Raised at</th><th>What the user is told</th><th>State</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="mono">TOO_FEW_IMAGES</td><td><span class="status s400">400</span></td><td class="muted mono">gate 1</td><td>Upload at least two overlapping images.</td><td><span class="live now">live</span></td></tr>
+            <tr><td class="mono">TOO_MANY_IMAGES</td><td><span class="status s400">400</span></td><td class="muted mono">gate 1</td><td>Upload no more than eight images.</td><td><span class="live now">live</span></td></tr>
+            <tr><td class="mono">UNSUPPORTED_IMAGE_TYPE</td><td><span class="status s400">400</span></td><td class="muted mono">gate 2</td><td>File <i>n</i> is not a supported raster image.</td><td><span class="live now">live</span></td></tr>
+            <tr><td class="mono">IMAGE_TOO_LARGE</td><td><span class="status s413">413</span></td><td class="muted mono">gate 2</td><td>File <i>n</i> exceeds the 12 MB limit.</td><td><span class="live now">live</span></td></tr>
+            <tr><td class="mono">EMPTY_IMAGE</td><td><span class="status s422">422</span></td><td class="muted mono">gate 2</td><td>File <i>n</i> is empty.</td><td><span class="live now">live</span></td></tr>
+            <tr><td class="mono">INVALID_STITCH_SETTINGS</td><td><span class="status s422">422</span></td><td class="muted mono">gate 3</td><td>Detector and geometric thresholds are invalid.</td><td><span class="live now">live</span></td></tr>
+            <tr><td class="mono">PIPELINE_NOT_IMPLEMENTED</td><td><span class="status s501">501</span></td><td class="muted mono">after gate 3</td><td>The CV pipeline is scaffolded but not implemented yet.</td><td><span class="live now">live</span></td></tr>
+            <tr><td class="mono">DECODE_FAILED</td><td><span class="status s422">422</span></td><td class="muted mono">gate 4</td><td>File <i>n</i> could not be read as an image.</td><td><span class="live later">reserved</span></td></tr>
+            <tr><td class="mono">IMAGE_TOO_MANY_PIXELS</td><td><span class="status s422">422</span></td><td class="muted mono">gate 4</td><td>File <i>n</i> is above the 12 MP processing limit.</td><td><span class="live later">reserved</span></td></tr>
+            <tr><td class="mono">NO_DESCRIPTORS</td><td><span class="status s422">422</span></td><td class="muted mono">gate 5</td><td>Image <i>n</i> has too little texture for this detector.</td><td><span class="live later">reserved</span></td></tr>
+            <tr><td class="mono">INSUFFICIENT_MATCHES</td><td><span class="status s422">422</span></td><td class="muted mono">gate 6</td><td>Images <i>a</i> and <i>b</i> share too few descriptor matches.</td><td><span class="live later">reserved</span></td></tr>
+            <tr><td class="mono">INSUFFICIENT_INLIERS</td><td><span class="status s422">422</span></td><td class="muted mono">gate 7</td><td>Images <i>a</i> and <i>b</i> do not have enough geometric agreement.</td><td><span class="live later">reserved</span></td></tr>
+            <tr><td class="mono">DEGENERATE_HOMOGRAPHY</td><td><span class="status s422">422</span></td><td class="muted mono">gate 7</td><td>The transform between <i>a</i> and <i>b</i> collapses the image.</td><td><span class="live later">reserved</span></td></tr>
+            <tr><td class="mono">CANVAS_TOO_LARGE</td><td><span class="status s422">422</span></td><td class="muted mono">gate 8</td><td>The combined canvas exceeds the 25 MP output limit.</td><td><span class="live later">reserved</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 07 -->
+    <section id="settings">
+      <div class="kicker">07</div>
+      <h2>Settings</h2>
+      <p class="sub">Every threshold in the system is here, read from the environment once per process. A magic number anywhere else is a review comment.</p>
+
+      <div class="tablewrap">
+        <table>
+          <thead>
+            <tr><th>Setting</th><th>Default</th><th>Range</th><th>What it protects</th></tr>
+          </thead>
+          <tbody>
+            <tr><td class="mono">max_upload_files</td><td class="num">8</td><td class="num">2 – 12</td><td class="muted">Request duration on a free instance</td></tr>
+            <tr><td class="mono">max_upload_mb</td><td class="num">12</td><td class="num">1 – 50</td><td class="muted">Per-file memory before decode</td></tr>
+            <tr><td class="mono">max_image_pixels</td><td class="num">12 MP</td><td class="num">0.1 – 50 MP</td><td class="muted">Decode-bomb ceiling</td></tr>
+            <tr><td class="mono">default_detector</td><td class="mono">SIFT</td><td class="mono">SIFT | ORB</td><td class="muted">Quality by default, speed on request</td></tr>
+            <tr><td class="mono">ratio_threshold</td><td class="num">0.75</td><td class="num">0 – 1</td><td class="muted">Lowe's test; false matches per pair</td></tr>
+            <tr><td class="mono">ransac_reproj_threshold</td><td class="num">5.0 px</td><td class="num">0 – 50</td><td class="muted">How sloppy an inlier may be</td></tr>
+            <tr><td class="mono">min_inliers</td><td class="num">12</td><td class="num">4 – 500</td><td class="muted">The floor below which a pair is rejected</td></tr>
+            <tr><td class="mono">min_inlier_ratio</td><td class="num">0.25</td><td class="num">0 – 1</td><td class="muted">Catches a lucky fit on many bad matches</td></tr>
+            <tr><td class="mono">max_output_pixels</td><td class="num">25 MP</td><td class="num">0.1 – 100 MP</td><td class="muted">Runaway canvas from a bad homography</td></tr>
+            <tr><td class="mono">backend_cors_origins</td><td class="mono">localhost:5173</td><td class="muted">comma list</td><td class="muted">Exact Vercel origin in production</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 08 -->
+    <section id="rules">
+      <div class="kicker">08</div>
+      <h2>Standing rules</h2>
+      <p class="sub">Four commitments that outrank convenience. A pull request that breaks one does not merge.</p>
+
+      <div class="rules">
+        <div class="rule">
+          <span class="no">Rule 01</span>
+          <h4>Never return a distorted image instead of an error.</h4>
+          <p>A warped mess that technically renders is worse than a rejection, because it cannot be graded and cannot be debugged. Reject, and name the pair that failed.</p>
+        </div>
+        <div class="rule">
+          <span class="no">Rule 02</span>
+          <h4>Measure every stage, always.</h4>
+          <p>Timings and inlier counts are collected on the success path too, not only when something goes wrong. The report is written from them.</p>
+        </div>
+        <div class="rule">
+          <span class="no">Rule 03</span>
+          <h4>Nothing survives the request.</h4>
+          <p>No globals, no temp files, no cache keyed by upload. Render Free wipes local disk on restart and v1 is designed so that costs nothing.</p>
+        </div>
+        <div class="rule">
+          <span class="no">Rule 04</span>
+          <h4>Cheap checks run before expensive ones.</h4>
+          <p>Count, media type, and byte size are settled before a single image is decoded, so a bad request never buys CPU time.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 09 -->
+    <section id="deploy">
+      <div class="kicker">09</div>
+      <h2>Deployment</h2>
+
+      <h3>Backend · Render Free</h3>
+      <ul>
+        <li>Service root <code>backend/</code>, bound to <code>0.0.0.0:$PORT</code>, health path <code>/healthz</code>.</li>
+        <li>A free instance sleeps when idle. The first request after a sleep pays a cold start, so the demo warms the service before the presentation.</li>
+        <li>Local disk is ephemeral and unused. A restart mid-demo costs one retry, not a data loss.</li>
+        <li><code>opencv-python-headless</code> only. Pulling the GUI build inflates the image for libraries the server never calls.</li>
+      </ul>
+
+      <h3>Frontend · Vercel</h3>
+      <ul>
+        <li>Project root <code>frontend/</code>, with <code>VITE_API_BASE_URL</code> pointed at the public Render URL.</li>
+        <li>CORS allows the exact Vercel origin plus the local dev origins, listed rather than wildcarded.</li>
+        <li>Image payloads are never proxied through a Vercel Function. The bundle, payload, and duration limits have not been tested against real demo photographs, and the demo is not the place to find out.</li>
+      </ul>
+    </section>
+
+  </main>
+</div>
+
+<footer class="docfoot">
+  <div>
+    <span>Automatic Panorama Stitcher · backend design v1 · pairs with the interface mock</span>
+    <span>Source of truth: docs/architecture.md · docs/api-contract.md · docs/cv-pipeline.md</span>
+  </div>
+</footer>

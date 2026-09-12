@@ -1,0 +1,10 @@
+# Runtime dependencies for the FastAPI/OpenCV backend.
+# Keep this file at the repository root because CP461 requires an obvious,
+# assignment-visible requirements.txt and clear execution instructions.
+fastapi>=0.115,<1
+uvicorn[standard]>=0.30,<1
+python-multipart>=0.0.9,<1
+pydantic-settings>=2.4,<3
+numpy>=1.26,<3
+opencv-python-headless>=4.10,<5
+Pillow>=10,<12
