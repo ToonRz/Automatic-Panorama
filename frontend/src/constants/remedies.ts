@@ -5,9 +5,6 @@ import type { ApiErrorDetail } from "../types";
  * docs/backend-spec.md section 9). These are language and product guidance,
  * not measurement, so they live here and can be reworded without a backend
  * change.
- *
- * PIPELINE_NOT_IMPLEMENTED is deliberately absent: a 501 renders the
- * scaffold state (section 8), never this table.
  */
 export const GENERIC_REMEDY: readonly string[] = [
   "This error code is not recognised yet. Note the code above and check docs/backend-spec.md for updates.",

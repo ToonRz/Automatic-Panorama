@@ -46,9 +46,5 @@ describe("App with the mock switcher (VITE_MOCK_API=true)", () => {
 
     await user.click(screen.getByRole("button", { name: "Rejected" }));
     expect(await screen.findByRole("alert")).toBeInTheDocument();
-
-    await user.click(screen.getByRole("button", { name: "Scaffold" }));
-    expect(screen.getByText(/isn't built yet/i)).toBeInTheDocument();
-    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 });

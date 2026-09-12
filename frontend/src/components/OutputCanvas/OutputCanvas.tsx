@@ -3,7 +3,6 @@ import type { ApiErrorDetail, StitchResponse } from "../../types";
 import { EmptyState } from "./EmptyState";
 import { FailedState } from "./FailedState";
 import { ResultPlate } from "./ResultPlate";
-import { ScaffoldState } from "./ScaffoldState";
 import { WorkingState } from "./WorkingState";
 
 export interface OutputCanvasProps {
@@ -18,13 +17,11 @@ const TAG_BY_STATE: Partial<Record<ScreenState, { label: string; className: stri
   complete: { label: "Complete", className: "tag ok" },
   working: { label: "Running", className: "tag busy" },
   failed: { label: "Rejected", className: "tag bad" },
-  scaffold: { label: "Scaffolded", className: "tag busy" },
 };
 
 const TITLE_BY_STATE: Partial<Record<ScreenState, string>> = {
   working: "Stitching",
   failed: "Not stitched",
-  scaffold: "Not stitched",
 };
 
 /**
@@ -49,7 +46,6 @@ export function OutputCanvas({ state, isColdStart, error, result, isStale }: Out
       {(state === "empty" || state === "ready") && <EmptyState />}
       {state === "working" && <WorkingState isColdStart={isColdStart} />}
       {state === "failed" && error && <FailedState status={error.status} detail={error.detail} />}
-      {state === "scaffold" && <ScaffoldState />}
       {state === "complete" && result && <ResultPlate result={result} />}
     </section>
   );

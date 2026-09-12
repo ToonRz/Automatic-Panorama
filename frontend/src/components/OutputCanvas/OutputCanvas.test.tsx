@@ -1,15 +1,11 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import {
-  insufficientInliersError,
-  pipelineNotImplementedFixture,
-  unrecognizedCodeError,
-} from "../../fixtures";
+import { insufficientInliersError, unrecognizedCodeError } from "../../fixtures";
 import { OutputCanvas } from "./OutputCanvas";
 
 describe("OutputCanvas", () => {
-  it("shows the placeholder ribbon for empty and ready, and no working/error/scaffold content", () => {
+  it("shows the placeholder ribbon for empty and ready, and no working/error content", () => {
     render(
       <OutputCanvas state="empty" isColdStart={false} error={null} result={null} isStale={false} />,
     );
@@ -66,23 +62,6 @@ describe("OutputCanvas", () => {
       />,
     );
     expect(screen.getByText(/not recognised yet/i)).toBeInTheDocument();
-  });
-
-  it("renders the scaffold state in amber, not the failed state, for a 501 (A8)", () => {
-    render(
-      <OutputCanvas
-        state="scaffold"
-        isColdStart={false}
-        error={{
-          status: pipelineNotImplementedFixture.status,
-          detail: pipelineNotImplementedFixture.detail,
-        }}
-        result={null}
-        isStale={false}
-      />,
-    );
-    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-    expect(screen.getByText(/isn't built yet/i)).toBeInTheDocument();
   });
 
   it("marks a complete result as produced with previous settings when stale", () => {

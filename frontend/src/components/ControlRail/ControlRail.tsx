@@ -39,8 +39,6 @@ function primaryButtonSpec(state: ScreenState, detector: Detector): PrimaryButto
       return detector === "SIFT"
         ? { label: "Retry with ORB", disabled: false, ghost: true, detectorOverride: "ORB" }
         : { label: "Try again", disabled: false, ghost: true };
-    case "scaffold":
-      return { label: "Stitch panorama", disabled: false, ghost: false };
   }
 }
 

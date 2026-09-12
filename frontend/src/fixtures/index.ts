@@ -149,21 +149,12 @@ export const unrecognizedCodeError: MockErrorFixture = {
   },
 };
 
-export const pipelineNotImplementedFixture: MockErrorFixture = {
-  status: 501,
-  detail: {
-    code: "PIPELINE_NOT_IMPLEMENTED",
-    message: "The CV pipeline is scaffolded but not implemented yet.",
-  },
-};
-
 export type MockScenario =
   | "success-with-overlay"
   | "success-without-overlay"
   | "insufficient-inliers"
   | "image-too-large"
-  | "unrecognized-code"
-  | "pipeline-not-implemented";
+  | "unrecognized-code";
 
 export const MOCK_SCENARIOS: readonly MockScenario[] = [
   "success-with-overlay",
@@ -171,5 +162,4 @@ export const MOCK_SCENARIOS: readonly MockScenario[] = [
   "insufficient-inliers",
   "image-too-large",
   "unrecognized-code",
-  "pipeline-not-implemented",
 ];

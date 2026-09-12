@@ -1,9 +1,9 @@
 /**
- * The switcher's own state list. docs/ui-spec.md section 4 defines six
- * exclusive screen states; the seven counted in section 1 and section 12
+ * The switcher's own state list. docs/ui-spec.md section 4 defines five
+ * exclusive screen states; the six counted in section 1 and section 12
  * (A1) add the cold-start notice as a distinguishable variant of `working`
- * (section 5/9), not a seventh value of the state machine itself. The
- * switcher exposes all seven renderings for review and screenshots.
+ * (section 5/9), not a sixth value of the state machine itself. The
+ * switcher exposes all six renderings for review and screenshots.
  */
 export type DebugStateKey =
   | "empty"
@@ -11,8 +11,7 @@ export type DebugStateKey =
   | "working"
   | "working-cold-start"
   | "complete"
-  | "failed"
-  | "scaffold";
+  | "failed";
 
 export interface DebugStateEntry {
   key: DebugStateKey;
@@ -26,5 +25,4 @@ export const DEBUG_STATES: readonly DebugStateEntry[] = [
   { key: "working-cold-start", label: "Stitching (cold start)" },
   { key: "complete", label: "Complete" },
   { key: "failed", label: "Rejected" },
-  { key: "scaffold", label: "Scaffold" },
 ];

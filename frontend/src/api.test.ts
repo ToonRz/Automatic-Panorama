@@ -4,7 +4,6 @@ import { setMockScenario, submitStitch } from "./api";
 import {
   imageTooLargeError,
   insufficientInliersError,
-  pipelineNotImplementedFixture,
   successWithOverlayFixture,
   successWithoutOverlayFixture,
   unrecognizedCodeError,
@@ -52,14 +51,6 @@ describe("submitStitch in mock mode", () => {
     await expect(submitStitch([], options)).rejects.toMatchObject({
       status: unrecognizedCodeError.status,
       detail: unrecognizedCodeError.detail,
-    });
-  });
-
-  it("rejects with the scaffold (501) fixture", async () => {
-    setMockScenario("pipeline-not-implemented");
-    await expect(submitStitch([], options)).rejects.toMatchObject({
-      status: pipelineNotImplementedFixture.status,
-      detail: pipelineNotImplementedFixture.detail,
     });
   });
 });

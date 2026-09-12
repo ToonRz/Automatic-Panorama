@@ -52,11 +52,6 @@ describe("ControlRail primary button", () => {
     expect(screen.getByRole("button", { name: /try again/i })).toBeEnabled();
   });
 
-  it("enables 'Stitch panorama' for the scaffold state", () => {
-    render(<ControlRail {...baseProps} state="scaffold" />);
-    expect(screen.getByRole("button", { name: /stitch panorama/i })).toBeEnabled();
-  });
-
   it("hides the dropzone while working or complete", () => {
     const { rerender } = render(<ControlRail {...baseProps} state="working" />);
     expect(screen.queryByLabelText(/drop overlapping images/i)).not.toBeInTheDocument();

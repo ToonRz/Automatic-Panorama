@@ -6,7 +6,7 @@ import { MAX_FILES, MIN_FILES, RANSAC_DEFAULT, RATIO_DEFAULT } from "../constant
 import type { DebugStateKey } from "../dev/debugStates";
 import type { ApiErrorDetail, Detector, StitchResponse } from "../types";
 
-export type ScreenState = "empty" | "ready" | "working" | "complete" | "failed" | "scaffold";
+export type ScreenState = "empty" | "ready" | "working" | "complete" | "failed";
 
 interface RunSettings {
   detector: Detector;
@@ -23,8 +23,7 @@ type Phase =
   | { kind: "idle" }
   | { kind: "working"; startedAt: number }
   | { kind: "complete"; result: StitchResponse; settings: RunSettings }
-  | { kind: "failed"; error: FailedDetail }
-  | { kind: "scaffold" };
+  | { kind: "failed"; error: FailedDetail };
 
 function makeFakeFile(name: string, sizeBytes: number, type: string): File {
   return new File([new Uint8Array(sizeBytes)], name, { type });
@@ -118,10 +117,6 @@ export function useStitchRun(): UseStitchRunResult {
       (caughtError: unknown) => {
         if (requestIdRef.current !== requestId) return;
         if (caughtError instanceof ApiError) {
-          if (caughtError.status === 501) {
-            setPhase({ kind: "scaffold" });
-            return;
-          }
           setPhase({
             kind: "failed",
             error: {
@@ -178,11 +173,6 @@ export function useStitchRun(): UseStitchRunResult {
         requestIdRef.current += 1;
         setFilesInternal(makeFakeFiles(3));
         setPhase({ kind: "working", startedAt: Date.now() - COLD_START_THRESHOLD_MS - 1_000 });
-        return;
-      case "scaffold":
-        requestIdRef.current += 1;
-        setFilesInternal(makeFakeFiles(3));
-        setPhase({ kind: "scaffold" });
         return;
       case "complete": {
         requestIdRef.current += 1;

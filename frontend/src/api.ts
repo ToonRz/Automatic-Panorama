@@ -117,11 +117,6 @@ async function submitStitchMock(): Promise<StitchResponse> {
         fixtures.unrecognizedCodeError.status,
         fixtures.unrecognizedCodeError.detail,
       );
-    case "pipeline-not-implemented":
-      throw new ApiError(
-        fixtures.pipelineNotImplementedFixture.status,
-        fixtures.pipelineNotImplementedFixture.detail,
-      );
     default: {
       const exhaustive: never = mockScenario;
       throw new Error(`Unhandled mock scenario: ${String(exhaustive)}`);

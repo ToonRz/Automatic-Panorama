@@ -61,16 +61,6 @@ describe("useStitchRun", () => {
     expect(result.current.isStale).toBe(false);
   });
 
-  it("routes a 501 to scaffold, not failed", async () => {
-    vi.spyOn(api, "submitStitch").mockRejectedValue(
-      new api.ApiError(501, { code: "PIPELINE_NOT_IMPLEMENTED", message: "not built" }),
-    );
-    const { result } = renderHook(() => useStitchRun());
-    act(() => result.current.setFiles([fakeFile("a.jpg"), fakeFile("b.jpg")]));
-    act(() => result.current.submit());
-    await waitFor(() => expect(result.current.state).toBe("scaffold"));
-  });
-
   it("routes a 422 to failed with the error detail", async () => {
     vi.spyOn(api, "submitStitch").mockRejectedValue(
       new api.ApiError(422, { code: "INSUFFICIENT_INLIERS", message: "no agreement" }),
