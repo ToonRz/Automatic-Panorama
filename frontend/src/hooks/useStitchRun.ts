@@ -2,9 +2,11 @@ import { useEffect, useRef, useState } from "react";
 
 import { ApiError, submitStitch } from "../api";
 import { COLD_START_THRESHOLD_MS } from "../constants/availability";
-import { MAX_FILES, MIN_FILES, RANSAC_DEFAULT, RATIO_DEFAULT } from "../constants/thresholds";
+import { FALLBACK_CONFIG } from "../constants/config";
+import { MIN_FILES } from "../constants/thresholds";
 import type { DebugStateKey } from "../dev/debugStates";
-import type { ApiErrorDetail, Detector, StitchResponse } from "../types";
+import type { ApiErrorDetail, ClientConfig, Detector, StitchResponse } from "../types";
+import { validatePreparedFiles, validateSelection } from "../utils/preflight";
 
 export type ScreenState = "empty" | "ready" | "working" | "complete" | "failed";
 
@@ -39,6 +41,10 @@ export interface UseStitchRunResult {
   state: ScreenState;
   files: File[];
   setFiles: (files: File[]) => void;
+  fileErrors: Array<string | null>;
+  totalError: string | null;
+  selectionError: string | null;
+  hasPreflightErrors: boolean;
   detector: Detector;
   setDetector: (detector: Detector) => void;
   ratioThreshold: number;
@@ -60,14 +66,30 @@ export interface UseStitchRunResult {
  * in-flight request, and the result. `state` is a pure function of `phase`
  * and `files.length`, so no other boolean can disagree with it.
  */
-export function useStitchRun(): UseStitchRunResult {
+export function useStitchRun(config: ClientConfig = FALLBACK_CONFIG): UseStitchRunResult {
   const [files, setFilesInternal] = useState<File[]>([]);
-  const [detector, setDetector] = useState<Detector>("SIFT");
-  const [ratioThreshold, setRatioThreshold] = useState(RATIO_DEFAULT);
-  const [ransacThreshold, setRansacThreshold] = useState(RANSAC_DEFAULT);
+  const [fileErrors, setFileErrors] = useState<Array<string | null>>([]);
+  const [totalError, setTotalError] = useState<string | null>(null);
+  const [selectionError, setSelectionError] = useState<string | null>(null);
+  const [detector, setDetectorInternal] = useState<Detector>(config.default_detector);
+  const [ratioThreshold, setRatioThresholdInternal] = useState(config.ratio_threshold);
+  const [ransacThreshold, setRansacThresholdInternal] = useState(
+    config.ransac_reproj_threshold,
+  );
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
   const [isColdStart, setIsColdStart] = useState(false);
   const requestIdRef = useRef(0);
+  const detectorTouchedRef = useRef(false);
+  const ratioTouchedRef = useRef(false);
+  const ransacTouchedRef = useRef(false);
+
+  useEffect(() => {
+    if (!detectorTouchedRef.current) setDetectorInternal(config.default_detector);
+    if (!ratioTouchedRef.current) setRatioThresholdInternal(config.ratio_threshold);
+    if (!ransacTouchedRef.current) {
+      setRansacThresholdInternal(config.ransac_reproj_threshold);
+    }
+  }, [config]);
 
   useEffect(() => {
     if (phase.kind !== "working") {
@@ -86,14 +108,47 @@ export function useStitchRun(): UseStitchRunResult {
   }, [phase]);
 
   function setFiles(nextFiles: File[]) {
+    const selection = validateSelection(nextFiles, config);
+    if (selection.selectionError) {
+      setSelectionError(selection.selectionError);
+      return;
+    }
+    const prepared = validatePreparedFiles(nextFiles, config);
     requestIdRef.current += 1;
     setFilesInternal(nextFiles);
+    setFileErrors(
+      selection.fileErrors.map((error, index) => error ?? prepared.fileErrors[index] ?? null),
+    );
+    setTotalError(prepared.totalError);
+    setSelectionError(null);
     setPhase({ kind: "idle" });
+  }
+
+  function setDetector(value: Detector) {
+    detectorTouchedRef.current = true;
+    setDetectorInternal(value);
+  }
+
+  function setRatioThreshold(value: number) {
+    ratioTouchedRef.current = true;
+    setRatioThresholdInternal(value);
+  }
+
+  function setRansacThreshold(value: number) {
+    ransacTouchedRef.current = true;
+    setRansacThresholdInternal(value);
   }
 
   function submit(overrides?: Partial<RunSettings>) {
     if (phase.kind === "working") return;
-    if (files.length < MIN_FILES || files.length > MAX_FILES) return;
+    if (
+      files.length < MIN_FILES ||
+      files.length > config.max_upload_files ||
+      fileErrors.some(Boolean) ||
+      totalError
+    ) {
+      return;
+    }
 
     const settings: RunSettings = {
       detector: overrides?.detector ?? detector,
@@ -157,26 +212,41 @@ export function useStitchRun(): UseStitchRunResult {
       case "empty":
         requestIdRef.current += 1;
         setFilesInternal([]);
+        setFileErrors([]);
+        setTotalError(null);
+        setSelectionError(null);
         setPhase({ kind: "idle" });
         return;
       case "ready":
         requestIdRef.current += 1;
         setFilesInternal(makeFakeFiles(3));
+        setFileErrors([]);
+        setTotalError(null);
+        setSelectionError(null);
         setPhase({ kind: "idle" });
         return;
       case "working":
         requestIdRef.current += 1;
         setFilesInternal(makeFakeFiles(3));
+        setFileErrors([]);
+        setTotalError(null);
+        setSelectionError(null);
         setPhase({ kind: "working", startedAt: Date.now() });
         return;
       case "working-cold-start":
         requestIdRef.current += 1;
         setFilesInternal(makeFakeFiles(3));
+        setFileErrors([]);
+        setTotalError(null);
+        setSelectionError(null);
         setPhase({ kind: "working", startedAt: Date.now() - COLD_START_THRESHOLD_MS - 1_000 });
         return;
       case "complete": {
         requestIdRef.current += 1;
         setFilesInternal(makeFakeFiles(3));
+        setFileErrors([]);
+        setTotalError(null);
+        setSelectionError(null);
         const settings: RunSettings = { detector, ratioThreshold, ransacThreshold };
         import("../fixtures").then((fixtures) => {
           setPhase({
@@ -190,6 +260,9 @@ export function useStitchRun(): UseStitchRunResult {
       case "failed": {
         requestIdRef.current += 1;
         setFilesInternal(makeFakeFiles(3));
+        setFileErrors([]);
+        setTotalError(null);
+        setSelectionError(null);
         import("../fixtures").then((fixtures) => {
           setPhase({
             kind: "failed",
@@ -215,11 +288,16 @@ export function useStitchRun(): UseStitchRunResult {
       phase.settings.ratioThreshold !== ratioThreshold ||
       phase.settings.ransacThreshold !== ransacThreshold);
   const error = phase.kind === "failed" ? phase.error : null;
+  const hasPreflightErrors = fileErrors.some(Boolean) || totalError !== null;
 
   return {
     state,
     files,
     setFiles,
+    fileErrors,
+    totalError,
+    selectionError,
+    hasPreflightErrors,
     detector,
     setDetector,
     ratioThreshold,

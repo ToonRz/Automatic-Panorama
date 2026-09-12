@@ -106,6 +106,14 @@ Transitions out of a settled state:
 - submitting from `complete` or `failed` clears the previous result
   before entering `working`.
 
+Before a request, `useClientConfig` starts from `FALLBACK_CONFIG` and replaces
+it once `GET /api/v1/config` succeeds after the availability state becomes
+`online`. File count, per-file bytes, total bytes, and control defaults all
+read this policy. A selection above the count limit is rejected as a whole;
+invalid types and originals above 60 MB are marked inline. Prepared per-file
+and total byte failures also stay in `ready`, disable the action as
+"Fix the marked frames", and never become a failed run.
+
 The output panel carries `aria-live="polite"`. Entering `working` announces that
 stitching started; entering `complete` or `failed` announces the
 outcome heading. Stage-by-stage checklist changes are not announced, because a
@@ -325,8 +333,10 @@ rejection, an `IMAGE_TOO_LARGE` rejection, and an unrecognised code.
   boolean can disagree with the current state;
 - `frontend/src/api.ts` keeps its current shape. Mock mode is a branch inside
   it, not a parallel client;
-- thresholds, retry bounds, file limits, and the remedy table are named
-  constants in their own modules, not literals inside JSX.
+- interface slider ranges and retry bounds are named constants. Server-owned
+  file limits and defaults come from `ClientConfig`, with one generated-snapshot
+  `FALLBACK_CONFIG`; remedy text receives the same config instead of embedding
+  policy numbers in JSX.
 
 ## 12. Acceptance
 

@@ -1,5 +1,17 @@
 export type Detector = "SIFT" | "ORB";
 
+export interface ClientConfig {
+  max_upload_files: number;
+  max_upload_mb: number;
+  max_total_upload_mb: number;
+  default_detector: Detector;
+  ratio_threshold: number;
+  ransac_reproj_threshold: number;
+  min_inliers: number;
+  min_inlier_ratio: number;
+  max_input_long_edge_by_count: Record<string, number>;
+}
+
 export interface StitchOptions {
   detector: Detector;
   ratioThreshold: number;

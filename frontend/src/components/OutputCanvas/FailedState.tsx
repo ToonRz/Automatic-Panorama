@@ -1,18 +1,20 @@
 import { headingForError, remedyForCode } from "../../constants/remedies";
-import type { ApiErrorDetail } from "../../types";
+import { FALLBACK_CONFIG } from "../../constants/config";
+import type { ApiErrorDetail, ClientConfig } from "../../types";
 
 export interface FailedStateProps {
   status: number;
   detail: ApiErrorDetail;
+  config?: ClientConfig;
 }
 
 /**
  * docs/ui-spec.md section 7: heading, HTTP status + code in mono, the
  * backend message, then context chips (omitted when context is absent).
  */
-export function FailedState({ status, detail }: FailedStateProps) {
+export function FailedState({ status, detail, config = FALLBACK_CONFIG }: FailedStateProps) {
   const heading = headingForError(detail);
-  const remedies = remedyForCode(detail.code);
+  const remedies = remedyForCode(detail, config);
   const context = detail.context;
 
   return (

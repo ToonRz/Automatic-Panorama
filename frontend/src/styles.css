@@ -320,12 +320,32 @@ button {
   color: var(--muted);
   font-variant-numeric: tabular-nums;
 }
+.file.invalid {
+  color: var(--coral);
+}
+.file-error {
+  grid-column: 3 / -1;
+  color: var(--coral);
+  font-size: 0.72rem;
+}
 .files-total {
   padding: 10px 0 8px;
   text-align: right;
   font-family: var(--mono);
   font-size: 0.68rem;
   color: var(--muted);
+}
+.files-total.invalid,
+.selection-error {
+  color: var(--coral);
+}
+.files-total span {
+  display: block;
+  margin-top: 5px;
+}
+.selection-error {
+  margin: 12px 0 0;
+  font-size: 0.76rem;
 }
 
 .rule {

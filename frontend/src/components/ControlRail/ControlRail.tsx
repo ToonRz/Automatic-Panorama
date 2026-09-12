@@ -1,6 +1,5 @@
 import type { ScreenState } from "../../hooks/useStitchRun";
-import { MAX_FILES } from "../../constants/thresholds";
-import type { Detector } from "../../types";
+import type { ClientConfig, Detector } from "../../types";
 import { Dropzone } from "./Dropzone";
 import { FileList } from "./FileList";
 import { PipelineSettings } from "./PipelineSettings";
@@ -8,6 +7,10 @@ import { PipelineSettings } from "./PipelineSettings";
 export interface ControlRailProps {
   state: ScreenState;
   files: File[];
+  config: ClientConfig;
+  fileErrors: Array<string | null>;
+  totalError: string | null;
+  selectionError: string | null;
   onFilesSelected: (files: File[]) => void;
   detector: Detector;
   onDetectorChange: (detector: Detector) => void;
@@ -16,6 +19,7 @@ export interface ControlRailProps {
   ransacThreshold: number;
   onRansacChange: (value: number) => void;
   onSubmit: (overrides?: { detector?: Detector }) => void;
+  hasPreflightErrors: boolean;
 }
 
 interface PrimaryButtonSpec {
@@ -25,7 +29,14 @@ interface PrimaryButtonSpec {
   detectorOverride?: Detector;
 }
 
-function primaryButtonSpec(state: ScreenState, detector: Detector): PrimaryButtonSpec {
+function primaryButtonSpec(
+  state: ScreenState,
+  detector: Detector,
+  hasPreflightErrors: boolean,
+): PrimaryButtonSpec {
+  if (hasPreflightErrors) {
+    return { label: "Fix the marked frames", disabled: true, ghost: false };
+  }
   switch (state) {
     case "empty":
       return { label: "Add two frames to start", disabled: true, ghost: false };
@@ -45,6 +56,10 @@ function primaryButtonSpec(state: ScreenState, detector: Detector): PrimaryButto
 export function ControlRail({
   state,
   files,
+  config,
+  fileErrors,
+  totalError,
+  selectionError,
   onFilesSelected,
   detector,
   onDetectorChange,
@@ -53,8 +68,9 @@ export function ControlRail({
   ransacThreshold,
   onRansacChange,
   onSubmit,
+  hasPreflightErrors,
 }: ControlRailProps) {
-  const primary = primaryButtonSpec(state, detector);
+  const primary = primaryButtonSpec(state, detector, hasPreflightErrors);
   const showDropzone = state === "empty" || state === "ready" || state === "failed";
   const settingsDisabled = state === "working";
 
@@ -72,12 +88,13 @@ export function ControlRail({
           <h2>Source frames</h2>
         </div>
         <span className="counter">
-          {files.length} / {MAX_FILES}
+          {files.length} / {config.max_upload_files}
         </span>
       </div>
 
-      {showDropzone && <Dropzone onFilesSelected={onFilesSelected} />}
-      <FileList files={files} />
+      {showDropzone && <Dropzone onFilesSelected={onFilesSelected} config={config} />}
+      {selectionError && <p className="selection-error" role="alert">{selectionError}</p>}
+      <FileList files={files} fileErrors={fileErrors} totalError={totalError} />
 
       <div className="rule" />
       <div className="panel-head compact">

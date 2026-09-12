@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { setMockScenario, submitStitch } from "./api";
+import { fetchClientConfig, setMockScenario, submitStitch } from "./api";
+import { FALLBACK_CONFIG } from "./constants/config";
 import {
   imageTooLargeError,
   insufficientInliersError,
@@ -52,5 +53,14 @@ describe("submitStitch in mock mode", () => {
       status: unrecognizedCodeError.status,
       detail: unrecognizedCodeError.detail,
     });
+  });
+});
+
+describe("fetchClientConfig", () => {
+  it("returns fallback policy without a network call in mock mode", async () => {
+    vi.stubEnv("VITE_MOCK_API", "true");
+    const fetchSpy = vi.spyOn(globalThis, "fetch");
+    await expect(fetchClientConfig()).resolves.toEqual(FALLBACK_CONFIG);
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 });

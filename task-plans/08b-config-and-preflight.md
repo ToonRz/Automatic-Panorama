@@ -30,16 +30,16 @@ blobs into the same post-preparation check.
 
 ## Acceptance
 
-- [ ] config is requested once after the pill first reads `online`, and the
+- [x] config is requested once after the pill first reads `online`, and the
       `config.json` snapshot drives the tests;
-- [ ] with the config request failing, the page works on `FALLBACK_CONFIG`;
-- [ ] a config with `max_upload_files: 5` changes the counter, rejects a
+- [x] with the config request failing, the page works on `FALLBACK_CONFIG`;
+- [x] a config with `max_upload_files: 5` changes the counter, rejects a
       six-file selection with the section 5.1 message, and changes the
       `TOO_MANY_IMAGES` remedy;
-- [ ] a config arriving after the user moved a slider does not reset it;
-- [ ] a non-image file and a file over `CLIENT_MAX_ORIGINAL_MB` are marked
+- [x] a config arriving after the user moved a slider does not reset it;
+- [x] a non-image file and a file over `CLIENT_MAX_ORIGINAL_MB` are marked
       invalid inline, and the button reads "Fix the marked frames";
-- [ ] no `fetch` to `/api/v1/stitch` happens while any row is invalid;
-- [ ] pre-flight problems never put the output panel into `failed`;
-- [ ] screenshots of an invalid row, the over-count message, and the total line
+- [x] no `fetch` to `/api/v1/stitch` happens while any row is invalid;
+- [x] pre-flight problems never put the output panel into `failed`;
+- [x] screenshots of an invalid row, the over-count message, and the total line
       in its error treatment.

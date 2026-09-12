@@ -1,11 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import type { ApiErrorDetail } from "../types";
+import { FALLBACK_CONFIG } from "./config";
 import { GENERIC_REMEDY, headingForError, remedyForCode } from "./remedies";
 
 describe("remedyForCode", () => {
   it("returns the generic remedy for an unrecognised code", () => {
-    expect(remedyForCode("SOME_FUTURE_CODE")).toBe(GENERIC_REMEDY);
+    expect(remedyForCode({ code: "SOME_FUTURE_CODE", message: "x" })).toBe(GENERIC_REMEDY);
   });
 
   it("returns remedy text for every live and owed code in the section 7.1 table", () => {
@@ -29,10 +30,19 @@ describe("remedyForCode", () => {
       "CANVAS_TOO_LARGE",
     ];
     for (const code of codes) {
-      const remedy = remedyForCode(code);
+      const remedy = remedyForCode({ code, message: "x" });
       expect(remedy.length).toBeGreaterThan(0);
       expect(remedy).not.toBe(GENERIC_REMEDY);
     }
+  });
+
+  it("uses the server-configured frame limit", () => {
+    expect(
+      remedyForCode(
+        { code: "TOO_MANY_IMAGES", message: "x" },
+        { ...FALLBACK_CONFIG, max_upload_files: 5 },
+      ),
+    ).toEqual(["Remove frames until 5 or fewer remain."]);
   });
 });
 

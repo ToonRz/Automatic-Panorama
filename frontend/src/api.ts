@@ -1,5 +1,6 @@
 import { HEALTH_CHECK_TIMEOUT_MS } from "./constants/availability";
-import type { ApiErrorDetail, StitchOptions, StitchResponse } from "./types";
+import { FALLBACK_CONFIG } from "./constants/config";
+import type { ApiErrorDetail, ClientConfig, StitchOptions, StitchResponse } from "./types";
 import type { MockScenario } from "./fixtures";
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000").replace(
@@ -70,6 +71,34 @@ export async function checkHealth(): Promise<void> {
   } finally {
     clearTimeout(timeout);
   }
+}
+
+export async function fetchClientConfig(): Promise<ClientConfig> {
+  if (isMockApiEnabled()) return FALLBACK_CONFIG;
+  const response = await fetch(`${API_BASE_URL}/api/v1/config`);
+  if (!response.ok) {
+    throw new ApiError(response.status, await parseError(response));
+  }
+  const payload: unknown = await response.json();
+  if (!isClientConfig(payload)) throw new Error("Invalid client config response");
+  return payload;
+}
+
+function isClientConfig(value: unknown): value is ClientConfig {
+  if (!value || typeof value !== "object") return false;
+  const config = value as Record<string, unknown>;
+  return (
+    typeof config.max_upload_files === "number" &&
+    typeof config.max_upload_mb === "number" &&
+    typeof config.max_total_upload_mb === "number" &&
+    (config.default_detector === "SIFT" || config.default_detector === "ORB") &&
+    typeof config.ratio_threshold === "number" &&
+    typeof config.ransac_reproj_threshold === "number" &&
+    typeof config.min_inliers === "number" &&
+    typeof config.min_inlier_ratio === "number" &&
+    !!config.max_input_long_edge_by_count &&
+    typeof config.max_input_long_edge_by_count === "object"
+  );
 }
 
 export async function submitStitch(

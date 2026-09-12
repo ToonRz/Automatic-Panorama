@@ -1,4 +1,5 @@
-import type { ApiErrorDetail } from "../types";
+import { FALLBACK_CONFIG } from "./config";
+import type { ApiErrorDetail, ClientConfig } from "../types";
 
 /**
  * Remedy text keyed by backend error code (docs/ui-spec.md section 7.1,
@@ -91,8 +92,14 @@ export const HEADING_BY_CODE: Readonly<Record<string, string>> = {
 
 export const GENERIC_HEADING = "Could not stitch these frames";
 
-export function remedyForCode(code: string): readonly string[] {
-  return REMEDY_BY_CODE[code] ?? GENERIC_REMEDY;
+export function remedyForCode(
+  detail: ApiErrorDetail,
+  config: ClientConfig = FALLBACK_CONFIG,
+): readonly string[] {
+  if (detail.code === "TOO_MANY_IMAGES") {
+    return [`Remove frames until ${config.max_upload_files} or fewer remain.`];
+  }
+  return REMEDY_BY_CODE[detail.code] ?? GENERIC_REMEDY;
 }
 
 /**

@@ -2,6 +2,7 @@ import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import * as api from "../api";
+import { FALLBACK_CONFIG } from "../constants/config";
 import type { StitchResponse } from "../types";
 import { useStitchRun } from "./useStitchRun";
 
@@ -116,6 +117,32 @@ describe("useStitchRun", () => {
     act(() => result.current.setFiles([fakeFile("c.jpg"), fakeFile("d.jpg")]));
     expect(result.current.state).toBe("ready");
     expect(result.current.error).toBeNull();
+  });
+
+  it("does not reset a slider the user touched when server config arrives", () => {
+    const { result, rerender } = renderHook(
+      ({ config }) => useStitchRun(config),
+      { initialProps: { config: FALLBACK_CONFIG } },
+    );
+    act(() => result.current.setRatioThreshold(0.82));
+    rerender({ config: { ...FALLBACK_CONFIG, ratio_threshold: 0.7 } });
+    expect(result.current.ratioThreshold).toBe(0.82);
+  });
+
+  it("keeps pre-flight errors in ready and never submits them", () => {
+    const submit = vi.spyOn(api, "submitStitch");
+    const { result } = renderHook(() => useStitchRun());
+    act(() =>
+      result.current.setFiles([
+        fakeFile("a.jpg"),
+        new File(["notes"], "notes.txt", { type: "text/plain" }),
+      ]),
+    );
+    expect(result.current.state).toBe("ready");
+    expect(result.current.hasPreflightErrors).toBe(true);
+    act(() => result.current.submit());
+    expect(submit).not.toHaveBeenCalled();
+    expect(result.current.state).toBe("ready");
   });
 });
 

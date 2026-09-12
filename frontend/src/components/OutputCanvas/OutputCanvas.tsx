@@ -1,5 +1,6 @@
 import type { ScreenState } from "../../hooks/useStitchRun";
-import type { ApiErrorDetail, StitchResponse } from "../../types";
+import { FALLBACK_CONFIG } from "../../constants/config";
+import type { ApiErrorDetail, ClientConfig, StitchResponse } from "../../types";
 import { EmptyState } from "./EmptyState";
 import { FailedState } from "./FailedState";
 import { ResultPlate } from "./ResultPlate";
@@ -11,6 +12,7 @@ export interface OutputCanvasProps {
   error: { status: number; detail: ApiErrorDetail } | null;
   result: StitchResponse | null;
   isStale: boolean;
+  config?: ClientConfig;
 }
 
 const TAG_BY_STATE: Partial<Record<ScreenState, { label: string; className: string }>> = {
@@ -27,7 +29,7 @@ const TITLE_BY_STATE: Partial<Record<ScreenState, string>> = {
 /**
  * docs/ui-spec.md section 4: dispatches on the single state machine value.
  */
-export function OutputCanvas({ state, isColdStart, error, result, isStale }: OutputCanvasProps) {
+export function OutputCanvas({ state, isColdStart, error, result, isStale, config = FALLBACK_CONFIG }: OutputCanvasProps) {
   const tag = TAG_BY_STATE[state];
 
   return (
@@ -45,7 +47,7 @@ export function OutputCanvas({ state, isColdStart, error, result, isStale }: Out
 
       {(state === "empty" || state === "ready") && <EmptyState />}
       {state === "working" && <WorkingState isColdStart={isColdStart} />}
-      {state === "failed" && error && <FailedState status={error.status} detail={error.detail} />}
+      {state === "failed" && error && <FailedState status={error.status} detail={error.detail} config={config} />}
       {state === "complete" && result && <ResultPlate result={result} />}
     </section>
   );

@@ -3,9 +3,15 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
 import { ControlRail } from "./ControlRail";
+import { FALLBACK_CONFIG } from "../../constants/config";
 
 const baseProps = {
   files: [],
+  config: FALLBACK_CONFIG,
+  fileErrors: [],
+  totalError: null,
+  selectionError: null,
+  hasPreflightErrors: false,
   onFilesSelected: vi.fn(),
   detector: "SIFT" as const,
   onDetectorChange: vi.fn(),
@@ -59,5 +65,32 @@ describe("ControlRail primary button", () => {
     expect(screen.queryByLabelText(/drop overlapping images/i)).not.toBeInTheDocument();
     rerender(<ControlRail {...baseProps} state="ready" />);
     expect(screen.getByText(/drop overlapping images/i)).toBeInTheDocument();
+  });
+
+  it("shows server count policy and the over-count selection message", () => {
+    render(
+      <ControlRail
+        {...baseProps}
+        state="ready"
+        config={{ ...FALLBACK_CONFIG, max_upload_files: 5 }}
+        selectionError="Choose up to 5 frames. You chose 6."
+      />,
+    );
+    expect(screen.getByText("0 / 5")).toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent("Choose up to 5 frames. You chose 6.");
+  });
+
+  it("disables submission while a row is invalid", () => {
+    render(
+      <ControlRail
+        {...baseProps}
+        state="ready"
+        files={[new File(["x"], "notes.txt", { type: "text/plain" })]}
+        fileErrors={["notes.txt can't be read in this browser."]}
+        hasPreflightErrors
+      />,
+    );
+    expect(screen.getByText(/can't be read in this browser/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /fix the marked frames/i })).toBeDisabled();
   });
 });

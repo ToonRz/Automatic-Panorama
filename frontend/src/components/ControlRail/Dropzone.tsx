@@ -1,15 +1,17 @@
 import { useState } from "react";
 
-import { MAX_FILE_BYTES, MAX_FILES, MIN_FILES } from "../../constants/thresholds";
+import { MIN_FILES } from "../../constants/thresholds";
+import type { ClientConfig } from "../../types";
 import { formatBytes } from "../../utils/formatBytes";
 
 export interface DropzoneProps {
   onFilesSelected: (files: File[]) => void;
+  config: ClientConfig;
 }
 
 const ACCEPTED_TYPES = "image/jpeg,image/png,image/webp,image/bmp,image/tiff";
 
-export function Dropzone({ onFilesSelected }: DropzoneProps) {
+export function Dropzone({ onFilesSelected, config }: DropzoneProps) {
   const [dragActive, setDragActive] = useState(false);
 
   return (
@@ -34,7 +36,7 @@ export function Dropzone({ onFilesSelected }: DropzoneProps) {
       <span className="hint">
         JPG · PNG · WEBP · BMP · TIFF
         <br />
-        {MIN_FILES}–{MAX_FILES} frames, {formatBytes(MAX_FILE_BYTES)} each
+        {MIN_FILES}–{config.max_upload_files} frames, {config.max_upload_mb} MB each
       </span>
       <input
         id="image-upload"

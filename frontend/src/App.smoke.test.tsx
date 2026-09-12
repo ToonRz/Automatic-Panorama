@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("./api", () => ({
   checkHealth: vi.fn().mockResolvedValue(undefined),
+  fetchClientConfig: vi.fn().mockRejectedValue(new Error("use fallback")),
   submitStitch: vi.fn(),
   ApiError: class ApiError extends Error {},
 }));

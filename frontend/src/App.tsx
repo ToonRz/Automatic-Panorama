@@ -7,6 +7,7 @@ import { StatusPill } from "./components/StatusPill";
 import type { DebugStateKey } from "./dev/debugStates";
 import { StateSwitcher } from "./dev/StateSwitcher";
 import { useBackendAvailability } from "./hooks/useBackendAvailability";
+import { useClientConfig } from "./hooks/useClientConfig";
 import { useStitchRun } from "./hooks/useStitchRun";
 
 export default function App() {
@@ -17,7 +18,8 @@ export default function App() {
   // toggle it per-render with vi.stubEnv.
   const mockApiEnabled = import.meta.env.VITE_MOCK_API === "true";
   const backendStatus = useBackendAvailability();
-  const run = useStitchRun();
+  const { config } = useClientConfig(backendStatus);
+  const run = useStitchRun(config);
   const [debugState, setDebugState] = useState<DebugStateKey | null>(null);
 
   function handleDebugSelect(key: DebugStateKey) {
@@ -41,6 +43,11 @@ export default function App() {
         <ControlRail
           state={run.state}
           files={run.files}
+          config={config}
+          fileErrors={run.fileErrors}
+          totalError={run.totalError}
+          selectionError={run.selectionError}
+          hasPreflightErrors={run.hasPreflightErrors}
           onFilesSelected={run.setFiles}
           detector={run.detector}
           onDetectorChange={run.setDetector}
@@ -56,6 +63,7 @@ export default function App() {
           error={run.error}
           result={run.result}
           isStale={run.isStale}
+          config={config}
         />
       </div>
 
