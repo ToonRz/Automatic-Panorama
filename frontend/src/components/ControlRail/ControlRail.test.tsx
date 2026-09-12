@@ -7,6 +7,7 @@ import { FALLBACK_CONFIG } from "../../constants/config";
 
 const baseProps = {
   files: [],
+  preparedImages: [],
   config: FALLBACK_CONFIG,
   fileErrors: [],
   totalError: null,
@@ -32,6 +33,13 @@ describe("ControlRail primary button", () => {
   it("enables 'Stitch panorama' when ready", () => {
     render(<ControlRail {...baseProps} state="ready" />);
     expect(screen.getByRole("button", { name: /stitch panorama/i })).toBeEnabled();
+  });
+
+  it("keeps the ready placeholder controls visible but disabled while preparing", () => {
+    render(<ControlRail {...baseProps} state="preparing" />);
+    expect(screen.getByText(/drop overlapping images/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /preparing images/i })).toBeDisabled();
+    expect(screen.getByRole("combobox", { name: /feature detector/i })).toBeDisabled();
   });
 
   it("disables with 'Stitching…' while working", () => {
@@ -92,5 +100,29 @@ describe("ControlRail primary button", () => {
     );
     expect(screen.getByText(/can't be read in this browser/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /fix the marked frames/i })).toBeDisabled();
+  });
+
+  it("shows original-to-upload dimensions and counts prepared bytes", () => {
+    const original = new File([new Uint8Array(20)], "IMG_4412.jpg", { type: "image/jpeg" });
+    const upload = new File([new Uint8Array(10 * 1024)], "IMG_4412.jpg", { type: "image/jpeg" });
+    render(
+      <ControlRail
+        {...baseProps}
+        state="ready"
+        files={[original]}
+        preparedImages={[{
+          original,
+          upload,
+          uploadName: upload.name,
+          originalWidth: 4032,
+          originalHeight: 3024,
+          uploadWidth: 1600,
+          uploadHeight: 1200,
+          resized: true,
+        }]}
+      />,
+    );
+    expect(screen.getByText("4032×3024 → 1600×1200")).toBeInTheDocument();
+    expect(screen.getByText(/upload total · 10 KB/i)).toBeInTheDocument();
   });
 });

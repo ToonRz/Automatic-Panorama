@@ -1,5 +1,6 @@
 import type { ScreenState } from "../../hooks/useStitchRun";
 import type { ClientConfig, Detector } from "../../types";
+import type { PreparedImage } from "../../utils/prepareImage";
 import { Dropzone } from "./Dropzone";
 import { FileList } from "./FileList";
 import { PipelineSettings } from "./PipelineSettings";
@@ -7,6 +8,7 @@ import { PipelineSettings } from "./PipelineSettings";
 export interface ControlRailProps {
   state: ScreenState;
   files: File[];
+  preparedImages: Array<PreparedImage | null>;
   config: ClientConfig;
   fileErrors: Array<string | null>;
   totalError: string | null;
@@ -42,6 +44,8 @@ function primaryButtonSpec(
       return { label: "Add two frames to start", disabled: true, ghost: false };
     case "ready":
       return { label: "Stitch panorama", disabled: false, ghost: false };
+    case "preparing":
+      return { label: "Preparing images…", disabled: true, ghost: false };
     case "working":
       return { label: "Stitching…", disabled: true, ghost: false };
     case "complete":
@@ -56,6 +60,7 @@ function primaryButtonSpec(
 export function ControlRail({
   state,
   files,
+  preparedImages,
   config,
   fileErrors,
   totalError,
@@ -71,8 +76,9 @@ export function ControlRail({
   hasPreflightErrors,
 }: ControlRailProps) {
   const primary = primaryButtonSpec(state, detector, hasPreflightErrors);
-  const showDropzone = state === "empty" || state === "ready" || state === "failed";
-  const settingsDisabled = state === "working";
+  const showDropzone =
+    state === "empty" || state === "preparing" || state === "ready" || state === "failed";
+  const settingsDisabled = state === "working" || state === "preparing";
 
   return (
     <form
@@ -94,7 +100,12 @@ export function ControlRail({
 
       {showDropzone && <Dropzone onFilesSelected={onFilesSelected} config={config} />}
       {selectionError && <p className="selection-error" role="alert">{selectionError}</p>}
-      <FileList files={files} fileErrors={fileErrors} totalError={totalError} />
+      <FileList
+        files={files}
+        preparedImages={preparedImages}
+        fileErrors={fileErrors}
+        totalError={totalError}
+      />
 
       <div className="rule" />
       <div className="panel-head compact">

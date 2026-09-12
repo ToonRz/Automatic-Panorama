@@ -3,15 +3,27 @@
 import cv2
 import numpy as np
 import pytest
+from fastapi.testclient import TestClient
 
+from app.core.config import Settings
 from app.core.errors import StitchPipelineError
+from app.main import app
 from app.services import stitcher
 from app.services.stitcher import decode_and_downscale, input_long_edge_budget
+from app.tests.fixtures import overlapping_pair
+
+client = TestClient(app)
 
 
 def _png_bytes(width: int, height: int) -> bytes:
     image = np.random.default_rng(0).integers(0, 255, size=(height, width, 3), dtype=np.uint8)
     ok, buffer = cv2.imencode(".png", image)
+    assert ok
+    return buffer.tobytes()
+
+
+def _jpeg_bytes(image: np.ndarray) -> bytes:
+    ok, buffer = cv2.imencode(".jpg", image, [cv2.IMWRITE_JPEG_QUALITY, 85])
     assert ok
     return buffer.tobytes()
 
@@ -26,6 +38,28 @@ _EXPECTED_BUDGET_BY_COUNT = {
     7: 1156,
     8: 1085,
 }
+
+
+def test_default_pixel_ceiling_accepts_50_megapixels() -> None:
+    assert Settings(_env_file=None).max_image_pixels == 50_000_000  # type: ignore[call-arg]
+
+
+def test_route_accepts_synthetic_4032_by_3024_uploads() -> None:
+    pair = overlapping_pair(seed=13)
+    frames = [
+        cv2.resize(frame, (4032, 3024), interpolation=cv2.INTER_LINEAR)
+        for frame in (pair.frame_a, pair.frame_b)
+    ]
+
+    response = client.post(
+        "/api/v1/stitch",
+        files=[
+            ("files", (f"frame-{index}.jpg", _jpeg_bytes(frame), "image/jpeg"))
+            for index, frame in enumerate(frames, start=1)
+        ],
+    )
+
+    assert response.status_code == 200, response.text
 
 
 @pytest.mark.parametrize(

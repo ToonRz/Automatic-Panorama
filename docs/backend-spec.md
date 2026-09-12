@@ -450,7 +450,7 @@ interface counts frames the way a person does.
 | `IMAGE_TOO_LARGE` | 413 | 2 | `image`, `size_mb`, `limit_mb` | File n exceeds the 12 MB limit. |
 | `INVALID_STITCH_SETTINGS` | 422 | 3 | `field`, `value` | Detector and geometric thresholds are invalid. |
 | `DECODE_FAILED` | 422 | 4 | `image` | File n could not be read as an image. |
-| `IMAGE_TOO_MANY_PIXELS` | 422 | 4 | `image`, `pixels`, `limit` | File n is above the 12 MP processing limit. |
+| `IMAGE_TOO_MANY_PIXELS` | 422 | 4 | `image`, `pixels`, `limit` | File n is above the 50 MP processing limit. |
 | `NO_DESCRIPTORS` | 422 | 5 | `image`, `keypoints`, `detector` | Image n has too little texture for this detector. |
 | `INSUFFICIENT_MATCHES` | 422 | 6 | `pair`, `pair_index`, `matches`, `required` | Images a and b share too few descriptor matches. |
 | `INSUFFICIENT_INLIERS` | 422 | 7 | `pair`, `pair_index`, `inliers`, `required`, `inlier_ratio` | Images a and b do not have enough geometric agreement. |
@@ -479,7 +479,7 @@ process. A magic number anywhere else is a review comment.
 | `max_upload_files` | 8 | 2 - 12 | request duration on a free instance |
 | `max_upload_mb` | 12 | 1 - 50 | per-file memory before decode |
 | `max_total_upload_mb` | 48 | 4 - 200 | total request memory before decode |
-| `max_image_pixels` | 12 MP | 0.1 - 50 MP | decode-bomb ceiling |
+| `max_image_pixels` | 50 MP | 0.1 - 50 MP | decode-bomb ceiling for original clients, before the normal input downscale |
 | `max_output_pixels` | 8 MP | 0.1 - 40 MP | base64 payload and runaway canvases |
 | `canvas_budget_fraction` | 0.75 | 0.25 - 1.0 | headroom between the input budget and rejection |
 | `input_long_edge_cap` | 1600 | 480 - 4096 | upper bound of the per-request budget |

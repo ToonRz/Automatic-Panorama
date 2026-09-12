@@ -22,6 +22,7 @@ describe("user-facing copy guard", () => {
     for (const label of [
       "Empty",
       "Frames loaded",
+      "Preparing",
       "Stitching",
       "Stitching (cold start)",
       "Complete",

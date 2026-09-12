@@ -8,6 +8,7 @@
 export type DebugStateKey =
   | "empty"
   | "ready"
+  | "preparing"
   | "working"
   | "working-cold-start"
   | "complete"
@@ -21,6 +22,7 @@ export interface DebugStateEntry {
 export const DEBUG_STATES: readonly DebugStateEntry[] = [
   { key: "empty", label: "Empty" },
   { key: "ready", label: "Frames loaded" },
+  { key: "preparing", label: "Preparing" },
   { key: "working", label: "Stitching" },
   { key: "working-cold-start", label: "Stitching (cold start)" },
   { key: "complete", label: "Complete" },

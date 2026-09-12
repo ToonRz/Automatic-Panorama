@@ -16,13 +16,12 @@ describe("pre-flight validation", () => {
     );
   });
 
-  it("marks a non-image and an over-60 MB original invalid", () => {
+  it("rejects an over-60 MB original before attempting browser decode", () => {
     const result = validateSelection(
-      [file("notes.txt", 1, "text/plain"), file("huge.jpg", 60 * 1024 * 1024 + 1)],
+      [file("huge.jpg", 60 * 1024 * 1024 + 1)],
       FALLBACK_CONFIG,
     );
-    expect(result.fileErrors[0]).toMatch(/can't be read in this browser/i);
-    expect(result.fileErrors[1]).toBe("Too large to open in the browser.");
+    expect(result.fileErrors[0]).toBe("Too large to open in the browser.");
   });
 
   it("uses prepared byte sizes for per-file and total checks", () => {

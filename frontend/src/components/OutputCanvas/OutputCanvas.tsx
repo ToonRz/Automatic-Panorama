@@ -45,7 +45,8 @@ export function OutputCanvas({ state, isColdStart, error, result, isStale, confi
         </div>
       </div>
 
-      {(state === "empty" || state === "ready") && <EmptyState />}
+      {(state === "empty" || state === "preparing" || state === "ready") && <EmptyState />}
+      {state === "preparing" && <span className="sr-only">Preparing images…</span>}
       {state === "working" && <WorkingState isColdStart={isColdStart} />}
       {state === "failed" && error && <FailedState status={error.status} detail={error.detail} config={config} />}
       {state === "complete" && result && <ResultPlate result={result} />}

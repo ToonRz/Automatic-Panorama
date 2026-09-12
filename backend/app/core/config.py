@@ -27,7 +27,7 @@ class Settings(BaseSettings):
     max_upload_files: int = Field(default=8, ge=2, le=12)
     max_upload_mb: int = Field(default=12, ge=1, le=50)
     max_total_upload_mb: int = Field(default=48, ge=4, le=200)
-    max_image_pixels: int = Field(default=12_000_000, ge=100_000, le=50_000_000)
+    max_image_pixels: int = Field(default=50_000_000, ge=100_000, le=50_000_000)
     max_output_pixels: int = Field(default=8_000_000, ge=100_000, le=40_000_000)
     canvas_budget_fraction: float = Field(default=0.75, ge=0.25, le=1.0)
     input_long_edge_cap: int = Field(default=1_600, ge=480, le=4_096)

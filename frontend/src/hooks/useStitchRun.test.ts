@@ -4,10 +4,34 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import * as api from "../api";
 import { FALLBACK_CONFIG } from "../constants/config";
 import type { StitchResponse } from "../types";
+import type { PreparedImage } from "../utils/prepareImage";
 import { useStitchRun } from "./useStitchRun";
 
 function fakeFile(name = "a.jpg"): File {
   return new File([new Uint8Array(10)], name, { type: "image/jpeg" });
+}
+
+async function prepare(file: File): Promise<PreparedImage> {
+  return {
+    original: file,
+    upload: file,
+    uploadName: file.name,
+    originalWidth: 16,
+    originalHeight: 16,
+    uploadWidth: 16,
+    uploadHeight: 16,
+    resized: false,
+  };
+}
+
+async function selectFiles(
+  result: { current: ReturnType<typeof useStitchRun> },
+  files: File[],
+) {
+  act(() => result.current.setFiles(files));
+  if (files.length > 0) {
+    await waitFor(() => expect(result.current.state).not.toBe("preparing"));
+  }
 }
 
 describe("useStitchRun", () => {
@@ -15,14 +39,14 @@ describe("useStitchRun", () => {
     vi.restoreAllMocks();
   });
 
-  it("starts empty, becomes ready at two files, and empty again below that", () => {
-    const { result } = renderHook(() => useStitchRun());
+  it("starts empty, becomes ready at two files, and empty again below that", async () => {
+    const { result } = renderHook(() => useStitchRun(FALLBACK_CONFIG, prepare));
     expect(result.current.state).toBe("empty");
 
-    act(() => result.current.setFiles([fakeFile("a.jpg")]));
+    await selectFiles(result, [fakeFile("a.jpg")]);
     expect(result.current.state).toBe("empty");
 
-    act(() => result.current.setFiles([fakeFile("a.jpg"), fakeFile("b.jpg")]));
+    await selectFiles(result, [fakeFile("a.jpg"), fakeFile("b.jpg")]);
     expect(result.current.state).toBe("ready");
   });
 
@@ -34,8 +58,8 @@ describe("useStitchRun", () => {
       }),
     );
 
-    const { result } = renderHook(() => useStitchRun());
-    act(() => result.current.setFiles([fakeFile("a.jpg"), fakeFile("b.jpg")]));
+    const { result } = renderHook(() => useStitchRun(FALLBACK_CONFIG, prepare));
+    await selectFiles(result, [fakeFile("a.jpg"), fakeFile("b.jpg")]);
     act(() => result.current.submit());
     expect(result.current.state).toBe("working");
 
@@ -66,8 +90,8 @@ describe("useStitchRun", () => {
     vi.spyOn(api, "submitStitch").mockRejectedValue(
       new api.ApiError(422, { code: "INSUFFICIENT_INLIERS", message: "no agreement" }),
     );
-    const { result } = renderHook(() => useStitchRun());
-    act(() => result.current.setFiles([fakeFile("a.jpg"), fakeFile("b.jpg")]));
+    const { result } = renderHook(() => useStitchRun(FALLBACK_CONFIG, prepare));
+    await selectFiles(result, [fakeFile("a.jpg"), fakeFile("b.jpg")]);
     act(() => result.current.submit());
     await waitFor(() => expect(result.current.state).toBe("failed"));
     expect(result.current.error?.detail.code).toBe("INSUFFICIENT_INLIERS");
@@ -91,8 +115,8 @@ describe("useStitchRun", () => {
         stage_timings_ms: {},
       },
     });
-    const { result } = renderHook(() => useStitchRun());
-    act(() => result.current.setFiles([fakeFile("a.jpg"), fakeFile("b.jpg")]));
+    const { result } = renderHook(() => useStitchRun(FALLBACK_CONFIG, prepare));
+    await selectFiles(result, [fakeFile("a.jpg"), fakeFile("b.jpg")]);
     act(() => result.current.submit());
     await waitFor(() => expect(result.current.state).toBe("complete"));
     expect(result.current.isStale).toBe(false);
@@ -109,19 +133,19 @@ describe("useStitchRun", () => {
     vi.spyOn(api, "submitStitch").mockRejectedValue(
       new api.ApiError(422, { code: "INSUFFICIENT_INLIERS", message: "no agreement" }),
     );
-    const { result } = renderHook(() => useStitchRun());
-    act(() => result.current.setFiles([fakeFile("a.jpg"), fakeFile("b.jpg")]));
+    const { result } = renderHook(() => useStitchRun(FALLBACK_CONFIG, prepare));
+    await selectFiles(result, [fakeFile("a.jpg"), fakeFile("b.jpg")]);
     act(() => result.current.submit());
     await waitFor(() => expect(result.current.state).toBe("failed"));
 
-    act(() => result.current.setFiles([fakeFile("c.jpg"), fakeFile("d.jpg")]));
+    await selectFiles(result, [fakeFile("c.jpg"), fakeFile("d.jpg")]);
     expect(result.current.state).toBe("ready");
     expect(result.current.error).toBeNull();
   });
 
   it("does not reset a slider the user touched when server config arrives", () => {
     const { result, rerender } = renderHook(
-      ({ config }) => useStitchRun(config),
+      ({ config }) => useStitchRun(config, prepare),
       { initialProps: { config: FALLBACK_CONFIG } },
     );
     act(() => result.current.setRatioThreshold(0.82));
@@ -129,20 +153,50 @@ describe("useStitchRun", () => {
     expect(result.current.ratioThreshold).toBe(0.82);
   });
 
-  it("keeps pre-flight errors in ready and never submits them", () => {
+  it("keeps decode errors in ready and never submits them", async () => {
     const submit = vi.spyOn(api, "submitStitch");
-    const { result } = renderHook(() => useStitchRun());
-    act(() =>
-      result.current.setFiles([
-        fakeFile("a.jpg"),
-        new File(["notes"], "notes.txt", { type: "text/plain" }),
-      ]),
-    );
+    const rejectText = async (file: File) => {
+      if (file.type === "text/plain") throw new Error("decode failed");
+      return prepare(file);
+    };
+    const { result } = renderHook(() => useStitchRun(FALLBACK_CONFIG, rejectText));
+    await selectFiles(result, [
+      fakeFile("a.jpg"),
+      new File(["notes"], "notes.txt", { type: "text/plain" }),
+    ]);
     expect(result.current.state).toBe("ready");
     expect(result.current.hasPreflightErrors).toBe(true);
+    expect(result.current.fileErrors[1]).toBe(
+      "notes.txt can't be read in this browser. Export it as JPG and add it again.",
+    );
     act(() => result.current.submit());
     expect(submit).not.toHaveBeenCalled();
     expect(result.current.state).toBe("ready");
+  });
+
+  it("abandons an older preparation when a new selection finishes first", async () => {
+    let releaseOld!: () => void;
+    const delayed = vi.fn(async (file: File) => {
+      if (file.name.startsWith("old")) {
+        await new Promise<void>((resolve) => {
+          releaseOld = resolve;
+        });
+      }
+      return prepare(file);
+    });
+    const { result } = renderHook(() => useStitchRun(FALLBACK_CONFIG, delayed));
+
+    act(() => result.current.setFiles([fakeFile("old-a.jpg"), fakeFile("old-b.jpg")]));
+    expect(result.current.state).toBe("preparing");
+    await selectFiles(result, [fakeFile("new-a.jpg"), fakeFile("new-b.jpg")]);
+    expect(result.current.preparedImages.map((item) => item?.uploadName)).toEqual([
+      "new-a.jpg",
+      "new-b.jpg",
+    ]);
+
+    releaseOld();
+    await act(async () => Promise.resolve());
+    expect(result.current.files.map((file) => file.name)).toEqual(["new-a.jpg", "new-b.jpg"]);
   });
 });
 

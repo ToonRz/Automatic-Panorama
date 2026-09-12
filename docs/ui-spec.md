@@ -88,6 +88,7 @@ combination of booleans may produce a screen that is not one of these.
 | State | Entered when | Canvas shows | Primary action |
 | --- | --- | --- | --- |
 | `empty` | fewer than 2 files chosen | placeholder and the pipeline ribbon | disabled, "Add two frames to start" |
+| `preparing` | a valid selection is being decoded and sized | the `ready` placeholder | disabled, "Preparing images…" |
 | `ready` | 2-8 files chosen | placeholder and the pipeline ribbon | enabled, "Stitch panorama" |
 | `working` | request in flight | stage checklist, section 5 | disabled, "Stitching..." |
 | `complete` | HTTP 200 | panorama, overlay toggle, download | enabled, "Stitch again" |
@@ -100,9 +101,9 @@ Transitions out of a settled state:
   state stays `complete`. Silently leaving the image under new settings would
   claim a result the numbers no longer describe, and clearing it would destroy
   the user's output because a slider moved;
-- changing the file selection from any state clears the result and the error and
-  returns to `empty` or `ready`. The old panorama does not describe the new
-  frames;
+- changing the file selection from any state clears the result and the error,
+  abandons preparation already in flight, and enters `preparing` before returning
+  to `empty` or `ready`. The old panorama does not describe the new frames;
 - submitting from `complete` or `failed` clears the previous result
   before entering `working`.
 
@@ -110,14 +111,21 @@ Before a request, `useClientConfig` starts from `FALLBACK_CONFIG` and replaces
 it once `GET /api/v1/config` succeeds after the availability state becomes
 `online`. File count, per-file bytes, total bytes, and control defaults all
 read this policy. A selection above the count limit is rejected as a whole;
-invalid types and originals above 60 MB are marked inline. Prepared per-file
-and total byte failures also stay in `ready`, disable the action as
+originals above 60 MB are marked inline before decode. Each remaining frame is
+decoded sequentially with EXIF orientation applied. A frame over the count-based
+long-edge budget, or whose media type is not accepted by the backend, is drawn
+to a canvas and encoded as JPEG at quality 0.92; an accepted frame already in
+budget is uploaded byte-identical. Decode failures use the message defined in
+`docs/integration-spec.md` section 6.3. Rows keep the original filename and show
+the original and prepared dimensions; the upload total uses prepared bytes.
+Prepared per-file and total byte failures stay in `ready`, disable the action as
 "Fix the marked frames", and never become a failed run.
 
-The output panel carries `aria-live="polite"`. Entering `working` announces that
-stitching started; entering `complete` or `failed` announces the
-outcome heading. Stage-by-stage checklist changes are not announced, because a
-screen reader reciting six stage names during every run is noise.
+The output panel carries `aria-live="polite"`. Entering `preparing` announces
+"Preparing images…" once. Entering `working` announces that stitching started;
+entering `complete` or `failed` announces the outcome heading. Stage-by-stage
+checklist changes are not announced, because reciting seven stage names during
+every run is noise.
 
 ## 5. The working state
 
@@ -133,7 +141,7 @@ sequence would put invented numbers on screen. The real timings arrive in
 `stage_timings_ms` and are rendered in the diagnostics chart once the response
 lands.
 
-The checklist therefore shows all six stages in a single pending treatment with
+The checklist therefore shows all seven stages in a single pending treatment with
 an indeterminate motion cue. The mock's per-stage ticks and millisecond values
 are a picture of the finished run, not a live feed.
 
@@ -344,7 +352,7 @@ Per state, with the fixture that drives it:
 
 | # | Requirement |
 | --- | --- |
-| A1 | each of the six states renders its own screen, and no two are visible at once |
+| A1 | each of the seven states renders its own screen, and no two are visible at once |
 | A2 | the working state shows no numeric timing |
 | A3 | every value in the section 6.1 table renders from its named source |
 | A4 | the inlier ratio and reprojection cards show the worst pair, not an average |

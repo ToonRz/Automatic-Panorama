@@ -6,7 +6,7 @@ export interface WorkingStateProps {
 
 /**
  * docs/ui-spec.md section 5: no per-stage timing, percentage, or elapsed
- * counter while a request is in flight. All six stages render in a single
+ * counter while a request is in flight. All seven stages render in a single
  * pending treatment with one indeterminate motion cue, not a ticked list.
  */
 export function WorkingState({ isColdStart }: WorkingStateProps) {

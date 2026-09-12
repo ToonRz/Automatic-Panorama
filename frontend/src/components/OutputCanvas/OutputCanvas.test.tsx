@@ -13,6 +13,20 @@ describe("OutputCanvas", () => {
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
+  it("shows the ready placeholder and announces preparing once", () => {
+    render(
+      <OutputCanvas
+        state="preparing"
+        isColdStart={false}
+        error={null}
+        result={null}
+        isStale={false}
+      />,
+    );
+    expect(screen.getByText(/the panorama lands here/i)).toBeInTheDocument();
+    expect(screen.getAllByText("Preparing images…")).toHaveLength(1);
+  });
+
   it("shows the seven-stage checklist and no numeric timing while working (A2)", () => {
     render(
       <OutputCanvas

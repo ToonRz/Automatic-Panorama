@@ -43,6 +43,7 @@ export default function App() {
         <ControlRail
           state={run.state}
           files={run.files}
+          preparedImages={run.preparedImages}
           config={config}
           fileErrors={run.fileErrors}
           totalError={run.totalError}

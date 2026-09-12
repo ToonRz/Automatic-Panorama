@@ -1,14 +1,16 @@
 import { useEffect, useMemo } from "react";
 
 import { formatBytes } from "../../utils/formatBytes";
+import type { PreparedImage } from "../../utils/prepareImage";
 
 export interface FileListProps {
   files: File[];
+  preparedImages: Array<PreparedImage | null>;
   fileErrors: Array<string | null>;
   totalError: string | null;
 }
 
-export function FileList({ files, fileErrors, totalError }: FileListProps) {
+export function FileList({ files, preparedImages, fileErrors, totalError }: FileListProps) {
   const previews = useMemo(
     () => files.map((file) => ({ file, url: URL.createObjectURL(file) })),
     [files],
@@ -21,7 +23,10 @@ export function FileList({ files, fileErrors, totalError }: FileListProps) {
 
   if (files.length === 0) return null;
 
-  const totalBytes = files.reduce((total, file) => total + file.size, 0);
+  const totalBytes = files.reduce(
+    (total, file, index) => total + (preparedImages[index]?.upload.size ?? file.size),
+    0,
+  );
 
   return (
     <>
@@ -37,7 +42,16 @@ export function FileList({ files, fileErrors, totalError }: FileListProps) {
             <img src={previews[index]?.url} alt="" aria-hidden="true" />
             <span className="n">{String(index + 1).padStart(2, "0")}</span>
             <span className="name">{file.name}</span>
-            <span className="size">{formatBytes(file.size)}</span>
+            <span className="size">
+              {formatBytes(preparedImages[index]?.upload.size ?? file.size)}
+            </span>
+            {preparedImages[index] && (
+              <span className="dimensions">
+                {preparedImages[index].originalWidth}×{preparedImages[index].originalHeight}
+                {preparedImages[index].resized &&
+                  ` → ${preparedImages[index].uploadWidth}×${preparedImages[index].uploadHeight}`}
+              </span>
+            )}
             {fileErrors[index] && <span className="file-error">{fileErrors[index]}</span>}
           </div>
         ))}

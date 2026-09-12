@@ -1,6 +1,6 @@
 import type { ClientConfig } from "../types";
+import { CLIENT_MAX_ORIGINAL_MB } from "../constants/preparation";
 
-export const CLIENT_MAX_ORIGINAL_MB = 60;
 const BYTES_PER_MB = 1024 * 1024;
 
 export interface PreflightResult {
@@ -21,9 +21,6 @@ export function validateSelection(files: File[], config: ClientConfig): Prefligh
     fileErrors: files.map((file) => {
       if (file.size > CLIENT_MAX_ORIGINAL_MB * BYTES_PER_MB) {
         return "Too large to open in the browser.";
-      }
-      if (!file.type.startsWith("image/")) {
-        return `${file.name} can't be read in this browser. Export it as JPG and add it again.`;
       }
       return null;
     }),

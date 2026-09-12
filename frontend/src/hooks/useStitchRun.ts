@@ -7,8 +7,9 @@ import { MIN_FILES } from "../constants/thresholds";
 import type { DebugStateKey } from "../dev/debugStates";
 import type { ApiErrorDetail, ClientConfig, Detector, StitchResponse } from "../types";
 import { validatePreparedFiles, validateSelection } from "../utils/preflight";
+import { prepareImage, type PreparedImage } from "../utils/prepareImage";
 
-export type ScreenState = "empty" | "ready" | "working" | "complete" | "failed";
+export type ScreenState = "empty" | "preparing" | "ready" | "working" | "complete" | "failed";
 
 interface RunSettings {
   detector: Detector;
@@ -23,23 +24,47 @@ interface FailedDetail {
 
 type Phase =
   | { kind: "idle" }
+  | { kind: "preparing" }
   | { kind: "working"; startedAt: number }
   | { kind: "complete"; result: StitchResponse; settings: RunSettings }
   | { kind: "failed"; error: FailedDetail };
 
-function makeFakeFile(name: string, sizeBytes: number, type: string): File {
-  return new File([new Uint8Array(sizeBytes)], name, { type });
+// Tiny 16x16 solid-color PNGs, one per palette accent, standing in for a real
+// photograph the way docs/mockups/ui-mock.html uses drawn artwork rather than
+// a photo: synthetic and reusable (CLAUDE.md rule 7), never a stand-in for a
+// production upload. A JPEG-typed File still decodes fine as a PNG byte
+// stream; the browser sniffs content, not the `type` field.
+const FAKE_FRAME_PNGS = [
+  "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAFklEQVR42mPQ760jCTGMahjVMHw1AACgMDoQDL2v/QAAAABJRU5ErkJggg==",
+  "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAFklEQVR42mPIf3yeJMQwqmFUw/DVAABb7iEfemNqDwAAAABJRU5ErkJggg==",
+  "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAFklEQVR42mN4fzKbJMQwqmFUw/DVAABQKiMfwB5kKgAAAABJRU5ErkJggg==",
+];
+
+function decodeBase64(base64: string): Uint8Array {
+  const binary = atob(base64);
+  return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+}
+
+// PNG decoders stop at the IEND chunk, so trailing zero bytes are ignored by
+// the image pipeline while still giving `file.size` the realistic figure the
+// UI displays.
+function makeFakeFile(name: string, sizeBytes: number, type: string, variant: number): File {
+  const png = decodeBase64(FAKE_FRAME_PNGS[variant % FAKE_FRAME_PNGS.length]);
+  const bytes = new Uint8Array(Math.max(sizeBytes, png.length));
+  bytes.set(png);
+  return new File([bytes], name, { type });
 }
 
 function makeFakeFiles(count: number): File[] {
   return Array.from({ length: count }, (_, index) =>
-    makeFakeFile(`IMG_44${12 + index}.jpg`, 3_100_000 + index * 40_000, "image/jpeg"),
+    makeFakeFile(`IMG_44${12 + index}.jpg`, 3_100_000 + index * 40_000, "image/jpeg", index),
   );
 }
 
 export interface UseStitchRunResult {
   state: ScreenState;
   files: File[];
+  preparedImages: Array<PreparedImage | null>;
   setFiles: (files: File[]) => void;
   fileErrors: Array<string | null>;
   totalError: string | null;
@@ -62,12 +87,16 @@ export interface UseStitchRunResult {
 }
 
 /**
- * Single owner of the six screen states (docs/ui-spec.md section 4), the
+ * Single owner of the seven screen states (docs/ui-spec.md section 4), the
  * in-flight request, and the result. `state` is a pure function of `phase`
  * and `files.length`, so no other boolean can disagree with it.
  */
-export function useStitchRun(config: ClientConfig = FALLBACK_CONFIG): UseStitchRunResult {
+export function useStitchRun(
+  config: ClientConfig = FALLBACK_CONFIG,
+  prepare: typeof prepareImage = prepareImage,
+): UseStitchRunResult {
   const [files, setFilesInternal] = useState<File[]>([]);
+  const [preparedImages, setPreparedImages] = useState<Array<PreparedImage | null>>([]);
   const [fileErrors, setFileErrors] = useState<Array<string | null>>([]);
   const [totalError, setTotalError] = useState<string | null>(null);
   const [selectionError, setSelectionError] = useState<string | null>(null);
@@ -113,15 +142,48 @@ export function useStitchRun(config: ClientConfig = FALLBACK_CONFIG): UseStitchR
       setSelectionError(selection.selectionError);
       return;
     }
-    const prepared = validatePreparedFiles(nextFiles, config);
     requestIdRef.current += 1;
+    const requestId = requestIdRef.current;
     setFilesInternal(nextFiles);
-    setFileErrors(
-      selection.fileErrors.map((error, index) => error ?? prepared.fileErrors[index] ?? null),
-    );
-    setTotalError(prepared.totalError);
+    setPreparedImages([]);
+    setFileErrors(selection.fileErrors);
+    setTotalError(null);
     setSelectionError(null);
-    setPhase({ kind: "idle" });
+    if (selection.fileErrors.some(Boolean) || nextFiles.length === 0) {
+      setPhase({ kind: "idle" });
+      return;
+    }
+
+    setPhase({ kind: "preparing" });
+    const budget =
+      config.max_input_long_edge_by_count[String(nextFiles.length)] ??
+      Math.max(...Object.values(config.max_input_long_edge_by_count));
+    void (async () => {
+      const prepared: Array<PreparedImage | null> = [];
+      const decodeErrors: Array<string | null> = [];
+      for (const file of nextFiles) {
+        try {
+          prepared.push(await prepare(file, budget));
+          decodeErrors.push(null);
+        } catch {
+          prepared.push(null);
+          decodeErrors.push(
+            `${file.name} can't be read in this browser. Export it as JPG and add it again.`,
+          );
+        }
+      }
+      if (requestIdRef.current !== requestId) return;
+      const postflight = validatePreparedFiles(
+        prepared.map((item) => item?.upload ?? new Blob()),
+        config,
+      );
+      setPreparedImages(prepared);
+      setFileErrors(
+        decodeErrors.map((error, index) => error ?? postflight.fileErrors[index] ?? null),
+      );
+      setTotalError(postflight.totalError);
+      setPhase({ kind: "idle" });
+    })();
   }
 
   function setDetector(value: Detector) {
@@ -140,7 +202,7 @@ export function useStitchRun(config: ClientConfig = FALLBACK_CONFIG): UseStitchR
   }
 
   function submit(overrides?: Partial<RunSettings>) {
-    if (phase.kind === "working") return;
+    if (phase.kind === "working" || phase.kind === "preparing") return;
     if (
       files.length < MIN_FILES ||
       files.length > config.max_upload_files ||
@@ -160,7 +222,7 @@ export function useStitchRun(config: ClientConfig = FALLBACK_CONFIG): UseStitchR
     const requestId = ++requestIdRef.current;
     setPhase({ kind: "working", startedAt: Date.now() });
 
-    submitStitch(files, {
+    submitStitch(preparedImages.map((item) => item?.upload).filter((file): file is File => !!file), {
       detector: settings.detector,
       ratioThreshold: settings.ratioThreshold,
       ransacReprojThreshold: settings.ransacThreshold,
@@ -212,6 +274,7 @@ export function useStitchRun(config: ClientConfig = FALLBACK_CONFIG): UseStitchR
       case "empty":
         requestIdRef.current += 1;
         setFilesInternal([]);
+        setPreparedImages([]);
         setFileErrors([]);
         setTotalError(null);
         setSelectionError(null);
@@ -220,14 +283,25 @@ export function useStitchRun(config: ClientConfig = FALLBACK_CONFIG): UseStitchR
       case "ready":
         requestIdRef.current += 1;
         setFilesInternal(makeFakeFiles(3));
+        setPreparedImages([]);
         setFileErrors([]);
         setTotalError(null);
         setSelectionError(null);
         setPhase({ kind: "idle" });
         return;
+      case "preparing":
+        requestIdRef.current += 1;
+        setFilesInternal(makeFakeFiles(3));
+        setPreparedImages([]);
+        setFileErrors([]);
+        setTotalError(null);
+        setSelectionError(null);
+        setPhase({ kind: "preparing" });
+        return;
       case "working":
         requestIdRef.current += 1;
         setFilesInternal(makeFakeFiles(3));
+        setPreparedImages([]);
         setFileErrors([]);
         setTotalError(null);
         setSelectionError(null);
@@ -236,6 +310,7 @@ export function useStitchRun(config: ClientConfig = FALLBACK_CONFIG): UseStitchR
       case "working-cold-start":
         requestIdRef.current += 1;
         setFilesInternal(makeFakeFiles(3));
+        setPreparedImages([]);
         setFileErrors([]);
         setTotalError(null);
         setSelectionError(null);
@@ -244,6 +319,7 @@ export function useStitchRun(config: ClientConfig = FALLBACK_CONFIG): UseStitchR
       case "complete": {
         requestIdRef.current += 1;
         setFilesInternal(makeFakeFiles(3));
+        setPreparedImages([]);
         setFileErrors([]);
         setTotalError(null);
         setSelectionError(null);
@@ -260,6 +336,7 @@ export function useStitchRun(config: ClientConfig = FALLBACK_CONFIG): UseStitchR
       case "failed": {
         requestIdRef.current += 1;
         setFilesInternal(makeFakeFiles(3));
+        setPreparedImages([]);
         setFileErrors([]);
         setTotalError(null);
         setSelectionError(null);
@@ -293,6 +370,7 @@ export function useStitchRun(config: ClientConfig = FALLBACK_CONFIG): UseStitchR
   return {
     state,
     files,
+    preparedImages,
     setFiles,
     fileErrors,
     totalError,

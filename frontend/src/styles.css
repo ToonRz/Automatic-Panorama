@@ -328,6 +328,12 @@ button {
   color: var(--coral);
   font-size: 0.72rem;
 }
+.dimensions {
+  grid-column: 3 / -1;
+  color: var(--muted);
+  font-family: var(--mono);
+  font-size: 0.68rem;
+}
 .files-total {
   padding: 10px 0 8px;
   text-align: right;
@@ -338,6 +344,17 @@ button {
 .files-total.invalid,
 .selection-error {
   color: var(--coral);
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 .files-total span {
   display: block;
@@ -743,7 +760,7 @@ input[type="range"] {
 }
 .diag-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 1px;
   background: var(--line-soft);
   border: 1px solid var(--line-soft);

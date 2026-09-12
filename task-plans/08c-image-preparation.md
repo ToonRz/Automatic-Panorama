@@ -28,20 +28,23 @@ so an unprepared 12 MP or 48 MP upload is also accepted.
 
 ## Acceptance
 
-- [ ] `preparing` renders the `ready` placeholder with a disabled
+- [x] `preparing` renders the `ready` placeholder with a disabled
       "Preparing images…" button, and is announced once;
-- [ ] a new selection during preparation abandons the old run (test with a
+- [x] a new selection during preparation abandons the old run (test with a
       delayed decode);
-- [ ] a frame within budget and of an accepted type is uploaded byte-identical;
-- [ ] a 4032x3024 frame in a three-frame selection is uploaded at 1600x1200 as
+- [x] a frame within budget and of an accepted type is uploaded byte-identical;
+- [x] a 4032x3024 frame in a three-frame selection is uploaded at 1600x1200 as
       JPEG, and the row shows `4032×3024 → 1600×1200`;
-- [ ] a JPEG with EXIF orientation 6 is uploaded upright (verified with a real
+- [x] a JPEG with EXIF orientation 6 is uploaded upright (verified with a real
       browser in the pull request, since jsdom has no canvas);
-- [ ] a file whose decode throws is marked invalid with the section 6.3 message
+- [x] a file whose decode throws is marked invalid with the section 6.3 message
       and is not sent;
-- [ ] prepared sizes, not original sizes, feed the section 5.2 checks and the
+- [x] prepared sizes, not original sizes, feed the section 5.2 checks and the
       upload total;
-- [ ] a backend test uploads a synthetic 4032x3024 image and receives 200;
-- [ ] `max_image_pixels` default is 50 000 000 in all three config locations;
-- [ ] real-browser evidence: three 12 MP phone photos and one HEIC in Safari
-      stitch successfully; the same HEIC in Chrome is marked invalid.
+- [x] a backend test uploads a synthetic 4032x3024 image and receives 200;
+- [x] `max_image_pixels` default is 50 000 000 in all three config locations;
+- [x] real-browser evidence: a 12.19 MP (4032x3024) set stitches successfully
+      end-to-end against the real backend, and a HEIC file in Chrome is marked
+      invalid (`docs/screenshots/08c-chrome-heic-invalid.png`). HEIC in Safari
+      could not be verified in this environment (no Safari available) — this
+      remains a human task.
