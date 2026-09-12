@@ -1,6 +1,7 @@
 # Task 03 - API integration
 
-Superseded. This slice was too coarse to review and is now split.
+Status: complete. Superseded and split; all three constituent slices below are
+merged.
 
 - Request gates, settings, concurrency: `task-plans/07b-request-gates.md`
 - Decode, normalize, downscale: `task-plans/07c-decode-and-downscale.md`

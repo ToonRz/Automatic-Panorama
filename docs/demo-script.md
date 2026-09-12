@@ -25,6 +25,22 @@ improvise extra slides.
 6. State that uploaded images are processed in memory and not retained.
 7. Close with one concrete contribution from each member.
 
+## Test fixtures and the section 12.2 real-photo gap
+
+`docs/backend-spec.md` section 12.2 calls for one small set of real,
+downscaled photographs with a recorded licence, used for the end-to-end test
+and this demo. The build environment that implemented `task-plans/07a`
+through `07j` had no way to source and license real photography, so
+`backend/app/tests/fixtures.py::end_to_end_fixture` is a synthetic stand-in
+instead: a textured plane warped by a known homography, with an injected
+per-frame exposure gain so the blend stage has something real to compensate.
+This is a stated substitution, not a silent one -- it satisfies the
+acceptance table's numeric bars (section 12.3) but is not a photograph.
+
+Before recording, replace it with an actual overlapping photo set (three
+frames, hand-held pan, licensed for reuse or shot by a team member) and
+record its source and licence here.
+
 ## Rehearsal checklist
 
 - [ ] Timer starts before the first spoken word.

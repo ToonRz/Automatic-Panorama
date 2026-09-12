@@ -3,7 +3,7 @@
 The roadmap is organized as tracer-bullet slices: each phase leaves a runnable
 vertical path and produces evidence that can be merged independently.
 
-## Phase 0 - scaffold and contract (current)
+## Phase 0 - scaffold and contract (complete)
 
 Exit criteria:
 
@@ -13,12 +13,11 @@ Exit criteria:
   instructions exist;
 - Render/Vercel deployment configuration is documented but not yet claimed as
   live;
-- `/api/v1/stitch` returns an honest `501` until implementation lands;
-- the backend contract is specified in full in `docs/backend-spec.md`, and the
-  ten implementation slices are planned under
-  `task-plans/07-backend-pipeline.md`.
+- the backend contract is specified in full in `docs/backend-spec.md`, and all
+  ten implementation slices under `task-plans/07-backend-pipeline.md` are
+  merged; `/api/v1/stitch` runs the real pipeline and no longer returns `501`.
 
-## Phase 1 - pairwise CV baseline
+## Phase 1 - pairwise CV baseline (complete)
 
 Owner: CV core + QA. Slices `07a`, `07d`, `07e`, `07f`. Deliver a local
 function that takes two synthetic overlapping images and returns a Homography,
@@ -31,7 +30,7 @@ Exit criteria:
 - RANSAC rejects an intentionally bad correspondence set;
 - inlier match visualization is saved for review.
 
-## Phase 2 - multi-image composition
+## Phase 2 - multi-image composition (complete)
 
 Owners: CV core + backend. Slices `07b`, `07c`, `07g`, `07h`. Add ordering and
 reference selection, transform composition, the per-request input budget,
@@ -43,7 +42,7 @@ Exit criteria:
 - disconnected or weak images fail with diagnostics;
 - output size is bounded and no intermediate is silently persisted.
 
-## Phase 3 - blending and result contract
+## Phase 3 - blending and result contract (complete)
 
 Owners: CV core + backend + frontend. Slices `07i` and `07j`, plus the `04`
 family. Add masks, feather blending, crop and encode, and the JSON/image

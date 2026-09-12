@@ -17,7 +17,7 @@ In scope for v1:
 
 - upload of 2-8 frames with previews and a running byte total;
 - detector choice and two geometric thresholds;
-- five screen states plus a cold-start state and a scaffold state;
+- five screen states plus a cold-start state;
 - the panorama, a toggleable seam/inlier overlay, and a PNG download;
 - the diagnostics evidence block: summary cards, a per-pair table, and a stage
   timing chart;
@@ -91,8 +91,7 @@ combination of booleans may produce a screen that is not one of these.
 | `ready` | 2-8 files chosen | placeholder and the pipeline ribbon | enabled, "Stitch panorama" |
 | `working` | request in flight | stage checklist, section 5 | disabled, "Stitching..." |
 | `complete` | HTTP 200 | panorama, overlay toggle, download | enabled, "Stitch again" |
-| `failed` | HTTP 400, 413, 422, 500 | error block, section 7 | enabled, "Retry with ORB" when the detector was SIFT, otherwise "Try again" |
-| `scaffold` | HTTP 501 | scaffold notice, section 8 | enabled, "Stitch panorama" |
+| `failed` | HTTP 400, 413, 422, 500, 503, 504 | error block, section 7 | enabled, "Retry with ORB" when the detector was SIFT, otherwise "Try again" |
 
 Transitions out of a settled state:
 
@@ -104,11 +103,11 @@ Transitions out of a settled state:
 - changing the file selection from any state clears the result and the error and
   returns to `empty` or `ready`. The old panorama does not describe the new
   frames;
-- submitting from `complete`, `failed`, or `scaffold` clears the previous result
+- submitting from `complete` or `failed` clears the previous result
   before entering `working`.
 
 The output panel carries `aria-live="polite"`. Entering `working` announces that
-stitching started; entering `complete`, `failed`, or `scaffold` announces the
+stitching started; entering `complete` or `failed` announces the
 outcome heading. Stage-by-stage checklist changes are not announced, because a
 screen reader reciting six stage names during every run is noise.
 
@@ -260,16 +259,13 @@ and nothing for the geometric failures that actually need advice.
 An unrecognised code renders the backend `message` plus a single generic
 remedy. An empty remedy area is never acceptable.
 
-## 8. The scaffold state
+## 8. The scaffold state (removed)
 
-While `/api/v1/stitch` returns 501, a valid request produces
-`PIPELINE_NOT_IMPLEMENTED`. This is not the user's fault and not a rejection of
-their images, so it does not use the failed state's coral treatment. It gets its
-own amber state, states plainly that the stitching algorithm is not built yet,
-and links to `docs/roadmap.md`.
-
-This state is removed in the same pull request that replaces the 501 with a real
-response, not before.
+While `/api/v1/stitch` returned 501, a valid request produced
+`PIPELINE_NOT_IMPLEMENTED`, and the interface showed its own amber notice
+instead of the failed state's coral treatment. `task-plans/07j` wired the real
+pipeline into the route and removed the 501, so this state no longer exists in
+the code; this section is kept only as a record of what used to be here.
 
 ## 9. Backend availability
 
@@ -334,14 +330,13 @@ Per state, with the fixture that drives it:
 
 | # | Requirement |
 | --- | --- |
-| A1 | each of the seven states renders its own screen, and no two are visible at once |
+| A1 | each of the six states renders its own screen, and no two are visible at once |
 | A2 | the working state shows no numeric timing |
 | A3 | every value in the section 6.1 table renders from its named source |
 | A4 | the inlier ratio and reprojection cards show the worst pair, not an average |
 | A5 | the overlay toggle flips visibility and `aria-pressed`, and is absent when the overlay fields are missing |
 | A6 | download produces the clean image under the section 6.3 filename |
 | A7 | every code in the section 7.1 table renders its remedy, and an unknown code renders the generic one |
-| A8 | 501 renders the scaffold state, not the failed state |
 | A9 | the pill distinguishes waking from offline |
 | A10 | the layout stacks at 900px and the table scrolls inside its container |
 | A11 | keyboard reaches every control, and focus is visible on the dark ground |

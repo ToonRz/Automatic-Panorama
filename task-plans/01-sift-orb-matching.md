@@ -1,6 +1,7 @@
 # Task 01 - SIFT/ORB matching baseline
 
-Superseded. This slice was too coarse to review and is now split.
+Status: complete. Superseded and split; both constituent slices below are
+merged.
 
 - Feature extraction and gate 5: `task-plans/07d-feature-extraction.md`
 - Matching, ratio test, and gate 6: `task-plans/07e-matching-ratio-test.md`

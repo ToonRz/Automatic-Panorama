@@ -1,6 +1,7 @@
 # Task 02 - geometry, warp, and blend
 
-Superseded. This slice was too coarse to review and is now split.
+Status: complete. Superseded and split; all four constituent slices below are
+merged.
 
 - RANSAC and pair acceptance: `task-plans/07f-ransac-pair-acceptance.md`
 - Ordering and composition: `task-plans/07g-ordering-and-composition.md`
