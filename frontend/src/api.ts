@@ -1,3 +1,4 @@
+import { HEALTH_CHECK_TIMEOUT_MS } from "./constants/availability";
 import type { ApiErrorDetail, StitchOptions, StitchResponse } from "./types";
 import type { MockScenario } from "./fixtures";
 
@@ -59,9 +60,15 @@ export async function checkHealth(): Promise<void> {
     await delay(120);
     return;
   }
-  const response = await fetch(`${API_BASE_URL}/healthz`);
-  if (!response.ok) {
-    throw new ApiError(response.status, await parseError(response));
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), HEALTH_CHECK_TIMEOUT_MS);
+  try {
+    const response = await fetch(`${API_BASE_URL}/healthz`, { signal: controller.signal });
+    if (!response.ok) {
+      throw new ApiError(response.status, await parseError(response));
+    }
+  } finally {
+    clearTimeout(timeout);
   }
 }
 

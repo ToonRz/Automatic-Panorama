@@ -1,0 +1,247 @@
+import { useEffect, useRef, useState } from "react";
+
+import { ApiError, submitStitch } from "../api";
+import { COLD_START_THRESHOLD_MS } from "../constants/availability";
+import { MAX_FILES, MIN_FILES, RANSAC_DEFAULT, RATIO_DEFAULT } from "../constants/thresholds";
+import type { DebugStateKey } from "../dev/debugStates";
+import type { ApiErrorDetail, Detector, StitchResponse } from "../types";
+
+export type ScreenState = "empty" | "ready" | "working" | "complete" | "failed" | "scaffold";
+
+interface RunSettings {
+  detector: Detector;
+  ratioThreshold: number;
+  ransacThreshold: number;
+}
+
+interface FailedDetail {
+  status: number;
+  detail: ApiErrorDetail;
+}
+
+type Phase =
+  | { kind: "idle" }
+  | { kind: "working"; startedAt: number }
+  | { kind: "complete"; result: StitchResponse; settings: RunSettings }
+  | { kind: "failed"; error: FailedDetail }
+  | { kind: "scaffold" };
+
+function makeFakeFile(name: string, sizeBytes: number, type: string): File {
+  return new File([new Uint8Array(sizeBytes)], name, { type });
+}
+
+function makeFakeFiles(count: number): File[] {
+  return Array.from({ length: count }, (_, index) =>
+    makeFakeFile(`IMG_44${12 + index}.jpg`, 3_100_000 + index * 40_000, "image/jpeg"),
+  );
+}
+
+export interface UseStitchRunResult {
+  state: ScreenState;
+  files: File[];
+  setFiles: (files: File[]) => void;
+  detector: Detector;
+  setDetector: (detector: Detector) => void;
+  ratioThreshold: number;
+  setRatioThreshold: (value: number) => void;
+  ransacThreshold: number;
+  setRansacThreshold: (value: number) => void;
+  result: StitchResponse | null;
+  resultSettings: RunSettings | null;
+  isStale: boolean;
+  error: FailedDetail | null;
+  isColdStart: boolean;
+  submit: (overrides?: Partial<RunSettings>) => void;
+  /** Dev-only, mock-mode-only escape hatch for the state switcher. */
+  forceDebugState: (key: DebugStateKey) => void;
+}
+
+/**
+ * Single owner of the six screen states (docs/ui-spec.md section 4), the
+ * in-flight request, and the result. `state` is a pure function of `phase`
+ * and `files.length`, so no other boolean can disagree with it.
+ */
+export function useStitchRun(): UseStitchRunResult {
+  const [files, setFilesInternal] = useState<File[]>([]);
+  const [detector, setDetector] = useState<Detector>("SIFT");
+  const [ratioThreshold, setRatioThreshold] = useState(RATIO_DEFAULT);
+  const [ransacThreshold, setRansacThreshold] = useState(RANSAC_DEFAULT);
+  const [phase, setPhase] = useState<Phase>({ kind: "idle" });
+  const [isColdStart, setIsColdStart] = useState(false);
+  const requestIdRef = useRef(0);
+
+  useEffect(() => {
+    if (phase.kind !== "working") {
+      setIsColdStart(false);
+      return;
+    }
+    const elapsed = Date.now() - phase.startedAt;
+    const remaining = COLD_START_THRESHOLD_MS - elapsed;
+    if (remaining <= 0) {
+      setIsColdStart(true);
+      return;
+    }
+    setIsColdStart(false);
+    const timer = setTimeout(() => setIsColdStart(true), remaining);
+    return () => clearTimeout(timer);
+  }, [phase]);
+
+  function setFiles(nextFiles: File[]) {
+    requestIdRef.current += 1;
+    setFilesInternal(nextFiles);
+    setPhase({ kind: "idle" });
+  }
+
+  function submit(overrides?: Partial<RunSettings>) {
+    if (phase.kind === "working") return;
+    if (files.length < MIN_FILES || files.length > MAX_FILES) return;
+
+    const settings: RunSettings = {
+      detector: overrides?.detector ?? detector,
+      ratioThreshold: overrides?.ratioThreshold ?? ratioThreshold,
+      ransacThreshold: overrides?.ransacThreshold ?? ransacThreshold,
+    };
+    if (overrides?.detector) setDetector(overrides.detector);
+
+    const requestId = ++requestIdRef.current;
+    setPhase({ kind: "working", startedAt: Date.now() });
+
+    submitStitch(files, {
+      detector: settings.detector,
+      ratioThreshold: settings.ratioThreshold,
+      ransacReprojThreshold: settings.ransacThreshold,
+    }).then(
+      (result) => {
+        if (requestIdRef.current !== requestId) return;
+        setPhase({ kind: "complete", result, settings });
+      },
+      (caughtError: unknown) => {
+        if (requestIdRef.current !== requestId) return;
+        if (caughtError instanceof ApiError) {
+          if (caughtError.status === 501) {
+            setPhase({ kind: "scaffold" });
+            return;
+          }
+          setPhase({
+            kind: "failed",
+            error: {
+              status: caughtError.status,
+              detail: caughtError.detail ?? {
+                code: "UNKNOWN_ERROR",
+                message: caughtError.message,
+              },
+            },
+          });
+          return;
+        }
+        setPhase({
+          kind: "failed",
+          error: {
+            status: 0,
+            detail: {
+              code: "NETWORK_ERROR",
+              message:
+                caughtError instanceof Error
+                  ? caughtError.message
+                  : "The request failed. Check the backend URL and try again.",
+            },
+          },
+        });
+      },
+    );
+  }
+
+  function forceDebugState(key: DebugStateKey) {
+    // Checked as a literal (not the shared isMockApiEnabled() helper) so
+    // esbuild folds this whole branch away within this file's own transform
+    // when VITE_MOCK_API is unset, taking the dynamic fixture imports below
+    // with it (docs/ui-spec.md section 10 / A12).
+    if (import.meta.env.VITE_MOCK_API !== "true") return;
+
+    switch (key) {
+      case "empty":
+        requestIdRef.current += 1;
+        setFilesInternal([]);
+        setPhase({ kind: "idle" });
+        return;
+      case "ready":
+        requestIdRef.current += 1;
+        setFilesInternal(makeFakeFiles(3));
+        setPhase({ kind: "idle" });
+        return;
+      case "working":
+        requestIdRef.current += 1;
+        setFilesInternal(makeFakeFiles(3));
+        setPhase({ kind: "working", startedAt: Date.now() });
+        return;
+      case "working-cold-start":
+        requestIdRef.current += 1;
+        setFilesInternal(makeFakeFiles(3));
+        setPhase({ kind: "working", startedAt: Date.now() - COLD_START_THRESHOLD_MS - 1_000 });
+        return;
+      case "scaffold":
+        requestIdRef.current += 1;
+        setFilesInternal(makeFakeFiles(3));
+        setPhase({ kind: "scaffold" });
+        return;
+      case "complete": {
+        requestIdRef.current += 1;
+        setFilesInternal(makeFakeFiles(3));
+        const settings: RunSettings = { detector, ratioThreshold, ransacThreshold };
+        import("../fixtures").then((fixtures) => {
+          setPhase({
+            kind: "complete",
+            result: structuredClone(fixtures.successWithOverlayFixture),
+            settings,
+          });
+        });
+        return;
+      }
+      case "failed": {
+        requestIdRef.current += 1;
+        setFilesInternal(makeFakeFiles(3));
+        import("../fixtures").then((fixtures) => {
+          setPhase({
+            kind: "failed",
+            error: {
+              status: fixtures.insufficientInliersError.status,
+              detail: fixtures.insufficientInliersError.detail,
+            },
+          });
+        });
+        return;
+      }
+    }
+  }
+
+  const state: ScreenState =
+    phase.kind === "idle" ? (files.length < MIN_FILES ? "empty" : "ready") : phase.kind;
+
+  const result = phase.kind === "complete" ? phase.result : null;
+  const resultSettings = phase.kind === "complete" ? phase.settings : null;
+  const isStale =
+    phase.kind === "complete" &&
+    (phase.settings.detector !== detector ||
+      phase.settings.ratioThreshold !== ratioThreshold ||
+      phase.settings.ransacThreshold !== ransacThreshold);
+  const error = phase.kind === "failed" ? phase.error : null;
+
+  return {
+    state,
+    files,
+    setFiles,
+    detector,
+    setDetector,
+    ratioThreshold,
+    setRatioThreshold,
+    ransacThreshold,
+    setRansacThreshold,
+    result,
+    resultSettings,
+    isStale,
+    error,
+    isColdStart,
+    submit,
+    forceDebugState,
+  };
+}
