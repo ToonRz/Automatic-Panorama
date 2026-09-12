@@ -8,9 +8,17 @@ export interface FileListProps {
   preparedImages: Array<PreparedImage | null>;
   fileErrors: Array<string | null>;
   totalError: string | null;
+  /** Rows a server error names (docs/integration-spec.md section 7.1). */
+  highlightedIndices?: ReadonlySet<number>;
 }
 
-export function FileList({ files, preparedImages, fileErrors, totalError }: FileListProps) {
+export function FileList({
+  files,
+  preparedImages,
+  fileErrors,
+  totalError,
+  highlightedIndices = new Set(),
+}: FileListProps) {
   const previews = useMemo(
     () => files.map((file) => ({ file, url: URL.createObjectURL(file) })),
     [files],
@@ -36,7 +44,7 @@ export function FileList({ files, preparedImages, fileErrors, totalError }: File
       <div className="files" aria-label="Selected images">
         {files.map((file, index) => (
           <div
-            className={fileErrors[index] ? "file invalid" : "file"}
+            className={fileErrors[index] || highlightedIndices.has(index) ? "file invalid" : "file"}
             key={`${file.name}-${file.lastModified}-${index}`}
           >
             <img src={previews[index]?.url} alt="" aria-hidden="true" />

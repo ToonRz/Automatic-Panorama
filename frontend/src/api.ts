@@ -33,6 +33,22 @@ async function parseError(response: Response): Promise<ApiErrorDetail | undefine
 }
 
 /**
+ * docs/integration-spec.md section 7.2: a response with this status but no
+ * JSON envelope is a proxy page in front of a waking server, not a pipeline
+ * rejection; any other envelope-less response is unclassifiable.
+ */
+function envelopelessErrorDetail(status: number): ApiErrorDetail {
+  if (status === 502 || status === 503 || status === 504) {
+    return { code: "UPSTREAM_UNAVAILABLE", message: "The server is starting up." };
+  }
+  return { code: "UNKNOWN_ERROR", message: "The server sent an unexpected response." };
+}
+
+async function errorDetailFromResponse(response: Response): Promise<ApiErrorDetail> {
+  return (await parseError(response)) ?? envelopelessErrorDetail(response.status);
+}
+
+/**
  * Mock mode (docs/ui-spec.md section 10). Off by default; a client that
  * builds with `VITE_MOCK_API` unset or not exactly `"true"` never reaches
  * the branches below, so bundlers dead-code-eliminate the dynamic fixture
@@ -120,7 +136,7 @@ export async function submitStitch(
     body: form,
   });
   if (!response.ok) {
-    throw new ApiError(response.status, await parseError(response));
+    throw new ApiError(response.status, await errorDetailFromResponse(response));
   }
   return (await response.json()) as StitchResponse;
 }

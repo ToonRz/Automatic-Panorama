@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { fetchClientConfig, setMockScenario, submitStitch } from "./api";
 import { FALLBACK_CONFIG } from "./constants/config";
@@ -52,6 +52,46 @@ describe("submitStitch in mock mode", () => {
     await expect(submitStitch([], options)).rejects.toMatchObject({
       status: unrecognizedCodeError.status,
       detail: unrecognizedCodeError.detail,
+    });
+  });
+});
+
+describe("submitStitch against the real API (docs/integration-spec.md section 7.2)", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.restoreAllMocks();
+  });
+
+  it("maps a 502 with no JSON envelope to UPSTREAM_UNAVAILABLE", async () => {
+    vi.stubEnv("VITE_MOCK_API", "false");
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response("<html>Bad Gateway</html>", { status: 502 }),
+    );
+    await expect(submitStitch([], options)).rejects.toMatchObject({
+      status: 502,
+      detail: { code: "UPSTREAM_UNAVAILABLE" },
+    });
+  });
+
+  it("maps any other envelope-less error response to UNKNOWN_ERROR", async () => {
+    vi.stubEnv("VITE_MOCK_API", "false");
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("oops", { status: 500 }));
+    await expect(submitStitch([], options)).rejects.toMatchObject({
+      status: 500,
+      detail: { code: "UNKNOWN_ERROR" },
+    });
+  });
+
+  it("keeps the backend's own envelope when present", async () => {
+    vi.stubEnv("VITE_MOCK_API", "false");
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({ detail: { code: "UNEXPECTED_ERROR", message: "boom" } }), {
+        status: 500,
+      }),
+    );
+    await expect(submitStitch([], options)).rejects.toMatchObject({
+      status: 500,
+      detail: { code: "UNEXPECTED_ERROR", message: "boom" },
     });
   });
 });

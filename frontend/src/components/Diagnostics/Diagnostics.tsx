@@ -5,13 +5,17 @@ import { SummaryCards } from "./SummaryCards";
 
 export interface DiagnosticsProps {
   result: StitchResponse;
+  files?: readonly { name: string }[];
 }
 
 /**
  * docs/ui-spec.md section 6.1: the full-width evidence band — summary
- * cards, the per-pair table, and the stage timing chart.
+ * cards, the per-pair table, and the stage timing chart. `image_order` is
+ * zero-based over the upload selection (docs/backend-spec.md section 9); the
+ * interface counts frames the way a person does (docs/integration-spec.md
+ * section 7.1).
  */
-export function Diagnostics({ result }: DiagnosticsProps) {
+export function Diagnostics({ result, files = [] }: DiagnosticsProps) {
   const { diagnostics, image } = result;
 
   return (
@@ -23,12 +27,12 @@ export function Diagnostics({ result }: DiagnosticsProps) {
         </div>
         <span className="counter">
           {diagnostics.detector} · {diagnostics.image_count} frames · order{" "}
-          {diagnostics.image_order.join(" → ")}
+          {diagnostics.image_order.map((index) => index + 1).join(" → ")}
         </span>
       </div>
 
       <SummaryCards diagnostics={diagnostics} mimeType={image.mime_type} />
-      <PairTable diagnostics={diagnostics} />
+      <PairTable diagnostics={diagnostics} files={files} />
       <StageChart stageTimingsMs={diagnostics.stage_timings_ms} />
     </section>
   );

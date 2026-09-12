@@ -19,7 +19,7 @@ export default function App() {
   const mockApiEnabled = import.meta.env.VITE_MOCK_API === "true";
   const backendStatus = useBackendAvailability();
   const { config } = useClientConfig(backendStatus);
-  const run = useStitchRun(config);
+  const run = useStitchRun(config, undefined, backendStatus);
   const [debugState, setDebugState] = useState<DebugStateKey | null>(null);
 
   function handleDebugSelect(key: DebugStateKey) {
@@ -48,6 +48,8 @@ export default function App() {
           fileErrors={run.fileErrors}
           totalError={run.totalError}
           selectionError={run.selectionError}
+          error={run.error}
+          busySecondsLeft={run.busySecondsLeft}
           hasPreflightErrors={run.hasPreflightErrors}
           onFilesSelected={run.setFiles}
           detector={run.detector}
@@ -65,10 +67,11 @@ export default function App() {
           result={run.result}
           isStale={run.isStale}
           config={config}
+          files={run.files}
         />
       </div>
 
-      {run.result && <Diagnostics result={run.result} />}
+      {run.result && <Diagnostics result={run.result} files={run.files} />}
 
       <footer className="appfoot">Images are processed in memory and never stored.</footer>
     </main>

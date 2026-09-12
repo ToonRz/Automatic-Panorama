@@ -177,6 +177,12 @@ The per-pair table's verdict column is derived, not sent: a pair is accepted
 when it appears in a successful response. A failed run has no table because it
 has no successful pairs.
 
+`image_order` and the per-pair table's pair cell are the backend's zero-based
+indices (docs/backend-spec.md section 9) rendered one-based, because the
+interface counts frames the way a person does
+(docs/integration-spec.md section 7.1). The pair cell's `title` attribute
+names both files.
+
 If `stage_timings_ms` contains a key the UI does not recognise, it is rendered
 as an extra bar using the key as its label. The chart must not silently drop
 measured time.
@@ -238,6 +244,14 @@ mono, the backend `message`, and a row of context chips built from
 `detail.context`. Each chip shows its key and value. The chip row is omitted
 when `context` is absent.
 
+The heading names frames one-based, with the file name from the current
+selection: `Frame {n} · {name}` for a code that names one image,
+`Frames {n} · {name} and {n} · {name}` for a code that names a pair
+(`frameLabel`, docs/integration-spec.md section 7.1). The `image` and `pair`
+context chips render the same one-based numbers. The file list highlights the
+row or rows an error names, whether or not it also fails the client's own
+pre-flight checks.
+
 ### 7.1 Remedy text
 
 Remedies are held in the frontend, keyed by error code. They are language and
@@ -260,7 +274,7 @@ and nothing for the geometric failures that actually need advice.
 | `EMPTY_IMAGE` | live | - | the named file has no bytes; re-export it |
 | `IMAGE_TOO_LARGE` | live | - | downscale the named file below the stated limit |
 | `TOTAL_UPLOAD_TOO_LARGE` | owed | task 07b | the whole upload is over the request limit; remove a frame or downscale before uploading |
-| `SERVICE_BUSY` | owed | task 07b | one panorama is already being stitched; the button re-enables itself after the stated wait |
+| `SERVICE_BUSY` | live | - | another panorama is being stitched; the button unlocks when it's safe to try again, counting down from `context.retry_after_seconds` |
 | `STITCH_TIMEOUT` | owed | task 07b | the run passed the time limit; retry with fewer frames, or switch to ORB for a faster pass |
 | `DECODE_FAILED` | owed | task 07c | the named file is not readable as an image despite its extension; re-export it as JPG or PNG |
 | `IMAGE_TOO_MANY_PIXELS` | owed | task 07c | the named frame is over the processing limit; downscale it before uploading |
@@ -270,6 +284,19 @@ and nothing for the geometric failures that actually need advice.
 | `DEGENERATE_HOMOGRAPHY` | owed | task 07f | the named pair produced an unusable transform; lower the RANSAC tolerance and re-shoot with less parallax |
 | `DISCONNECTED_IMAGES` | owed | task 07g | the named frame shares no view with the others; remove it or add a bridging frame |
 | `CANVAS_TOO_LARGE` | owed | task 07h | the frames did not line up into a sensible shape; check that they are one continuous pan and re-shoot the odd frame |
+
+The rows below are raised by the client itself, not the pipeline
+(docs/integration-spec.md section 7.2). None of them identify a frame, so
+their heading is the generic one.
+
+| Code | Status | Raised by | Remedy |
+| --- | --- | --- | --- |
+| `UNEXPECTED_ERROR` | live | backend catch-all (500) | something went wrong on the server; try again, or try ORB or fewer frames |
+| `NETWORK_ERROR` | live | a rejected `fetch` while the pill reads online | the connection dropped; check your internet connection and try again |
+| `SERVER_UNREACHABLE` | live | a rejected `fetch` while the pill reads waking or offline | the server isn't reachable yet; wait for "Server online", then try again |
+| `UPSTREAM_UNAVAILABLE` | live | a 502/503/504 with no JSON envelope | the server is starting up; wait a moment and try again |
+| `UNKNOWN_ERROR` | live | any other response with no JSON envelope | the server sent an unexpected response; try again |
+| `REQUEST_TIMEOUT` | task 08e | the client's own request timeout (section 8.1) | the server took too long to answer; try again with fewer frames, or switch to ORB |
 
 An unrecognised code renders the backend `message` plus a single generic
 remedy. An empty remedy area is never acceptable.

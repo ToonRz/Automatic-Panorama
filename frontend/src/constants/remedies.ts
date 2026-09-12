@@ -1,5 +1,6 @@
 import { FALLBACK_CONFIG } from "./config";
 import type { ApiErrorDetail, ClientConfig } from "../types";
+import { frameLabel, pairLabel } from "../utils/frameLabel";
 
 /**
  * Remedy text keyed by backend error code (docs/ui-spec.md section 7.1,
@@ -23,8 +24,8 @@ export const REMEDY_BY_CODE: Readonly<Record<string, readonly string[]>> = {
     "Remove a frame or downscale before uploading.",
   ],
   SERVICE_BUSY: [
-    "One panorama is already being stitched.",
-    "The button re-enables itself after the stated wait.",
+    "Another panorama is being stitched.",
+    "The button unlocks when it's safe to try again.",
   ],
   STITCH_TIMEOUT: [
     "The run passed the time limit.",
@@ -62,6 +63,22 @@ export const REMEDY_BY_CODE: Readonly<Record<string, readonly string[]>> = {
   CANVAS_TOO_LARGE: [
     "The frames did not line up into a sensible shape.",
     "Check that they are one continuous pan and re-shoot the odd frame.",
+  ],
+  // Client-reachable codes (docs/integration-spec.md section 7.2), raised by
+  // the client itself rather than the pipeline.
+  UNEXPECTED_ERROR: [
+    "Something went wrong on the server.",
+    "Try again; if it repeats, try ORB or fewer frames.",
+  ],
+  NETWORK_ERROR: ["The connection dropped. Check your internet connection and try again."],
+  SERVER_UNREACHABLE: [
+    "The server isn't reachable yet. Wait for \"Server online\", then try again.",
+  ],
+  UPSTREAM_UNAVAILABLE: ["The server is starting up. Wait a moment and try again."],
+  UNKNOWN_ERROR: ["The server sent an unexpected response. Try again."],
+  REQUEST_TIMEOUT: [
+    "The server took too long to answer.",
+    "Try again with fewer frames, or switch to ORB.",
   ],
 };
 
@@ -117,17 +134,17 @@ const STANDALONE_HEADING_CODES = new Set([
   "CANVAS_TOO_LARGE",
 ]);
 
-function toOneBased(value: unknown): number | undefined {
-  return typeof value === "number" ? value + 1 : undefined;
-}
-
 /**
  * The error block's heading (docs/ui-spec.md section 7): names the images
  * involved when `context` identifies a pair or a single image, otherwise
  * falls back to a per-code sentence, and to a fully generic one for an
- * unrecognised code.
+ * unrecognised code. `files` supplies the names alongside the frame numbers
+ * (docs/integration-spec.md section 7.1); omitted, the numbers stand alone.
  */
-export function headingForError(detail: ApiErrorDetail): string {
+export function headingForError(
+  detail: ApiErrorDetail,
+  files: readonly { name: string }[] = [],
+): string {
   const fragment = HEADING_BY_CODE[detail.code] ?? GENERIC_HEADING;
   if (STANDALONE_HEADING_CODES.has(detail.code) || !(detail.code in HEADING_BY_CODE)) {
     return fragment;
@@ -136,16 +153,15 @@ export function headingForError(detail: ApiErrorDetail): string {
   const context = detail.context;
   const pair = context?.pair;
   if (Array.isArray(pair) && pair.length === 2) {
-    const first = toOneBased(pair[0]);
-    const second = toOneBased(pair[1]);
-    if (first !== undefined && second !== undefined) {
-      return `Frames ${first} and ${second} ${fragment}`;
+    const [first, second] = pair;
+    if (typeof first === "number" && typeof second === "number") {
+      return `${pairLabel(first, second, files)} ${fragment}`;
     }
   }
 
-  const image = toOneBased(context?.image);
-  if (image !== undefined) {
-    return `Frame ${image} ${fragment}`;
+  const image = context?.image;
+  if (typeof image === "number") {
+    return `${frameLabel(image, files)} ${fragment}`;
   }
 
   return `These frames ${fragment}`;

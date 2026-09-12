@@ -1,5 +1,6 @@
-import type { ScreenState } from "../../hooks/useStitchRun";
+import type { FailedDetail, ScreenState } from "../../hooks/useStitchRun";
 import type { ClientConfig, Detector } from "../../types";
+import { framesNamedByError } from "../../utils/frameLabel";
 import type { PreparedImage } from "../../utils/prepareImage";
 import { Dropzone } from "./Dropzone";
 import { FileList } from "./FileList";
@@ -13,6 +14,8 @@ export interface ControlRailProps {
   fileErrors: Array<string | null>;
   totalError: string | null;
   selectionError: string | null;
+  error: FailedDetail | null;
+  busySecondsLeft: number | null;
   onFilesSelected: (files: File[]) => void;
   detector: Detector;
   onDetectorChange: (detector: Detector) => void;
@@ -35,9 +38,15 @@ function primaryButtonSpec(
   state: ScreenState,
   detector: Detector,
   hasPreflightErrors: boolean,
+  busySecondsLeft: number | null,
 ): PrimaryButtonSpec {
   if (hasPreflightErrors) {
     return { label: "Fix the marked frames", disabled: true, ghost: false };
+  }
+  // docs/integration-spec.md section 7.3: the button stays locked until the
+  // server-stated wait passes, with no automatic retry.
+  if (state === "failed" && busySecondsLeft !== null && busySecondsLeft > 0) {
+    return { label: `Try again in ${busySecondsLeft}s`, disabled: true, ghost: true };
   }
   switch (state) {
     case "empty":
@@ -65,6 +74,8 @@ export function ControlRail({
   fileErrors,
   totalError,
   selectionError,
+  error,
+  busySecondsLeft,
   onFilesSelected,
   detector,
   onDetectorChange,
@@ -75,10 +86,12 @@ export function ControlRail({
   onSubmit,
   hasPreflightErrors,
 }: ControlRailProps) {
-  const primary = primaryButtonSpec(state, detector, hasPreflightErrors);
+  const primary = primaryButtonSpec(state, detector, hasPreflightErrors, busySecondsLeft);
   const showDropzone =
     state === "empty" || state === "preparing" || state === "ready" || state === "failed";
   const settingsDisabled = state === "working" || state === "preparing";
+  const highlightedIndices =
+    state === "failed" ? framesNamedByError(error?.detail) : new Set<number>();
 
   return (
     <form
@@ -105,6 +118,7 @@ export function ControlRail({
         preparedImages={preparedImages}
         fileErrors={fileErrors}
         totalError={totalError}
+        highlightedIndices={highlightedIndices}
       />
 
       <div className="rule" />

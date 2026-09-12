@@ -12,6 +12,8 @@ const baseProps = {
   fileErrors: [],
   totalError: null,
   selectionError: null,
+  error: null,
+  busySecondsLeft: null,
   hasPreflightErrors: false,
   onFilesSelected: vi.fn(),
   detector: "SIFT" as const,
@@ -124,5 +126,38 @@ describe("ControlRail primary button", () => {
     );
     expect(screen.getByText("4032×3024 → 1600×1200")).toBeInTheDocument();
     expect(screen.getByText(/upload total · 10 KB/i)).toBeInTheDocument();
+  });
+
+  it("locks the button with a countdown label during a SERVICE_BUSY wait (I11)", () => {
+    render(<ControlRail {...baseProps} state="failed" busySecondsLeft={2} />);
+    expect(screen.getByRole("button", { name: /try again in 2s/i })).toBeDisabled();
+  });
+
+  it("returns to the normal failed button once the countdown reaches zero", () => {
+    render(<ControlRail {...baseProps} state="failed" detector="ORB" busySecondsLeft={0} />);
+    expect(screen.getByRole("button", { name: /^try again$/i })).toBeEnabled();
+  });
+
+  it("highlights the file rows a server error names (I9)", () => {
+    const a = new File(["a"], "IMG_4412.jpg", { type: "image/jpeg" });
+    const b = new File(["b"], "IMG_4413.jpg", { type: "image/jpeg" });
+    render(
+      <ControlRail
+        {...baseProps}
+        state="failed"
+        files={[a, b]}
+        fileErrors={[null, null]}
+        error={{
+          status: 422,
+          detail: {
+            code: "INSUFFICIENT_INLIERS",
+            message: "no agreement",
+            context: { pair: [0, 1], pair_index: 0, inliers: 3, required: 12, inlier_ratio: 0.1 },
+          },
+        }}
+      />,
+    );
+    const files = screen.getAllByLabelText("Selected images")[0];
+    expect(files.querySelectorAll(".file.invalid")).toHaveLength(2);
   });
 });

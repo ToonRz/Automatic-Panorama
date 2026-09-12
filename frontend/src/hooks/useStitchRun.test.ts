@@ -143,6 +143,60 @@ describe("useStitchRun", () => {
     expect(result.current.error).toBeNull();
   });
 
+  it("counts down a SERVICE_BUSY rejection and re-enables at zero, sending no request meanwhile (I11)", async () => {
+    vi.useFakeTimers();
+    try {
+      const submit = vi.spyOn(api, "submitStitch").mockRejectedValue(
+        new api.ApiError(429, {
+          code: "SERVICE_BUSY",
+          message: "busy",
+          context: { retry_after_seconds: 2 },
+        }),
+      );
+      const { result } = renderHook(() => useStitchRun(FALLBACK_CONFIG, prepare));
+      await act(async () => {
+        result.current.setFiles([fakeFile("a.jpg"), fakeFile("b.jpg")]);
+        await vi.runAllTimersAsync();
+      });
+      act(() => result.current.submit());
+      await act(async () => {
+        await vi.runAllTimersAsync();
+      });
+      expect(result.current.state).toBe("failed");
+      expect(result.current.busySecondsLeft).toBe(2);
+      expect(submit).toHaveBeenCalledTimes(1);
+
+      await act(async () => vi.advanceTimersByTimeAsync(1_000));
+      expect(result.current.busySecondsLeft).toBe(1);
+
+      act(() => result.current.submit());
+      expect(submit).toHaveBeenCalledTimes(1);
+
+      await act(async () => vi.advanceTimersByTimeAsync(1_000));
+      expect(result.current.busySecondsLeft).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("classifies a rejected fetch as SERVER_UNREACHABLE while the pill is not online", async () => {
+    vi.spyOn(api, "submitStitch").mockRejectedValue(new TypeError("Failed to fetch"));
+    const { result } = renderHook(() => useStitchRun(FALLBACK_CONFIG, prepare, "waking"));
+    await selectFiles(result, [fakeFile("a.jpg"), fakeFile("b.jpg")]);
+    act(() => result.current.submit());
+    await waitFor(() => expect(result.current.state).toBe("failed"));
+    expect(result.current.error?.detail.code).toBe("SERVER_UNREACHABLE");
+  });
+
+  it("classifies a rejected fetch as NETWORK_ERROR while the pill is online", async () => {
+    vi.spyOn(api, "submitStitch").mockRejectedValue(new TypeError("Failed to fetch"));
+    const { result } = renderHook(() => useStitchRun(FALLBACK_CONFIG, prepare, "online"));
+    await selectFiles(result, [fakeFile("a.jpg"), fakeFile("b.jpg")]);
+    act(() => result.current.submit());
+    await waitFor(() => expect(result.current.state).toBe("failed"));
+    expect(result.current.error?.detail.code).toBe("NETWORK_ERROR");
+  });
+
   it("does not reset a slider the user touched when server config arrives", () => {
     const { result, rerender } = renderHook(
       ({ config }) => useStitchRun(config, prepare),

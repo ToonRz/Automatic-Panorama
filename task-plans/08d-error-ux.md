@@ -27,20 +27,25 @@ availability, detect proxy errors without a JSON envelope, and implement the
 
 ## Acceptance
 
-- [ ] the `error-insufficient-inliers.json` snapshot renders a heading with
+- [x] the `error-insufficient-inliers.json` snapshot renders a heading with
       both frame numbers and file names, one-based `pair` chip values, and both
       rows highlighted in the file list;
-- [ ] diagnostics order and pair cells are one-based, with file names in the
+- [x] diagnostics order and pair cells are one-based, with file names in the
       pair cell `title`;
-- [ ] each of `UNEXPECTED_ERROR`, `NETWORK_ERROR`, `SERVER_UNREACHABLE`,
+- [x] each of `UNEXPECTED_ERROR`, `NETWORK_ERROR`, `SERVER_UNREACHABLE`,
       `UPSTREAM_UNAVAILABLE`, `UNKNOWN_ERROR`, and `REQUEST_TIMEOUT` renders its
       section 7.2 remedy;
-- [ ] a 502 with an HTML body maps to `UPSTREAM_UNAVAILABLE`;
-- [ ] a rejected `fetch` maps to `SERVER_UNREACHABLE` when the pill is `waking`
+- [x] a 502 with an HTML body maps to `UPSTREAM_UNAVAILABLE`;
+- [x] a rejected `fetch` maps to `SERVER_UNREACHABLE` when the pill is `waking`
       or `offline`, otherwise `NETWORK_ERROR`;
-- [ ] a test iterates every code in backend spec section 9 and section 7.2 and
+- [x] a test iterates every code in backend spec section 9 and section 7.2 and
       asserts none renders the generic remedy;
-- [ ] `SERVICE_BUSY` with `retry_after_seconds: 2` shows `Try again in 2s`,
+- [x] `SERVICE_BUSY` with `retry_after_seconds: 2` shows `Try again in 2s`,
       then `1s`, then re-enables, with fake timers and no request sent;
-- [ ] screenshots of a pair error with highlighted rows, and the busy
-      countdown.
+- [x] screenshots of a pair error with highlighted rows (mock `Rejected`
+      state), and the busy countdown (real backend: two browser tabs
+      submitting the same pair concurrently produced a genuine
+      `SERVICE_BUSY` with `retry_after_seconds: 2`, and the button was
+      confirmed to re-enable to "Retry with ORB" once the wait passed; the
+      exact mid-countdown second is also pinned by a fake-timer test since
+      this tool's round-trip latency made catching it live unreliable).

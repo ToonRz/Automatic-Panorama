@@ -13,6 +13,7 @@ export interface OutputCanvasProps {
   result: StitchResponse | null;
   isStale: boolean;
   config?: ClientConfig;
+  files?: readonly { name: string }[];
 }
 
 const TAG_BY_STATE: Partial<Record<ScreenState, { label: string; className: string }>> = {
@@ -29,7 +30,15 @@ const TITLE_BY_STATE: Partial<Record<ScreenState, string>> = {
 /**
  * docs/ui-spec.md section 4: dispatches on the single state machine value.
  */
-export function OutputCanvas({ state, isColdStart, error, result, isStale, config = FALLBACK_CONFIG }: OutputCanvasProps) {
+export function OutputCanvas({
+  state,
+  isColdStart,
+  error,
+  result,
+  isStale,
+  config = FALLBACK_CONFIG,
+  files = [],
+}: OutputCanvasProps) {
   const tag = TAG_BY_STATE[state];
 
   return (
@@ -48,7 +57,9 @@ export function OutputCanvas({ state, isColdStart, error, result, isStale, confi
       {(state === "empty" || state === "preparing" || state === "ready") && <EmptyState />}
       {state === "preparing" && <span className="sr-only">Preparing images…</span>}
       {state === "working" && <WorkingState isColdStart={isColdStart} />}
-      {state === "failed" && error && <FailedState status={error.status} detail={error.detail} config={config} />}
+      {state === "failed" && error && (
+        <FailedState status={error.status} detail={error.detail} config={config} files={files} />
+      )}
       {state === "complete" && result && <ResultPlate result={result} />}
     </section>
   );

@@ -5,6 +5,7 @@ import { COLD_START_THRESHOLD_MS } from "../constants/availability";
 import { FALLBACK_CONFIG } from "../constants/config";
 import { MIN_FILES } from "../constants/thresholds";
 import type { DebugStateKey } from "../dev/debugStates";
+import type { BackendAvailability } from "./useBackendAvailability";
 import type { ApiErrorDetail, ClientConfig, Detector, StitchResponse } from "../types";
 import { validatePreparedFiles, validateSelection } from "../utils/preflight";
 import { prepareImage, type PreparedImage } from "../utils/prepareImage";
@@ -17,7 +18,7 @@ interface RunSettings {
   ransacThreshold: number;
 }
 
-interface FailedDetail {
+export interface FailedDetail {
   status: number;
   detail: ApiErrorDetail;
 }
@@ -80,6 +81,12 @@ export interface UseStitchRunResult {
   resultSettings: RunSettings | null;
   isStale: boolean;
   error: FailedDetail | null;
+  /**
+   * Seconds left in the `SERVICE_BUSY` countdown (docs/integration-spec.md
+   * section 7.3), or `null` when the failed state is not a busy rejection or
+   * the countdown has finished.
+   */
+  busySecondsLeft: number | null;
   isColdStart: boolean;
   submit: (overrides?: Partial<RunSettings>) => void;
   /** Dev-only, mock-mode-only escape hatch for the state switcher. */
@@ -94,6 +101,7 @@ export interface UseStitchRunResult {
 export function useStitchRun(
   config: ClientConfig = FALLBACK_CONFIG,
   prepare: typeof prepareImage = prepareImage,
+  availability: BackendAvailability = "online",
 ): UseStitchRunResult {
   const [files, setFilesInternal] = useState<File[]>([]);
   const [preparedImages, setPreparedImages] = useState<Array<PreparedImage | null>>([]);
@@ -107,6 +115,7 @@ export function useStitchRun(
   );
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
   const [isColdStart, setIsColdStart] = useState(false);
+  const [busySecondsLeft, setBusySecondsLeft] = useState<number | null>(null);
   const requestIdRef = useRef(0);
   const detectorTouchedRef = useRef(false);
   const ratioTouchedRef = useRef(false);
@@ -134,6 +143,25 @@ export function useStitchRun(
     setIsColdStart(false);
     const timer = setTimeout(() => setIsColdStart(true), remaining);
     return () => clearTimeout(timer);
+  }, [phase]);
+
+  /**
+   * docs/integration-spec.md section 7.3: counts down from
+   * `context.retry_after_seconds` once per second, with no automatic retry.
+   */
+  useEffect(() => {
+    if (phase.kind !== "failed" || phase.error.detail.code !== "SERVICE_BUSY") {
+      setBusySecondsLeft(null);
+      return;
+    }
+    const retryAfter = phase.error.detail.context?.retry_after_seconds;
+    const initial = typeof retryAfter === "number" ? retryAfter : 0;
+    setBusySecondsLeft(initial);
+    if (initial <= 0) return;
+    const interval = setInterval(() => {
+      setBusySecondsLeft((previous) => (previous === null || previous <= 1 ? 0 : previous - 1));
+    }, 1_000);
+    return () => clearInterval(interval);
   }, [phase]);
 
   function setFiles(nextFiles: File[]) {
@@ -203,6 +231,7 @@ export function useStitchRun(
 
   function submit(overrides?: Partial<RunSettings>) {
     if (phase.kind === "working" || phase.kind === "preparing") return;
+    if (busySecondsLeft !== null && busySecondsLeft > 0) return;
     if (
       files.length < MIN_FILES ||
       files.length > config.max_upload_files ||
@@ -246,16 +275,20 @@ export function useStitchRun(
           });
           return;
         }
+        // docs/integration-spec.md section 7.2: a rejected fetch is a dropped
+        // connection when the server was known online, otherwise the server
+        // was never reachable in the first place.
+        const code = availability === "online" ? "NETWORK_ERROR" : "SERVER_UNREACHABLE";
         setPhase({
           kind: "failed",
           error: {
             status: 0,
             detail: {
-              code: "NETWORK_ERROR",
+              code,
               message:
-                caughtError instanceof Error
-                  ? caughtError.message
-                  : "The request failed. Check the backend URL and try again.",
+                code === "NETWORK_ERROR"
+                  ? "The connection dropped."
+                  : "The server isn't reachable yet.",
             },
           },
         });
@@ -386,6 +419,7 @@ export function useStitchRun(
     resultSettings,
     isStale,
     error,
+    busySecondsLeft,
     isColdStart,
     submit,
     forceDebugState,
