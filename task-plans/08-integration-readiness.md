@@ -28,11 +28,18 @@ after 08b.
 
 ## Parent acceptance
 
-- [ ] all seven children merged;
-- [ ] every row of section 2 of `docs/integration-spec.md` is closed by a
+- [x] all seven children merged (as commits directly on `main`, per this
+      repository's workflow for this pass — see each child file for its
+      commit);
+- [x] every row of section 2 of `docs/integration-spec.md` is closed by a
       merged slice;
 - [ ] every requirement I1-I17 in section 11 has a test or recorded evidence
-      linked from its slice's pull request;
-- [ ] `docs/ui-spec.md` and `docs/backend-spec.md` no longer contradict the
+      linked from its slice's pull request — true for I1-I16; I17 (the public
+      URL passes section 10's scripted and manual checks) is only partly
+      closed: `scripts/smoke_public.py` exists and passes locally, but no
+      public Render/Vercel URL exists yet in this environment, so the
+      scripted-against-production and manual real-photo/HEIC/cold-start
+      checks remain open (`task-plans/08g-deploy-and-smoke.md`);
+- [x] `docs/ui-spec.md` and `docs/backend-spec.md` no longer contradict the
       integration spec;
-- [ ] `make test`, `make lint`, and `make frontend-build` are green on `main`.
+- [x] `make test`, `make lint`, and `make frontend-build` are green on `main`.
