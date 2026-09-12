@@ -2,6 +2,7 @@ import type { ScreenState } from "../../hooks/useStitchRun";
 import type { ApiErrorDetail, StitchResponse } from "../../types";
 import { EmptyState } from "./EmptyState";
 import { FailedState } from "./FailedState";
+import { ResultPlate } from "./ResultPlate";
 import { ScaffoldState } from "./ScaffoldState";
 import { WorkingState } from "./WorkingState";
 
@@ -28,8 +29,6 @@ const TITLE_BY_STATE: Partial<Record<ScreenState, string>> = {
 
 /**
  * docs/ui-spec.md section 4: dispatches on the single state machine value.
- * The complete state is a placeholder here; 04c fills it in with the
- * result plate, overlay, and download, and 04d adds the diagnostics band.
  */
 export function OutputCanvas({ state, isColdStart, error, result, isStale }: OutputCanvasProps) {
   const tag = TAG_BY_STATE[state];
@@ -51,11 +50,7 @@ export function OutputCanvas({ state, isColdStart, error, result, isStale }: Out
       {state === "working" && <WorkingState isColdStart={isColdStart} />}
       {state === "failed" && error && <FailedState status={error.status} detail={error.detail} />}
       {state === "scaffold" && <ScaffoldState />}
-      {state === "complete" && result && (
-        <div className="plate">
-          <img src={result.image.data_url} alt="Stitched panorama" />
-        </div>
-      )}
+      {state === "complete" && result && <ResultPlate result={result} />}
     </section>
   );
 }
