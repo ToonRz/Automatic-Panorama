@@ -5,6 +5,11 @@
 - Depends on: scaffold
 - Spec: `docs/ui-spec.md` section 10
 
+The fixtures written in this slice use `seam_positions_x`, which the backend
+contract has since replaced with `seam_lines`. `task-plans/04c` corrects the
+fixtures, the types, and their tests; see `docs/backend-spec.md` section 8 for
+why the shape changed.
+
 Do this slice before the other four. Every later slice asserts against these
 fixtures, and the complete and failed states cannot be seen at all until mock
 mode exists, because the live API returns 501.

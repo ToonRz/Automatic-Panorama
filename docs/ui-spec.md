@@ -7,8 +7,9 @@ mock cannot express — where every value on screen comes from, which state hide
 what, which error code produces which sentence, and what has to be true before
 a slice can merge.
 
-Implementation is split across `task-plans/04a` through `task-plans/04e` and
-depends on `task-plans/06-overlay-diagnostics-contract.md`.
+Implementation is split across `task-plans/04a` through `task-plans/04e`. The
+backend contract it reads from is `docs/backend-spec.md`; the overlay fields in
+section 6.2 are owed by `task-plans/07h` and `task-plans/07i`.
 
 ## 1. Scope
 
@@ -24,8 +25,10 @@ In scope for v1:
 
 Explicitly out of scope for v1, decided against the mock's own open list:
 
-- drag-to-reorder frames. `image_order` is decided by the server, and a
-  draggable list would imply the user's order matters;
+- drag-to-reorder frames. v1 chains the frames in upload order, so the order
+  does matter, and the input rail says so in one line above the file list. A
+  reorder control is a v2 affordance, not a v1 omission dressed up as a
+  decision. `docs/backend-spec.md` section 7.2 has the ordering rule;
 - a side-by-side match visualization tab. It needs correspondence data beyond
   what section 6 asks for;
 - a light theme. The product is dark-committed.
@@ -167,27 +170,32 @@ measured time.
 
 The overlay is drawn as SVG on top of the panorama, in the panorama's own
 coordinate space, so that it stays sharp when the image is scaled and so that
-the toggle costs nothing. It requires two fields that the current API contract
-does not provide; `task-plans/06-overlay-diagnostics-contract.md` owns adding
-them, and `docs/api-contract.md` records them as pending.
+the toggle costs nothing. It requires two diagnostics fields that the pipeline
+does not produce yet; `task-plans/07h` owns the seam geometry and
+`task-plans/07i` owns the sampled correspondences.
 
 Both fields are expressed in output-image pixel coordinates, the same space as
 `image.width` and `image.height`, so the frontend can draw them without any
 geometry of its own. Keeping the matrix arithmetic on the server matches the
 rule that OpenCV work lives in `backend/app/cv/`.
 
-- `seam_positions_x`: one x value per pair, the vertical line where that pair's
-  images meet on the output canvas. Length equals the pair count.
+- `seam_lines`: one entry per pair, `{ top: [x, y], bottom: [x, y] }`, the
+  shared boundary between that pair's frames projected onto the output canvas.
+  Length equals the pair count. It is a two-point line rather than a single x
+  because under real perspective the boundary tilts, and a vertical line drawn
+  where the seam is not would contradict the measurement the overlay exists to
+  show.
 - `sample_correspondences_per_pair`: for each pair, at most 12 inlier
   correspondences, each a pair of points on the output canvas. The field name
   says sample because it is a drawn illustration, not the inlier set. Nothing in
   the UI may count these points or present their number as a measurement. The
   inlier count comes from `inliers_per_pair` and nowhere else.
 
-The overlay renders, per pair: a dashed aqua seam line, coral circles on both
-points of each sampled correspondence, a faint connecting line between them, and
-a mono label reading the seam number and the inlier count from
-`inliers_per_pair`.
+The overlay renders, per pair: a dashed aqua line from the seam's top point to
+its bottom point, coral circles on both points of each sampled correspondence, a
+faint connecting line between them, and a mono label reading the seam number and
+the inlier count from `inliers_per_pair`. The label is anchored to the seam's
+top point, so it follows a tilted seam instead of floating away from it.
 
 The toggle is a two-state button reflecting `aria-pressed`. It defaults to on,
 because the evidence is the point of the screen. When the overlay fields are
@@ -222,7 +230,9 @@ product guidance, not measurement, so they can be reworded without a backend
 change and without widening the error envelope.
 
 The table below includes codes the pipeline does not emit yet. They are marked
-as owed, and the task that owes them is named. Writing remedies only for the
+as owed, and the slice that owes them is named. Every code in section 9 of
+`docs/backend-spec.md` has a row here; a code in one and not the other is a
+defect in whichever was changed last. Writing remedies only for the
 codes that exist today would produce a table full of "your file is too large"
 and nothing for the geometric failures that actually need advice.
 
@@ -235,10 +245,17 @@ and nothing for the geometric failures that actually need advice.
 | `EMPTY_IMAGE` | live | - | the named file has no bytes; re-export it |
 | `IMAGE_TOO_LARGE` | live | - | downscale the named file below the stated limit |
 | `PIPELINE_NOT_IMPLEMENTED` | live | - | handled by section 8, not by this table |
-| `INSUFFICIENT_INLIERS` | owed | task 02 | re-shoot the named frame with 30-50 percent overlap; raise the ratio test toward 0.80; try ORB on low-texture scenes |
-| `NO_DESCRIPTORS` | owed | task 01 | the named frame has too little texture; try ORB, or re-shoot with more detail in view |
-| `DEGENERATE_HOMOGRAPHY` | owed | task 02 | the named pair produced an unusable transform; lower the RANSAC tolerance and re-shoot with less parallax |
-| `DISCONNECTED_IMAGES` | owed | task 02 | the named frame shares no view with the others; remove it or add a bridging frame |
+| `TOTAL_UPLOAD_TOO_LARGE` | owed | task 07b | the whole upload is over the request limit; remove a frame or downscale before uploading |
+| `SERVICE_BUSY` | owed | task 07b | one panorama is already being stitched; the button re-enables itself after the stated wait |
+| `STITCH_TIMEOUT` | owed | task 07b | the run passed the time limit; retry with fewer frames, or switch to ORB for a faster pass |
+| `DECODE_FAILED` | owed | task 07c | the named file is not readable as an image despite its extension; re-export it as JPG or PNG |
+| `IMAGE_TOO_MANY_PIXELS` | owed | task 07c | the named frame is over the processing limit; downscale it before uploading |
+| `NO_DESCRIPTORS` | owed | task 07d | the named frame has too little texture; try ORB, or re-shoot with more detail in view |
+| `INSUFFICIENT_MATCHES` | owed | task 07e | the named pair barely shares any detail; raise the ratio test toward 0.85, or re-shoot with more overlap |
+| `INSUFFICIENT_INLIERS` | owed | task 07f | re-shoot the named frame with 30-50 percent overlap; raise the ratio test toward 0.80; try ORB on low-texture scenes |
+| `DEGENERATE_HOMOGRAPHY` | owed | task 07f | the named pair produced an unusable transform; lower the RANSAC tolerance and re-shoot with less parallax |
+| `DISCONNECTED_IMAGES` | owed | task 07g | the named frame shares no view with the others; remove it or add a bridging frame |
+| `CANVAS_TOO_LARGE` | owed | task 07h | the frames did not line up into a sensible shape; check that they are one continuous pan and re-shoot the odd frame |
 
 An unrecognised code renders the backend `message` plus a single generic
 remedy. An empty remedy area is never acceptable.
