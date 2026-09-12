@@ -23,6 +23,7 @@ about its unimplemented status until the algorithm has tests and demo evidence.
 | What the assignment grades | `docs/assignment-alignment.md` |
 | How components fit together | `docs/architecture.md` |
 | CV method and acceptance thresholds | `docs/cv-pipeline.md` |
+| What the interface must do | `docs/ui-spec.md`, `docs/mockups/ui-mock.html` |
 | Technology and hosting choices | `docs/tech-stack.md`, `docs/deployment-plan.md` |
 | What to build next | `docs/roadmap.md`, `task-plans/` |
 | Who owns each slice | `docs/contribution-plan.md` |
