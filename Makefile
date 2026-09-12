@@ -13,6 +13,7 @@ frontend-install:
 
 test:
 	PYTHONPATH=backend $(PYTHON) -m pytest -q
+	cd frontend && npm test
 
 lint:
 	$(PYTHON) -m ruff check backend/app

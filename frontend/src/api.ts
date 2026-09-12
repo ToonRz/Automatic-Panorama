@@ -1,4 +1,5 @@
 import type { ApiErrorDetail, StitchOptions, StitchResponse } from "./types";
+import type { MockScenario } from "./fixtures";
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000").replace(
   /\/$/,
@@ -29,7 +30,35 @@ async function parseError(response: Response): Promise<ApiErrorDetail | undefine
   return detail as ApiErrorDetail;
 }
 
+/**
+ * Mock mode (docs/ui-spec.md section 10). Off by default; a client that
+ * builds with `VITE_MOCK_API` unset or not exactly `"true"` never reaches
+ * the branches below, so bundlers dead-code-eliminate the dynamic fixture
+ * import and it never ships in a production build.
+ */
+export function isMockApiEnabled(): boolean {
+  return import.meta.env.VITE_MOCK_API === "true";
+}
+
+let mockScenario: MockScenario = "success-with-overlay";
+
+export function setMockScenario(scenario: MockScenario): void {
+  mockScenario = scenario;
+}
+
+export function getMockScenario(): MockScenario {
+  return mockScenario;
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export async function checkHealth(): Promise<void> {
+  if (isMockApiEnabled()) {
+    await delay(120);
+    return;
+  }
   const response = await fetch(`${API_BASE_URL}/healthz`);
   if (!response.ok) {
     throw new ApiError(response.status, await parseError(response));
@@ -40,6 +69,10 @@ export async function submitStitch(
   files: File[],
   options: StitchOptions,
 ): Promise<StitchResponse> {
+  if (isMockApiEnabled()) {
+    return submitStitchMock();
+  }
+
   const form = new FormData();
   files.forEach((file) => form.append("files", file));
   form.append("detector", options.detector);
@@ -54,4 +87,37 @@ export async function submitStitch(
     throw new ApiError(response.status, await parseError(response));
   }
   return (await response.json()) as StitchResponse;
+}
+
+async function submitStitchMock(): Promise<StitchResponse> {
+  const fixtures = await import("./fixtures");
+  await delay(500);
+
+  switch (mockScenario) {
+    case "success-with-overlay":
+      return structuredClone(fixtures.successWithOverlayFixture);
+    case "success-without-overlay":
+      return structuredClone(fixtures.successWithoutOverlayFixture);
+    case "insufficient-inliers":
+      throw new ApiError(
+        fixtures.insufficientInliersError.status,
+        fixtures.insufficientInliersError.detail,
+      );
+    case "image-too-large":
+      throw new ApiError(fixtures.imageTooLargeError.status, fixtures.imageTooLargeError.detail);
+    case "unrecognized-code":
+      throw new ApiError(
+        fixtures.unrecognizedCodeError.status,
+        fixtures.unrecognizedCodeError.detail,
+      );
+    case "pipeline-not-implemented":
+      throw new ApiError(
+        fixtures.pipelineNotImplementedFixture.status,
+        fixtures.pipelineNotImplementedFixture.detail,
+      );
+    default: {
+      const exhaustive: never = mockScenario;
+      throw new Error(`Unhandled mock scenario: ${String(exhaustive)}`);
+    }
+  }
 }
