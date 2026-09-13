@@ -8,6 +8,12 @@
       "port": 5173
     },
     {
+      "name": "frontend-mock",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "frontend", "run", "dev:mock", "--", "--host"],
+      "port": 5173
+    },
+    {
       "name": "backend-dev",
       "runtimeExecutable": "bash",
       "runtimeArgs": ["-c", "PYTHONPATH=backend python3 -m uvicorn app.main:app --reload --port 8000"],
