@@ -131,7 +131,7 @@ export default function App() {
           />
         </div>
 
-        {run.result && <Diagnostics result={run.result} files={run.files} />}
+        <Diagnostics result={run.result} files={run.files} />
       </main>
     </>
   );

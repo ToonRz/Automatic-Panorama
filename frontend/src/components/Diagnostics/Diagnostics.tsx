@@ -4,36 +4,37 @@ import { StageChart } from "./StageChart";
 import { SummaryCards } from "./SummaryCards";
 
 export interface DiagnosticsProps {
-  result: StitchResponse;
+  result: StitchResponse | null;
   files?: readonly { name: string }[];
 }
 
 /**
- * docs/ui-spec.md section 6.1: the full-width evidence band — summary
- * cards, the per-pair table, and the stage timing chart. `image_order` is
- * zero-based over the upload selection (docs/backend-spec.md section 9); the
- * interface counts frames the way a person does (docs/integration-spec.md
- * section 7.1).
+ * docs/ui-spec.md section 6.4: the diagnostics band is part of the page
+ * composition in every state, not only `complete`, so the page never
+ * collapses to a short column before the first run. Outside `complete` it
+ * renders its frame with no measurement in it — no number, zero, or
+ * previous-run value.
  */
 export function Diagnostics({ result, files = [] }: DiagnosticsProps) {
-  const { diagnostics, image } = result;
+  const diagnostics = result?.diagnostics ?? null;
 
   return (
-    <section className="diagnostics">
-      <div className="panel-head" style={{ marginBottom: 0 }}>
-        <div>
-          <span className="kicker">Details</span>
-          <h2>Run diagnostics</h2>
-        </div>
-        <span className="counter">
-          {diagnostics.detector} · {diagnostics.image_count} frames · order{" "}
-          {diagnostics.image_order.map((index) => index + 1).join(" → ")}
-        </span>
+    <section className="diag" aria-label="Diagnostics">
+      <div className="diag-head">
+        <h2>Alignment diagnostics</h2>
+        <p>
+          {result
+            ? "Read from the server response. Ratio and error show the worst pair, not an average."
+            : "Filled in after a successful run."}
+        </p>
       </div>
 
-      <SummaryCards diagnostics={diagnostics} mimeType={image.mime_type} />
-      <PairTable diagnostics={diagnostics} files={files} />
-      <StageChart stageTimingsMs={diagnostics.stage_timings_ms} />
+      <SummaryCards diagnostics={diagnostics} mimeType={result?.image.mime_type} />
+
+      <div className="diag-row">
+        <PairTable diagnostics={diagnostics} files={files} />
+        <StageChart stageTimingsMs={diagnostics?.stage_timings_ms ?? null} />
+      </div>
     </section>
   );
 }

@@ -31,4 +31,11 @@ describe("StageChart", () => {
     expect(widths).toContain("100%");
     expect(widths).toContain("25%");
   });
+
+  it("keeps its header and shows the placeholder text with no result (A15)", () => {
+    render(<StageChart stageTimingsMs={null} />);
+    expect(screen.getByText("Stage timings")).toBeInTheDocument();
+    expect(screen.getByText("Timings arrive with the response")).toBeInTheDocument();
+    expect(screen.queryByText(/ms total/)).not.toBeInTheDocument();
+  });
 });
