@@ -370,7 +370,7 @@ its CLI was logged out, so the Vercel side of 09c could not be automated.
 | Frontend (Vercel Production) | _pending — hand-off: confirm the production domain for the `automatic-panorama` project under the `toonrzs-projects` team and record it here_ |
 | `test` branch Preview | _pending — same hand-off_ |
 | Backend (Render) | `https://automatic-panorama-api.onrender.com` (Free, Singapore) |
-| Served commit | `9f2f373278204a39ed0f8b5dee999fc8e3d13461` (merge of PR #3, 09b) |
+| Served commit | `952a044da690da07b05d2ed99b765e8697c2302d` (merge of PR #4, 09c docs) |
 | Preview CORS pattern | `^https://automatic-panorama-[a-z0-9-]+-toonrzs-projects\.vercel\.app$` (set on Render; verified in Python against the branch-preview host, a commit-hash host, an `.evil.com` suffix, another project name, and `http://`, per section 5) |
 | UptimeRobot monitor | _pending — hand-off, requires a human-owned account (09d)_ |
 | Keep-alive enabled on | _pending_ |
@@ -380,9 +380,41 @@ Note: `BACKEND_CORS_ORIGINS` on Render is still `http://localhost:5173` only
 — the real Vercel production origin could not be confirmed from this session
 (see above) and must be added once known, per section 6 of the 09c hand-off.
 
+### 09e automated-evidence attempt
+
+The deploying session's network egress policy blocks both `*.onrender.com`
+and `*.vercel.app` outright (confirmed with curl, `httpx`, and the WebFetch
+tool — all return a 403 from the local egress proxy, not from Render or
+Vercel). As a direct result, none of section 9.1's scripted checks could be
+run against the live URLs from this session:
+
+- `python scripts/smoke_public.py https://automatic-panorama-api.onrender.com`
+  fails immediately with `httpx.ProxyError: 403 Forbidden` before making any
+  real request — not a failure of the deployed service.
+- `curl -si -X OPTIONS https://automatic-panorama-api.onrender.com/api/v1/stitch -H "Origin: ..." -H "Access-Control-Request-Method: POST"`
+  likewise returns a 403 from the local proxy for every origin tried,
+  including the negative case (`https://example.vercel.app`), so no CORS
+  behaviour was actually exercised.
+- Fetching the production site to inspect the built JS was not attempted:
+  no confirmed Vercel production URL exists yet (see above).
+
+What this session *could* check without leaving the Render API itself:
+`get_metrics` on `srv-daj3retg1s2s739asd90` for `memory_usage`/`memory_limit`
+over the deploy window shows `memory_limit` at 536,870,900 bytes (512 MiB, as
+expected for Free) and idle `memory_usage` around 67-77 MB — consistent with
+an idle FastAPI/uvicorn process, but this is idle memory, not the loaded
+worst-case request 09b's 410 MB budget is about, so it does not close out
+section 9.3.
+
+All of section 9.1, the always-on check (9.2), the memory-under-load
+comparison (9.3), and the manual pass (9.4) need to be run by someone (or
+some CI runner) whose network can actually reach `*.onrender.com` and
+`*.vercel.app` — see the hand-off list in the session's final report for the
+exact commands.
+
 | Date | Event |
 | --- | --- |
-| | |
+| 2026-09-13 | `automatic-panorama-api` created on Render Free/Singapore and deployed live from `main`; Preview CORS regex set and verified in Python; Vercel side and all of section 9's live checks left to hand-off (see above) |
 
 ## 11. References checked 2026-09-13
 
