@@ -9,7 +9,7 @@ export interface DropzoneProps {
   fileCount: number;
 }
 
-const ACCEPTED_TYPES = "image/jpeg,image/png,image/webp,image/bmp,image/tiff";
+const ACCEPTED_TYPES = "image/jpeg,image/png,image/webp,image/bmp,image/tiff,image/heic,image/heif,.heic,.heif";
 
 /**
  * docs/ui-spec.md section 3.1: a tall centred variant with no files, a
@@ -64,7 +64,7 @@ export function Dropzone({ onFilesSelected, config, fileCount }: DropzoneProps) 
         <div className="drop-text">
           <strong>Drop overlapping images</strong>
           <small>
-            JPG · PNG · WEBP · BMP · TIFF — up to {config.max_upload_mb} MB each
+            JPG · PNG · WEBP · BMP · TIFF · HEIC — up to {config.max_upload_mb} MB each
           </small>
         </div>
       )}

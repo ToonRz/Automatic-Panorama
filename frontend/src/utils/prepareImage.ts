@@ -32,7 +32,17 @@ export interface PreparedImage {
 }
 
 async function decodeInBrowser(file: File): Promise<DecodedImage> {
-  const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
+  let bitmap: ImageBitmap;
+  try {
+    bitmap = await createImageBitmap(file, { imageOrientation: "from-image" });
+  } catch (error) {
+    const isHeic = /\.(heic|heif)$/i.test(file.name)
+      || /^image\/hei[cf](?:-sequence)?$/i.test(file.type);
+    if (!isHeic) throw error;
+    // Load the software decoder only on browsers without native HEIC support.
+    const { heicTo } = await import("heic-to");
+    bitmap = await heicTo({ blob: file, type: "bitmap" });
+  }
   return {
     width: bitmap.width,
     height: bitmap.height,

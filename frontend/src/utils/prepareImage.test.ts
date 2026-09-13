@@ -47,3 +47,33 @@ describe("prepareImage decision logic", () => {
     expect(prepared.resized).toBe(false);
   });
 });
+
+const heicToMock = vi.hoisted(() => vi.fn());
+vi.mock("heic-to", () => ({ heicTo: heicToMock }));
+
+describe("browser HEIC fallback", () => {
+  it.each([
+    ["phone.HEIC", ""],
+    ["phone.heif", "application/octet-stream"],
+    ["phone", "image/heic"],
+  ])("decodes %s when the browser lacks HEIC support", async (name, type) => {
+    const close = vi.fn();
+    heicToMock.mockResolvedValue({ width: 100, height: 80, close });
+    vi.stubGlobal("createImageBitmap", vi.fn().mockRejectedValue(new Error("Unsupported")));
+    const convertToBlob = vi.fn().mockResolvedValue(new Blob(["jpeg"], { type: "image/jpeg" }));
+    vi.stubGlobal("OffscreenCanvas", class {
+      getContext() { return { fillRect() {}, drawImage() {} }; }
+      convertToBlob = convertToBlob;
+    });
+    try {
+      const file = new File(["heic"], name, { type });
+      const result = await prepareImage(file, 1600);
+      expect(heicToMock).toHaveBeenCalledWith({ blob: file, type: "bitmap" });
+      expect(result.upload.type).toBe("image/jpeg");
+      expect(close).toHaveBeenCalledOnce();
+    } finally {
+      vi.unstubAllGlobals();
+      vi.clearAllMocks();
+    }
+  });
+});
