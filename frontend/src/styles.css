@@ -1298,6 +1298,10 @@ input[type="range"]:disabled {
 .stagechart {
   padding: 0;
 }
+.pairtable > .panel-head,
+.stagechart > .panel-head {
+  margin: 0;
+}
 
 /* pair table */
 .tablewrap {
