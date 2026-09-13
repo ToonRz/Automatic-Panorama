@@ -1,5 +1,7 @@
+import { PanelHead } from "../PanelHead";
 import type { FailedDetail, ScreenState } from "../../hooks/useStitchRun";
 import type { ClientConfig, Detector } from "../../types";
+import { formatBytes } from "../../utils/formatBytes";
 import { framesNamedByError } from "../../utils/frameLabel";
 import type { PreparedImage } from "../../utils/prepareImage";
 import { Dropzone } from "./Dropzone";
@@ -98,63 +100,81 @@ export function ControlRail({
   const settingsDisabled = state === "working" || state === "preparing";
   const highlightedIndices =
     state === "failed" ? framesNamedByError(error?.detail) : new Set<number>();
+  const totalBytes = files.reduce(
+    (total, file, index) => total + (preparedImages[index]?.upload.size ?? file.size),
+    0,
+  );
 
   return (
     <form
-      className="panel stack"
+      className="panel rail stack"
+      aria-label="Controls"
       onSubmit={(event) => {
         event.preventDefault();
         onSubmit(primary.detectorOverride ? { detector: primary.detectorOverride } : undefined);
       }}
     >
-      <div className="panel-head">
-        <div>
-          <span className="kicker">Input</span>
-          <h2>Source frames</h2>
-        </div>
-        <span className="counter">
-          {files.length} / {config.max_upload_files}
-        </span>
+      <PanelHead
+        index={1}
+        title="Source frames"
+        aside={
+          <span className="mono">
+            <b>{files.length}</b> / {config.max_upload_files}
+          </span>
+        }
+      />
+      <div className="section">
+        {showDropzone && (
+          <Dropzone onFilesSelected={onFilesSelected} config={config} fileCount={files.length} />
+        )}
+        {selectionError && (
+          <p className="selection-error" role="alert">
+            {selectionError}
+          </p>
+        )}
+        {cancelledNote && <p className="cancelled-note">{cancelledNote}</p>}
+        <FileList
+          files={files}
+          preparedImages={preparedImages}
+          fileErrors={fileErrors}
+          totalError={totalError}
+          totalBytes={totalBytes}
+          highlightedIndices={highlightedIndices}
+          onRemove={showDropzone ? onFileRemoved : undefined}
+        />
       </div>
 
-      {showDropzone && <Dropzone onFilesSelected={onFilesSelected} config={config} />}
-      {selectionError && <p className="selection-error" role="alert">{selectionError}</p>}
-      {cancelledNote && <p className="cancelled-note">{cancelledNote}</p>}
-      <FileList
-        files={files}
-        preparedImages={preparedImages}
-        fileErrors={fileErrors}
-        totalError={totalError}
-        highlightedIndices={highlightedIndices}
-        onRemove={showDropzone ? onFileRemoved : undefined}
-      />
-
-      <div className="rule" />
-      <div className="panel-head compact">
-        <div>
-          <span className="kicker">Method</span>
-          <h2>Pipeline settings</h2>
-        </div>
+      <PanelHead index={2} title="Method" aside="Defaults from server" />
+      <div className="section">
+        <PipelineSettings
+          detector={detector}
+          onDetectorChange={onDetectorChange}
+          ratioThreshold={ratioThreshold}
+          onRatioChange={onRatioChange}
+          ransacThreshold={ransacThreshold}
+          onRansacChange={onRansacChange}
+          disabled={settingsDisabled}
+        />
       </div>
 
-      <PipelineSettings
-        detector={detector}
-        onDetectorChange={onDetectorChange}
-        ratioThreshold={ratioThreshold}
-        onRatioChange={onRatioChange}
-        ransacThreshold={ransacThreshold}
-        onRansacChange={onRansacChange}
-        disabled={settingsDisabled}
-      />
-
-      <button className={primary.ghost ? "cta ghost" : "cta"} type="submit" disabled={primary.disabled}>
-        {primary.label} <span aria-hidden="true">{primary.disabled && state === "working" ? "◍" : "→"}</span>
-      </button>
-      {state === "working" && (
-        <button type="button" className="cancel" onClick={onCancel}>
-          Cancel
+      <div className="action">
+        <button className={primary.ghost ? "cta ghost" : "cta"} type="submit" disabled={primary.disabled}>
+          {primary.label}
         </button>
-      )}
+        {state === "working" && (
+          <button type="button" className="cancel" onClick={onCancel}>
+            Cancel
+          </button>
+        )}
+        {files.length > 0 && (
+          <div className="action-meta">
+            <span>
+              {files.length} frames · {detector}
+            </span>
+            <span className="mono">≈ {formatBytes(totalBytes)} upload</span>
+          </div>
+        )}
+      </div>
     </form>
   );
 }

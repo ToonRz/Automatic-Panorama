@@ -1,22 +1,36 @@
 import { useState } from "react";
 
-import { MIN_FILES } from "../../constants/thresholds";
 import type { ClientConfig } from "../../types";
-import { formatBytes } from "../../utils/formatBytes";
 
 export interface DropzoneProps {
   onFilesSelected: (files: File[]) => void;
   config: ClientConfig;
+  /** Chooses the tall (no files) or compact (files chosen) variant (section 3.1). */
+  fileCount: number;
 }
 
 const ACCEPTED_TYPES = "image/jpeg,image/png,image/webp,image/bmp,image/tiff";
 
-export function Dropzone({ onFilesSelected, config }: DropzoneProps) {
+/**
+ * docs/ui-spec.md section 3.1: a tall centred variant with no files, a
+ * compact row once files exist. The whole zone is the label for the hidden
+ * file input; Browse is a styled span, not a nested button.
+ */
+export function Dropzone({ onFilesSelected, config, fileCount }: DropzoneProps) {
   const [dragActive, setDragActive] = useState(false);
+  const compact = fileCount > 0;
+
+  const className = [
+    "drop",
+    compact ? null : "tall",
+    dragActive ? "drag-active" : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <label
-      className={dragActive ? "dropzone drag-active" : "dropzone"}
+      className={className}
       htmlFor="image-upload"
       onDragOver={(event) => {
         event.preventDefault();
@@ -29,15 +43,32 @@ export function Dropzone({ onFilesSelected, config }: DropzoneProps) {
         onFilesSelected(Array.from(event.dataTransfer.files ?? []));
       }}
     >
-      <span className="mark" aria-hidden="true">
-        ↗
+      <span className="ico" aria-hidden="true">
+        {compact ? (
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+        ) : (
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
+            <path d="M12 16V4m0 0-4 4m4-4 4 4" />
+            <path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" />
+          </svg>
+        )}
       </span>
-      <strong>Drop overlapping images</strong>
-      <span className="hint">
-        JPG · PNG · WEBP · BMP · TIFF
-        <br />
-        {MIN_FILES}–{config.max_upload_files} frames, {config.max_upload_mb} MB each
-      </span>
+      {compact ? (
+        <div className="drop-text">
+          <strong>Add more frames</strong>
+          <small>Appended after frame {String(fileCount).padStart(2, "0")}</small>
+        </div>
+      ) : (
+        <div className="drop-text">
+          <strong>Drop overlapping images</strong>
+          <small>
+            JPG · PNG · WEBP · BMP · TIFF — up to {config.max_upload_mb} MB each
+          </small>
+        </div>
+      )}
+      <span className="btn-ghost">{compact ? "Browse" : "Browse files"}</span>
       <input
         id="image-upload"
         type="file"

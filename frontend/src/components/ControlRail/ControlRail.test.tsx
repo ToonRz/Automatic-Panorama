@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { ControlRail } from "./ControlRail";
 import { FALLBACK_CONFIG } from "../../constants/config";
+import { RANSAC_MAX, RANSAC_MIN, RATIO_MAX, RATIO_MIN } from "../../constants/thresholds";
 
 const baseProps = {
   files: [],
@@ -40,11 +41,12 @@ describe("ControlRail primary button", () => {
     expect(screen.getByRole("button", { name: /stitch panorama/i })).toBeEnabled();
   });
 
-  it("keeps the ready placeholder controls visible but disabled while preparing", () => {
+  it("keeps the ready placeholder controls visible but disables both radios while preparing", () => {
     render(<ControlRail {...baseProps} state="preparing" />);
     expect(screen.getByText(/drop overlapping images/i)).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /preparing images/i })).toBeDisabled();
-    expect(screen.getByRole("combobox", { name: /feature detector/i })).toBeDisabled();
+    expect(screen.getByRole("radio", { name: "SIFT" })).toBeDisabled();
+    expect(screen.getByRole("radio", { name: "ORB" })).toBeDisabled();
   });
 
   it("disables with 'Stitching…' while working", () => {
@@ -112,7 +114,8 @@ describe("ControlRail primary button", () => {
         selectionError="Choose up to 5 frames. You chose 6."
       />,
     );
-    expect(screen.getByText("0 / 5")).toBeInTheDocument();
+    const head = screen.getByText("Source frames").closest(".panel-head");
+    expect(head).toHaveTextContent("0 / 5");
     expect(screen.getByRole("alert")).toHaveTextContent("Choose up to 5 frames. You chose 6.");
   });
 
@@ -130,7 +133,7 @@ describe("ControlRail primary button", () => {
     expect(screen.getByRole("button", { name: /fix the marked frames/i })).toBeDisabled();
   });
 
-  it("shows original-to-upload dimensions and counts prepared bytes", () => {
+  it("shows the combined dimensions-and-size meta line, and counts prepared bytes in the total row", () => {
     const original = new File([new Uint8Array(20)], "IMG_4412.jpg", { type: "image/jpeg" });
     const upload = new File([new Uint8Array(10 * 1024)], "IMG_4412.jpg", { type: "image/jpeg" });
     render(
@@ -150,8 +153,12 @@ describe("ControlRail primary button", () => {
         }]}
       />,
     );
-    expect(screen.getByText("4032×3024 → 1600×1200")).toBeInTheDocument();
-    expect(screen.getByText(/upload total · 10 KB/i)).toBeInTheDocument();
+    expect(screen.getByText("4032×3024 → 1600×1200 · 10 KB")).toBeInTheDocument();
+    // The order/total row shows the prepared total, not File.size (1 byte).
+    expect(screen.getByText("10 KB")).toBeInTheDocument();
+    expect(
+      screen.getByText("Frames stitch in list order — capture order, left to right."),
+    ).toBeInTheDocument();
   });
 
   it("locks the button with a countdown label during a SERVICE_BUSY wait (I11)", () => {
@@ -185,6 +192,125 @@ describe("ControlRail primary button", () => {
     );
     const files = screen.getAllByLabelText("Selected images")[0];
     expect(files.querySelectorAll(".file.invalid")).toHaveLength(2);
+  });
+
+  it("shows the action-footer meta row once a file is chosen (n frames · detector, prepared bytes)", () => {
+    const files = [
+      new File([new Uint8Array(10 * 1024)], "a.jpg", { type: "image/jpeg" }),
+      new File([new Uint8Array(10 * 1024)], "b.jpg", { type: "image/jpeg" }),
+    ];
+    render(
+      <ControlRail
+        {...baseProps}
+        state="ready"
+        files={files}
+        fileErrors={[null, null]}
+        detector="ORB"
+      />,
+    );
+    expect(screen.getByText("2 frames · ORB")).toBeInTheDocument();
+    expect(screen.getByText("≈ 20 KB upload")).toBeInTheDocument();
+  });
+
+  it("omits the action-footer meta row with no files chosen", () => {
+    render(<ControlRail {...baseProps} state="empty" />);
+    expect(screen.queryByText(/upload$/i)).not.toBeInTheDocument();
+  });
+});
+
+describe("ControlRail detector radiogroup (A17)", () => {
+  it("is a radiogroup named 'Feature detector' with radios named SIFT and ORB", () => {
+    render(<ControlRail {...baseProps} state="ready" />);
+    const group = screen.getByRole("radiogroup", { name: "Feature detector" });
+    expect(group).toBeInTheDocument();
+    expect(screen.getByRole("radio", { name: "SIFT" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "ORB" })).not.toBeChecked();
+  });
+
+  it("enables both radios in the ready state", () => {
+    render(<ControlRail {...baseProps} state="ready" />);
+    expect(screen.getByRole("radio", { name: "SIFT" })).toBeEnabled();
+    expect(screen.getByRole("radio", { name: "ORB" })).toBeEnabled();
+  });
+
+  it("clicking ORB calls onDetectorChange('ORB')", async () => {
+    const onDetectorChange = vi.fn();
+    const user = userEvent.setup();
+    render(<ControlRail {...baseProps} state="ready" onDetectorChange={onDetectorChange} />);
+    await user.click(screen.getByRole("radio", { name: "ORB" }));
+    expect(onDetectorChange).toHaveBeenCalledWith("ORB");
+  });
+
+  it("moves the selection with the arrow keys and calls onDetectorChange", async () => {
+    const onDetectorChange = vi.fn();
+    const user = userEvent.setup();
+    render(<ControlRail {...baseProps} state="ready" onDetectorChange={onDetectorChange} />);
+    screen.getByRole("radio", { name: "SIFT" }).focus();
+    await user.keyboard("{ArrowRight}");
+    expect(onDetectorChange).toHaveBeenCalledWith("ORB");
+  });
+
+  it("disables both radios while working or preparing", () => {
+    const { rerender } = render(<ControlRail {...baseProps} state="working" />);
+    expect(screen.getByRole("radio", { name: "SIFT" })).toBeDisabled();
+    expect(screen.getByRole("radio", { name: "ORB" })).toBeDisabled();
+    rerender(<ControlRail {...baseProps} state="preparing" />);
+    expect(screen.getByRole("radio", { name: "SIFT" })).toBeDisabled();
+    expect(screen.getByRole("radio", { name: "ORB" })).toBeDisabled();
+  });
+});
+
+describe("ControlRail sliders (--p custom property)", () => {
+  it("sets --p to 0% at the minimum, 100% at the maximum, and proportional in between", () => {
+    const { rerender } = render(<ControlRail {...baseProps} state="ready" ratioThreshold={RATIO_MIN} />);
+    const ratioInput = screen.getByLabelText(/lowe ratio test/i) as HTMLInputElement;
+    expect(ratioInput.style.getPropertyValue("--p")).toBe("0%");
+
+    rerender(<ControlRail {...baseProps} state="ready" ratioThreshold={RATIO_MAX} />);
+    expect(
+      (screen.getByLabelText(/lowe ratio test/i) as HTMLInputElement).style.getPropertyValue("--p"),
+    ).toBe("100%");
+
+    const mid = (RATIO_MIN + RATIO_MAX) / 2;
+    rerender(<ControlRail {...baseProps} state="ready" ratioThreshold={mid} />);
+    expect(
+      (screen.getByLabelText(/lowe ratio test/i) as HTMLInputElement).style.getPropertyValue("--p"),
+    ).toBe("50%");
+  });
+
+  it("does the same for the RANSAC slider", () => {
+    const { rerender } = render(
+      <ControlRail {...baseProps} state="ready" ransacThreshold={RANSAC_MIN} />,
+    );
+    expect(
+      (screen.getByLabelText(/ransac tolerance/i) as HTMLInputElement).style.getPropertyValue("--p"),
+    ).toBe("0%");
+
+    rerender(<ControlRail {...baseProps} state="ready" ransacThreshold={RANSAC_MAX} />);
+    expect(
+      (screen.getByLabelText(/ransac tolerance/i) as HTMLInputElement).style.getPropertyValue("--p"),
+    ).toBe("100%");
+  });
+});
+
+describe("ControlRail dropzone variant", () => {
+  it("shows the tall variant with no files and the compact variant with files", () => {
+    const { rerender } = render(<ControlRail {...baseProps} state="empty" />);
+    expect(document.querySelector(".drop.tall")).toBeInTheDocument();
+    expect(screen.getByText("Drop overlapping images")).toBeInTheDocument();
+
+    const files = [new File([new Uint8Array(10)], "a.jpg", { type: "image/jpeg" })];
+    rerender(<ControlRail {...baseProps} state="ready" files={files} fileErrors={[null]} />);
+    expect(document.querySelector(".drop.tall")).not.toBeInTheDocument();
+    expect(screen.getByText("Add more frames")).toBeInTheDocument();
+    expect(screen.getByText("Appended after frame 01")).toBeInTheDocument();
+  });
+
+  it("shows neither variant in working or complete", () => {
+    const { rerender } = render(<ControlRail {...baseProps} state="working" />);
+    expect(document.querySelector(".drop")).not.toBeInTheDocument();
+    rerender(<ControlRail {...baseProps} state="complete" />);
+    expect(document.querySelector(".drop")).not.toBeInTheDocument();
   });
 });
 
