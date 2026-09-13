@@ -15,7 +15,7 @@ export interface WorkingStateProps {
 export function WorkingState({ fileCount, detector, isColdStart }: WorkingStateProps) {
   return (
     <div className="placeholder working">
-      <svg className="frames" width="300" height="130" viewBox="0 0 300 130" aria-hidden="true">
+      <svg className="frames" width="352" height="130" viewBox="-26 0 352 130" aria-hidden="true">
         <g className="f1">
           <rect x="10" y="20" width="120" height="90" rx="8" />
           <text x="20" y="40">01</text>
