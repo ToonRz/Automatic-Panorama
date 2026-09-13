@@ -398,7 +398,10 @@ matrix arithmetic on the server is what the layer contract requires.
 
 **`seam_lines`** — one entry per pair, each `{ "top": [x, y], "bottom": [x, y] }`.
 The two points are the shared image boundary between that pair's frames,
-projected onto the output canvas.
+projected onto the output canvas: the vertical edge of the earlier frame that
+faces the later frame's projected centre. That is the right edge for a
+left-to-right pan and the left edge for a right-to-left pan; always taking the
+right edge would put a right-to-left seam on the panorama's outer border.
 
 This replaces the mock's `seam_positions_x`, which sent a single x per pair. A
 single x is only correct when the homography is a pure horizontal translation.

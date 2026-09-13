@@ -1,5 +1,31 @@
 import type { SeamLine, StitchCorrespondence } from "../../types";
 
+const LABEL_GAP = 12;
+const LABEL_BASELINE = 28;
+const LABEL_LINE_HEIGHT = 32;
+/** Rough rendered width of "SEAM 01 · 999 inliers" at 22px mono, letter-spaced. */
+const LABEL_WIDTH = 330;
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
+}
+
+/**
+ * Anchors the label at the seam's top point, but inside the image: the crop
+ * can leave a seam's top point above the panorama, and a seam near the right
+ * border has no room for a label on its right, so it flips to the left.
+ * Each seam's label drops one line below the previous seam's, so labels of
+ * close seams do not overprint each other.
+ */
+function labelPosition(seam: SeamLine, index: number, width: number, height: number) {
+  const x = clamp(seam.top[0], 0, width);
+  const baseline = LABEL_BASELINE + index * LABEL_LINE_HEIGHT;
+  const y = clamp(seam.top[1], 0, Math.max(0, height - baseline)) + baseline;
+  return x + LABEL_GAP + LABEL_WIDTH <= width
+    ? { x: x + LABEL_GAP, y, textAnchor: "start" as const }
+    : { x: x - LABEL_GAP, y, textAnchor: "end" as const };
+}
+
 export interface OverlayProps {
   width: number;
   height: number;
@@ -76,8 +102,7 @@ export function Overlay({
               </g>
             ))}
             <text
-              x={seam.top[0] + 12}
-              y={seam.top[1] + 28}
+              {...labelPosition(seam, index, width, height)}
               style={{ fill: "var(--aqua)", fontFamily: "var(--mono)" }}
               fontSize={22}
               letterSpacing={2}

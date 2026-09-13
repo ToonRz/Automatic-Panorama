@@ -71,20 +71,35 @@ def _seam_lines(
     transforms: list[np.ndarray],
     translation: np.ndarray,
 ) -> list[dict[str, list[float]]]:
-    """The right edge of image i, projected onto the canvas, for each adjacent pair.
+    """Image i's edge facing image i+1, projected onto the canvas, for each adjacent pair.
 
-    Image i and image i+1 are adjacent captures of a continuous pan; image
-    i's right edge stands in for the boundary the two share. A pure
-    horizontal pan keeps this line vertical; real perspective tilts it,
-    which is exactly what the overlay exists to show (spec section 8).
+    Image i and image i+1 are adjacent captures of a continuous pan; the
+    vertical edge of image i that lies inside image i+1 stands in for the
+    boundary the two share. Which edge that is depends on the pan direction:
+    the right edge for a left-to-right pan, the left edge for right-to-left.
+    Always taking the right edge put a right-to-left seam on the panorama's
+    outer border, hiding it. A pure horizontal pan keeps this line vertical;
+    real perspective tilts it, which is exactly what the overlay exists to
+    show (spec section 8).
     """
 
     seams = []
     for i in range(len(image_sizes) - 1):
         width, height = image_sizes[i]
-        edge = np.array([[width, 0], [width, height]], dtype=np.float32).reshape(-1, 1, 2)
         full_transform = translation @ transforms[i]
-        projected = cv2.perspectiveTransform(edge, full_transform).reshape(-1, 2)
+        next_width, next_height = image_sizes[i + 1]
+        next_center = cv2.perspectiveTransform(
+            np.array([[[next_width / 2, next_height / 2]]], dtype=np.float32),
+            translation @ transforms[i + 1],
+        ).reshape(2)
+
+        candidates = []
+        for x in (0, width):
+            edge = np.array([[x, 0], [x, height]], dtype=np.float32).reshape(-1, 1, 2)
+            candidates.append(cv2.perspectiveTransform(edge, full_transform).reshape(-1, 2))
+        projected = min(
+            candidates, key=lambda line: float(np.linalg.norm(line.mean(axis=0) - next_center))
+        )
         seams.append(
             {
                 "top": [float(projected[0][0]), float(projected[0][1])],
