@@ -439,3 +439,34 @@ exact commands.
   always-on option) and Firebase (Cloud Functions need the Blaze plan, and the
   32 MiB Cloud Run HTTP/1 request limit is below `MAX_TOTAL_UPLOAD_MB`). See
   D-008.
+
+### Phone-photo memory incident (2026-09-13)
+
+Three portrait phone frames prepared at a 1600 px long edge caused a dropped
+stitch connection. Render sampled 536,756,220 bytes against a 536,870,900-byte
+limit at 13:44 UTC, followed by a process restart at 13:44:52. The production
+origin received a valid CORS header on `/healthz`. These observations point
+to memory exhaustion rather than a HEIC decode failure.
+
+The local three-frame reproduction completed but reached 1,071,611,904 bytes
+maximum RSS on macOS. Blending now uses float32 accumulation, in-place
+normalization, and one-channel exposure correction instead of several full
+float64 RGB copies; exposure estimation keeps grayscale images as uint8.
+The same local run reached 679,542,784 bytes after this change. These macOS
+measurements are comparative evidence, not Linux cgroup limits or proof
+that the default 1600 px budget fits Render Free.
+
+The Render `INPUT_LONG_EDGE_CAP` override and Blueprint are reduced to 1000
+as the operational mitigation. The backend enforces this cap even for an
+already-open client that submits 1600 px images. Local development defaults
+remain 1600. The blend regression test checks temporary NumPy allocations
+and output equivalence within one intensity level; it does not measure all
+OpenCV native allocations or replace the container memory harness.
+
+Live verification after the cap update: the production stitch endpoint
+returned HTTP 200 with `status: complete` for the same three phone scenes
+submitted as 1200×1600 JPEGs. The server reduced them to 750×1000 and produced
+1660×990 output, with 788/406 inliers and 1.17/1.21 px reprojection error.
+The response included the production frontend's CORS origin. This run used
+the existing deployed blend code; the allocation optimization above is a
+separate local change pending deployment.

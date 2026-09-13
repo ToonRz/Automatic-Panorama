@@ -29,7 +29,7 @@ services:
       - key: CANVAS_BUDGET_FRACTION
         value: "0.75"
       - key: INPUT_LONG_EDGE_CAP
-        value: "1600"
+        value: "1000"
       - key: INPUT_LONG_EDGE_FLOOR
         value: "640"
       - key: DEFAULT_DETECTOR

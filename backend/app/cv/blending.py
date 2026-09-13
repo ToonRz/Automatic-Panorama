@@ -24,7 +24,7 @@ def estimate_exposure_gains(
     """
 
     gains = [1.0] * len(warped_images)
-    grays = [cv2.cvtColor(image, cv2.COLOR_BGR2GRAY).astype(np.float64) for image in warped_images]
+    grays = [cv2.cvtColor(image, cv2.COLOR_BGR2GRAY) for image in warped_images]
 
     for i in range(1, len(warped_images)):
         overlap = (valid_masks[i - 1] > 0) & (valid_masks[i] > 0)
@@ -40,16 +40,10 @@ def estimate_exposure_gains(
     return gains
 
 
-def _apply_gains(warped_images: list[np.ndarray], gains: list[float]) -> list[np.ndarray]:
-    return [
-        np.clip(image.astype(np.float64) * gain, 0, 255).astype(np.uint8)
-        for image, gain in zip(warped_images, gains, strict=True)
-    ]
-
-
 def feather_blend(
     warped_images: list[np.ndarray],
     masks: list[np.ndarray],
+    gains: list[float] | None = None,
 ) -> np.ndarray:
     """Blend warped images with distance-transform feather weights, in float space.
 
@@ -60,20 +54,31 @@ def feather_blend(
     """
 
     height, width = masks[0].shape[:2]
-    accumulator = np.zeros((height, width, 3), dtype=np.float64)
-    weight_sum = np.zeros((height, width), dtype=np.float64)
+    accumulator = np.zeros((height, width, 3), dtype=np.float32)
+    weight_sum = np.zeros((height, width), dtype=np.float32)
+    scratch = np.empty((height, width), dtype=np.float32)
+    if gains is None:
+        gains = [1.0] * len(warped_images)
 
-    for image, mask in zip(warped_images, masks, strict=True):
+    for image, mask, gain in zip(warped_images, masks, gains, strict=True):
         binary_mask = (mask > 0).astype(np.uint8)
-        weight = cv2.distanceTransform(binary_mask, cv2.DIST_L2, 5).astype(np.float64)
-        accumulator += image.astype(np.float64) * weight[..., np.newaxis]
+        weight = cv2.distanceTransform(binary_mask, cv2.DIST_L2, 5)
+        for channel in range(3):
+            # Preserve the original clipped uint8 gain semantics, one channel
+            # at a time, without keeping another full set of graded images.
+            np.multiply(image[..., channel], gain, out=scratch)
+            np.clip(scratch, 0, 255, out=scratch)
+            np.floor(scratch, out=scratch)
+            scratch *= weight
+            accumulator[..., channel] += scratch
         weight_sum += weight
 
-    covered = weight_sum > 1e-6
-    safe_weight_sum = np.where(covered, weight_sum, 1.0)
-    blended = accumulator / safe_weight_sum[..., np.newaxis]
-    blended[~covered] = 0.0
-    return np.clip(blended, 0, 255).astype(np.uint8)
+    # Uncovered pixels have zero accumulated color; a denominator of one
+    # preserves black without allocating another full RGB canvas.
+    weight_sum[weight_sum <= 1e-6] = 1.0
+    accumulator /= weight_sum[..., np.newaxis]
+    np.clip(accumulator, 0, 255, out=accumulator)
+    return accumulator.astype(np.uint8)
 
 
 def blend_with_exposure_compensation(
@@ -83,8 +88,7 @@ def blend_with_exposure_compensation(
     """Compensate exposure, then feather-blend; the composition gate 9 actually runs."""
 
     gains = estimate_exposure_gains(warped_images, masks)
-    graded = _apply_gains(warped_images, gains)
-    return feather_blend(graded, masks)
+    return feather_blend(warped_images, masks, gains)
 
 
 def _min_pool(binary_mask: np.ndarray, factor: int) -> np.ndarray:
