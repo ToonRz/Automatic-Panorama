@@ -107,6 +107,8 @@ export interface UseStitchRunResult {
   cancel: () => void;
   /** The section 8.2 note; cleared by the next submit or selection. */
   cancelledNote: string | null;
+  /** Reset all files and return to the empty state without page reload. */
+  reset: () => void;
   /** Dev-only, mock-mode-only escape hatch for the state switcher. */
   forceDebugState: (key: DebugStateKey) => void;
 }
@@ -373,6 +375,19 @@ export function useStitchRun(
     setPhase({ kind: "idle" });
   }
 
+  function reset() {
+    requestIdRef.current += 1;
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+    setFilesInternal([]);
+    setPreparedImages([]);
+    setFileErrors([]);
+    setTotalError(null);
+    setSelectionError(null);
+    setCancelledNote(null);
+    setPhase({ kind: "idle" });
+  }
+
   function forceDebugState(key: DebugStateKey) {
     // Checked as a literal (not the shared isMockApiEnabled() helper) so
     // esbuild folds this whole branch away within this file's own transform
@@ -503,6 +518,7 @@ export function useStitchRun(
     submit,
     cancel,
     cancelledNote,
+    reset,
     forceDebugState,
   };
 }

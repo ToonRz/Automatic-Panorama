@@ -352,4 +352,56 @@ describe("ControlRail frame selection", () => {
     render(<ControlRail {...baseProps} state="working" files={frames} fileErrors={[null, null]} />);
     expect(screen.queryByRole("button", { name: /^remove/i })).not.toBeInTheDocument();
   });
+
+  it("allows removing a frame by index in complete state", async () => {
+    const onFileRemoved = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <ControlRail
+        {...baseProps}
+        state="complete"
+        files={frames}
+        fileErrors={[null, null]}
+        onFileRemoved={onFileRemoved}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: "Remove b.jpg" }));
+    expect(onFileRemoved).toHaveBeenCalledWith(1);
+  });
+
+  it("renders Clear all and calls onReset when clicked", async () => {
+    const onReset = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <ControlRail
+        {...baseProps}
+        state="complete"
+        files={frames}
+        fileErrors={[null, null]}
+        onReset={onReset}
+      />,
+    );
+    const clearBtn = screen.getByRole("button", { name: /clear all/i });
+    expect(clearBtn).toBeInTheDocument();
+    await user.click(clearBtn);
+    expect(onReset).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders + Start new panorama in complete state and calls onReset when clicked", async () => {
+    const onReset = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <ControlRail
+        {...baseProps}
+        state="complete"
+        files={frames}
+        fileErrors={[null, null]}
+        onReset={onReset}
+      />,
+    );
+    const newBtn = screen.getByRole("button", { name: /\+ start new panorama/i });
+    expect(newBtn).toBeInTheDocument();
+    await user.click(newBtn);
+    expect(onReset).toHaveBeenCalledTimes(1);
+  });
 });
