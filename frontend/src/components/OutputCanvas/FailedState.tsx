@@ -21,8 +21,10 @@ function contextChipValue(key: string, value: string | number | number[]): strin
 }
 
 /**
- * docs/ui-spec.md section 7: heading, HTTP status + code in mono, the
- * backend message, then context chips (omitted when context is absent).
+ * docs/ui-spec.md section 7: a card rendering five things in order — the
+ * status/code eyebrow, the heading, the backend message, context chips
+ * (omitted when absent), and the remedy list. Chip and remedy logic is
+ * unchanged from v1; only the card layout and the eyebrow-first order move.
  */
 export function FailedState({
   status,
@@ -35,23 +37,20 @@ export function FailedState({
   const context = detail.context;
 
   return (
-    <div>
-      <div className="alert" role="alert">
-        <h3>{heading}</h3>
-        <code>{status > 0 ? `${status} · ${detail.code}` : detail.code}</code>
-        <p>{detail.message}</p>
-        {context && (
-          <div className="ctx">
-            {Object.entries(context).map(([key, value]) => (
-              <span key={key}>
-                {key}
-                <b>{contextChipValue(key, value)}</b>
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-      <ul className="remedy">
+    <div className="failcard" role="alert">
+      <span className="code">{status > 0 ? `${status} · ${detail.code}` : detail.code}</span>
+      <h3>{heading}</h3>
+      <p>{detail.message}</p>
+      {context && (
+        <div className="chips">
+          {Object.entries(context).map(([key, value]) => (
+            <span className="chip" key={key}>
+              {key} {contextChipValue(key, value)}
+            </span>
+          ))}
+        </div>
+      )}
+      <ul>
         {remedies.map((line) => (
           <li key={line}>{line}</li>
         ))}

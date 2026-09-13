@@ -125,6 +125,9 @@ export default function App() {
             isStale={run.isStale}
             config={config}
             files={run.files}
+            detector={run.detector}
+            ratioThreshold={run.ratioThreshold}
+            ransacThreshold={run.ransacThreshold}
           />
         </div>
 

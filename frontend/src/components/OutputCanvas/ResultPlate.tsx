@@ -1,69 +1,47 @@
-import { useState } from "react";
-
 import type { StitchResponse } from "../../types";
 import { Overlay } from "./Overlay";
 
 export interface ResultPlateProps {
   result: StitchResponse;
+  /** Owned by `OutputCanvas` now that the toggle lives in the stage head. */
+  overlayOn: boolean;
 }
 
-function downloadFilename(detector: string, width: number, height: number): string {
-  return `panorama-${detector}-${width}x${height}.png`.toLowerCase();
+function mimeLabel(mimeType: string): string {
+  const subtype = mimeType.split("/")[1];
+  return subtype ? subtype.toUpperCase() : mimeType;
 }
 
 /**
- * docs/ui-spec.md sections 6.2-6.3: the panorama plate, the overlay toggle
- * (absent entirely when the overlay fields are missing), and the download
- * button, which always saves the clean image.
+ * docs/ui-spec.md section 3.1/6.2: the panorama plate with a drop shadow and
+ * the mono `W × H · MP · PNG` caption. The overlay toggle and download
+ * button live in the stage head (`OutputCanvas`); this component only draws
+ * the image, the optional overlay, and the caption.
  */
-export function ResultPlate({ result }: ResultPlateProps) {
+export function ResultPlate({ result, overlayOn }: ResultPlateProps) {
   const { diagnostics, image } = result;
-  const [overlayOn, setOverlayOn] = useState(true);
-
   const hasOverlay = Boolean(diagnostics.seam_lines && diagnostics.sample_correspondences_per_pair);
-  const filename = downloadFilename(diagnostics.detector, image.width, image.height);
-
-  function handleDownload() {
-    const link = document.createElement("a");
-    link.href = image.data_url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
+  const megapixels = (image.width * image.height) / 1_000_000;
 
   return (
-    <>
-      <div className="plate">
-        <img
-          src={image.data_url}
-          alt={`Stitched panorama of ${diagnostics.image_count} frames, ${image.width} by ${image.height} pixels`}
+    <div className="plate">
+      <img
+        className="pano"
+        src={image.data_url}
+        alt={`Stitched panorama of ${diagnostics.image_count} frames, ${image.width} by ${image.height} pixels`}
+      />
+      {hasOverlay && overlayOn && (
+        <Overlay
+          width={image.width}
+          height={image.height}
+          seamLines={diagnostics.seam_lines!}
+          correspondencesPerPair={diagnostics.sample_correspondences_per_pair!}
+          inliersPerPair={diagnostics.inliers_per_pair}
         />
-        {hasOverlay && overlayOn && (
-          <Overlay
-            width={image.width}
-            height={image.height}
-            seamLines={diagnostics.seam_lines!}
-            correspondencesPerPair={diagnostics.sample_correspondences_per_pair!}
-            inliersPerPair={diagnostics.inliers_per_pair}
-          />
-        )}
-      </div>
-      <div className="plate-foot">
-        {hasOverlay && (
-          <button
-            className="toggle"
-            type="button"
-            aria-pressed={overlayOn}
-            onClick={() => setOverlayOn((value) => !value)}
-          >
-            <i aria-hidden="true" /> Seams &amp; inliers
-          </button>
-        )}
-        <button className="download" type="button" onClick={handleDownload}>
-          ↓ Download PNG · {image.width} × {image.height}
-        </button>
-      </div>
-    </>
+      )}
+      <span className="corner br">
+        {image.width} × {image.height} · {megapixels.toFixed(2)} MP · {mimeLabel(image.mime_type)}
+      </span>
+    </div>
   );
 }

@@ -37,7 +37,7 @@ describe("App with the mock switcher (VITE_MOCK_API=true)", () => {
     expect(screen.getByRole("button", { name: /preparing images/i })).toBeDisabled();
 
     await user.click(screen.getByRole("button", { name: "Stitching" }));
-    expect(screen.getByText(/decode & normalize frames/i)).toBeInTheDocument();
+    expect(screen.getByText("Decode")).toBeInTheDocument();
     expect(screen.queryByText(/waking up/i)).not.toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Stitching (cold start)" }));
