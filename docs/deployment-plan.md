@@ -360,18 +360,25 @@ With screenshots:
 
 ## 10. Public URLs and operations log
 
-Not yet deployed. Filled in by 09c–09e.
+Backend is live (09c). Frontend/Vercel items are **pending manual setup** —
+see the hand-off list in the 09c PR and the session's final report: the
+Vercel MCP connector available to this deploy session had no team linked and
+its CLI was logged out, so the Vercel side of 09c could not be automated.
 
 | Item | Value |
 | --- | --- |
-| Frontend (Vercel Production) | _pending_ |
-| `test` branch Preview | _pending_ |
-| Backend (Render) | _pending_ |
-| Served commit | _pending_ |
-| Preview CORS pattern | _pending_ |
-| UptimeRobot monitor | _pending_ |
+| Frontend (Vercel Production) | _pending — hand-off: confirm the production domain for the `automatic-panorama` project under the `toonrzs-projects` team and record it here_ |
+| `test` branch Preview | _pending — same hand-off_ |
+| Backend (Render) | `https://automatic-panorama-api.onrender.com` (Free, Singapore) |
+| Served commit | `9f2f373278204a39ed0f8b5dee999fc8e3d13461` (merge of PR #3, 09b) |
+| Preview CORS pattern | `^https://automatic-panorama-[a-z0-9-]+-toonrzs-projects\.vercel\.app$` (set on Render; verified in Python against the branch-preview host, a commit-hash host, an `.evil.com` suffix, another project name, and `http://`, per section 5) |
+| UptimeRobot monitor | _pending — hand-off, requires a human-owned account (09d)_ |
 | Keep-alive enabled on | _pending_ |
 | Keep-alive disabled on | _still on_ |
+
+Note: `BACKEND_CORS_ORIGINS` on Render is still `http://localhost:5173` only
+— the real Vercel production origin could not be confirmed from this session
+(see above) and must be added once known, per section 6 of the 09c hand-off.
 
 | Date | Event |
 | --- | --- |

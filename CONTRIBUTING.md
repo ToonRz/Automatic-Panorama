@@ -23,6 +23,19 @@ Long-lived branches:
 | `test` | QA and deployment rehearsal | PR, CI green, smoke test |
 | `develop` | Integration branch for completed slices | PR, CI green |
 
+### Merging into `test` and `main`
+
+ToonRz merges every PR into `test` and into `main` using GitHub's
+**"Create a merge commit"** option, never squash or rebase merge. This is not
+a style preference: on the Vercel Hobby plan, a private repository's
+Production and Preview deployments are only built from a commit authored by
+the Hobby team owner (`docs/deployment-plan.md` section 4.1). A squash or
+rebase merge rewrites the commit and keeps the original PR author, which
+Vercel then refuses to deploy. A merge commit is authored by whoever clicks
+merge, so ToonRz merging with "Create a merge commit" is what keeps the
+`test` branch Preview and the `main` Production deploy alive regardless of
+who authored the underlying feature branch.
+
 Short-lived branches are cut from `develop` and deleted after merge:
 
 | Prefix | Use |
