@@ -17,6 +17,7 @@ export interface ControlRailProps {
   error: FailedDetail | null;
   busySecondsLeft: number | null;
   onFilesSelected: (files: File[]) => void;
+  onFileRemoved: (index: number) => void;
   detector: Detector;
   onDetectorChange: (detector: Detector) => void;
   ratioThreshold: number;
@@ -79,6 +80,7 @@ export function ControlRail({
   error,
   busySecondsLeft,
   onFilesSelected,
+  onFileRemoved,
   detector,
   onDetectorChange,
   ratioThreshold,
@@ -124,6 +126,7 @@ export function ControlRail({
         fileErrors={fileErrors}
         totalError={totalError}
         highlightedIndices={highlightedIndices}
+        onRemove={showDropzone ? onFileRemoved : undefined}
       />
 
       <div className="rule" />

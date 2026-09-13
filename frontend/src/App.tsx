@@ -51,7 +51,8 @@ export default function App() {
           error={run.error}
           busySecondsLeft={run.busySecondsLeft}
           hasPreflightErrors={run.hasPreflightErrors}
-          onFilesSelected={run.setFiles}
+          onFilesSelected={run.addFiles}
+          onFileRemoved={run.removeFile}
           detector={run.detector}
           onDetectorChange={run.setDetector}
           ratioThreshold={run.ratioThreshold}

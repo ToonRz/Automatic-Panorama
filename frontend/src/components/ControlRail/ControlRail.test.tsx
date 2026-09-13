@@ -16,6 +16,7 @@ const baseProps = {
   busySecondsLeft: null,
   hasPreflightErrors: false,
   onFilesSelected: vi.fn(),
+  onFileRemoved: vi.fn(),
   detector: "SIFT" as const,
   onDetectorChange: vi.fn(),
   ratioThreshold: 0.75,
@@ -184,5 +185,45 @@ describe("ControlRail primary button", () => {
     );
     const files = screen.getAllByLabelText("Selected images")[0];
     expect(files.querySelectorAll(".file.invalid")).toHaveLength(2);
+  });
+});
+
+describe("ControlRail frame selection", () => {
+  const frames = [
+    new File([new Uint8Array(10)], "a.jpg", { type: "image/jpeg" }),
+    new File([new Uint8Array(10)], "b.jpg", { type: "image/jpeg" }),
+  ];
+
+  it("passes every pick to onFilesSelected, even the same file twice", async () => {
+    const onFilesSelected = vi.fn();
+    const user = userEvent.setup();
+    render(<ControlRail {...baseProps} state="empty" onFilesSelected={onFilesSelected} />);
+    const input = screen.getByLabelText(/drop overlapping images/i) as HTMLInputElement;
+
+    await user.upload(input, frames[0]);
+    await user.upload(input, frames[0]);
+    expect(onFilesSelected).toHaveBeenCalledTimes(2);
+    expect(input.value).toBe("");
+  });
+
+  it("removes a frame by index while the selection is editable", async () => {
+    const onFileRemoved = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <ControlRail
+        {...baseProps}
+        state="ready"
+        files={frames}
+        fileErrors={[null, null]}
+        onFileRemoved={onFileRemoved}
+      />,
+    );
+    await user.click(screen.getByRole("button", { name: "Remove b.jpg" }));
+    expect(onFileRemoved).toHaveBeenCalledWith(1);
+  });
+
+  it("hides remove controls while working", () => {
+    render(<ControlRail {...baseProps} state="working" files={frames} fileErrors={[null, null]} />);
+    expect(screen.queryByRole("button", { name: /^remove/i })).not.toBeInTheDocument();
   });
 });

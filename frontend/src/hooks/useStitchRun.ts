@@ -78,6 +78,9 @@ export interface UseStitchRunResult {
   files: File[];
   preparedImages: Array<PreparedImage | null>;
   setFiles: (files: File[]) => void;
+  /** Appends newly picked frames after the current selection. */
+  addFiles: (files: File[]) => void;
+  removeFile: (index: number) => void;
   fileErrors: Array<string | null>;
   totalError: string | null;
   selectionError: string | null;
@@ -230,6 +233,15 @@ export function useStitchRun(
       setTotalError(postflight.totalError);
       setPhase({ kind: "idle" });
     })();
+  }
+
+  function addFiles(newFiles: File[]) {
+    if (newFiles.length === 0) return;
+    setFiles([...files, ...newFiles]);
+  }
+
+  function removeFile(index: number) {
+    setFiles(files.filter((_, fileIndex) => fileIndex !== index));
   }
 
   function setDetector(value: Detector) {
@@ -470,6 +482,8 @@ export function useStitchRun(
     files,
     preparedImages,
     setFiles,
+    addFiles,
+    removeFile,
     fileErrors,
     totalError,
     selectionError,

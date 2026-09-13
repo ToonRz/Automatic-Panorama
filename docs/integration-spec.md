@@ -165,7 +165,8 @@ the size that matters is the size after preparation, not the original.
 | type | MIME in the accepted list, or the file decodes (section 6.3) | that file row is marked invalid |
 | original size | `file.size <= CLIENT_MAX_ORIGINAL_MB` (60 MB) | that file row is marked invalid: "Too large to open in the browser." |
 
-A selection is never silently trimmed.
+A new pick appends to the current selection, so the count check applies to the
+combined list. A selection is never silently trimmed.
 
 ### 5.2 After preparation
 

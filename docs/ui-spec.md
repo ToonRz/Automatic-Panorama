@@ -101,6 +101,9 @@ Transitions out of a settled state:
   state stays `complete`. Silently leaving the image under new settings would
   claim a result the numbers no longer describe, and clearing it would destroy
   the user's output because a slider moved;
+- picking or dropping frames appends them after the current selection in pick
+  order, and each row has a remove control while the dropzone is shown; both
+  count as changing the selection;
 - changing the file selection from any state clears the result and the error,
   abandons preparation already in flight, and enters `preparing` before returning
   to `empty` or `ready`. The old panorama does not describe the new frames;

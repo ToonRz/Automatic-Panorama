@@ -43,7 +43,11 @@ export function Dropzone({ onFilesSelected, config }: DropzoneProps) {
         type="file"
         accept={ACCEPTED_TYPES}
         multiple
-        onChange={(event) => onFilesSelected(Array.from(event.target.files ?? []))}
+        onChange={(event) => {
+          onFilesSelected(Array.from(event.target.files ?? []));
+          // Reset so picking the same file again still fires a change event.
+          event.target.value = "";
+        }}
       />
     </label>
   );

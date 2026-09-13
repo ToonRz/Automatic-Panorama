@@ -382,3 +382,49 @@ describe("useStitchRun forceDebugState", () => {
     expect(result.current.isColdStart).toBe(true);
   });
 });
+
+describe("useStitchRun addFiles / removeFile", () => {
+  async function settle(result: { current: ReturnType<typeof useStitchRun> }) {
+    await waitFor(() => expect(result.current.state).not.toBe("preparing"));
+  }
+
+  it("appends a later pick instead of replacing the selection", async () => {
+    const { result } = renderHook(() => useStitchRun(FALLBACK_CONFIG, prepare));
+    act(() => result.current.addFiles([fakeFile("a.jpg")]));
+    await settle(result);
+    expect(result.current.state).toBe("empty");
+
+    act(() => result.current.addFiles([fakeFile("b.jpg"), fakeFile("c.jpg")]));
+    await settle(result);
+    expect(result.current.files.map((file) => file.name)).toEqual(["a.jpg", "b.jpg", "c.jpg"]);
+    expect(result.current.preparedImages).toHaveLength(3);
+    expect(result.current.state).toBe("ready");
+  });
+
+  it("rejects an append over the count limit and keeps the previous selection", async () => {
+    const { result } = renderHook(() => useStitchRun(FALLBACK_CONFIG, prepare));
+    const max = FALLBACK_CONFIG.max_upload_files;
+    act(() => result.current.addFiles(Array.from({ length: max }, (_, i) => fakeFile(`${i}.jpg`))));
+    await settle(result);
+
+    act(() => result.current.addFiles([fakeFile("extra.jpg")]));
+    expect(result.current.selectionError).toBe(
+      `Choose up to ${max} frames. You chose ${max + 1}.`,
+    );
+    expect(result.current.files).toHaveLength(max);
+  });
+
+  it("removes one frame and re-prepares the rest", async () => {
+    const { result } = renderHook(() => useStitchRun(FALLBACK_CONFIG, prepare));
+    act(() => result.current.addFiles([fakeFile("a.jpg"), fakeFile("b.jpg"), fakeFile("c.jpg")]));
+    await settle(result);
+
+    act(() => result.current.removeFile(1));
+    await settle(result);
+    expect(result.current.files.map((file) => file.name)).toEqual(["a.jpg", "c.jpg"]);
+    expect(result.current.preparedImages.map((item) => item?.uploadName)).toEqual([
+      "a.jpg",
+      "c.jpg",
+    ]);
+  });
+});

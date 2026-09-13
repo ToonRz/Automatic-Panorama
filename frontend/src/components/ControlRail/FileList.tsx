@@ -10,6 +10,8 @@ export interface FileListProps {
   totalError: string | null;
   /** Rows a server error names (docs/integration-spec.md section 7.1). */
   highlightedIndices?: ReadonlySet<number>;
+  /** Omitted while the selection is locked (working or complete). */
+  onRemove?: (index: number) => void;
 }
 
 export function FileList({
@@ -18,6 +20,7 @@ export function FileList({
   fileErrors,
   totalError,
   highlightedIndices = new Set(),
+  onRemove,
 }: FileListProps) {
   const previews = useMemo(
     () => files.map((file) => ({ file, url: URL.createObjectURL(file) })),
@@ -53,6 +56,16 @@ export function FileList({
             <span className="size">
               {formatBytes(preparedImages[index]?.upload.size ?? file.size)}
             </span>
+            {onRemove && (
+              <button
+                type="button"
+                className="file-remove"
+                aria-label={`Remove ${file.name}`}
+                onClick={() => onRemove(index)}
+              >
+                ×
+              </button>
+            )}
             {preparedImages[index] && (
               <span className="dimensions">
                 {preparedImages[index].originalWidth}×{preparedImages[index].originalHeight}
