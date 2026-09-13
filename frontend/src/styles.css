@@ -1403,7 +1403,7 @@ td.num {
 }
 .barrow {
   display: grid;
-  grid-template-columns: 92px 1fr 64px;
+  grid-template-columns: 92px minmax(0, 1fr) 72px;
   align-items: center;
   gap: 12px;
   font-size: 12.5px;
@@ -1435,6 +1435,7 @@ td.num {
   text-align: right;
   color: var(--muted);
   font-size: 12px;
+  white-space: nowrap;
 }
 .bars-empty {
   padding: 34px 18px;
