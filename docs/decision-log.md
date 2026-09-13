@@ -80,3 +80,40 @@ which is exactly what standing rule 01 exists to prevent.
 **Tradeoff:** A genuinely unusual but valid composition, such as a very steep
 vertical pan, is rejected rather than delivered small. Retuning
 `canvas_budget_fraction` is the response to that if it ever happens.
+
+## D-008: Keep Render Free awake with an UptimeRobot monitor
+
+**Decision:** The backend stays on Render Free in Singapore. An UptimeRobot
+Free HTTP monitor requests `/healthz` every 5 minutes, 24/7 with no end date,
+and emails ToonRz on an outage.
+
+**Reason:** The goal is a backend that does not cold-start during grading, on a
+$0 budget. A 5-minute request keeps the service under Render's 15-minute
+spin-down, and the same monitor is the alerting. GitHub Actions cron would
+exhaust the private repository's free minutes. Railway Hobby ($5/month) and
+Render Starter (paid) were considered and declined on budget. Firebase was
+rejected: Cloud Functions need the Blaze plan, scale to zero, and cap HTTP/1
+requests at 32 MiB, below `MAX_TOTAL_UPLOAD_MB`.
+
+**Tradeoff:** One always-on free service uses about 744 of the workspace's 750
+free hours in a 31-day month, so the workspace runs nothing else free. Render
+may still restart the instance, so the cold-start UI stays. 512 MB of RAM makes
+the memory budget in `docs/deployment-plan.md` section 7 a release gate.
+Moving to `plan: starter` is the paid escape hatch. D-002 still holds; this
+refines its "Render sleeps" tradeoff.
+
+## D-009: Preview deployments share the production backend
+
+**Decision:** No staging backend. Vercel Preview origins for this project are
+allowed by an anchored `BACKEND_CORS_ORIGIN_REGEX`. On the Vercel Hobby plan,
+ToonRz merges into `test` and `main` with merge commits.
+
+**Reason:** QA on the `test` branch needs the real pipeline, and a second free
+service would break the instance-hour budget in D-008. Vercel Hobby deploys a
+private repository's commits only when the Hobby owner authored them, so the
+merge commit that reaches `test` or `main` must be ToonRz's.
+
+**Tradeoff:** Preview traffic shares the production instance and its
+one-stitch semaphore (D-006). Preview deploys of teammates' feature branches
+are blocked, so QA happens on `test`, not on each PR.
+
