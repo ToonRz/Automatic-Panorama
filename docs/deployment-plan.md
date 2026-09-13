@@ -226,6 +226,39 @@ container's cgroup (`memory.peak`), not from `docker stats` sampling. The
 normal path, three budget-sized frames prepared by the browser (08c), is
 measured and recorded as well.
 
+`backend/scripts/measure_peak_memory.py` implements this: it starts a fresh
+`python:3.12-slim` container per run with `--memory=512m --memory-swap=512m`,
+the repository mounted read-only, and the same install/start commands and
+`render.yaml` environment as production; it generates the synthetic pan
+in-process (no photo is committed), posts it, and reads the peak from the
+container's cgroup (`memory.peak` on cgroup v2, `memory.max_usage_in_bytes` on
+v1), detecting an OOM kill as a failure rather than a number. Run it with:
+
+```bash
+python backend/scripts/measure_peak_memory.py --profile worst --runs 3
+python backend/scripts/measure_peak_memory.py --profile normal --runs 3
+```
+
+**Status: blocked, not yet measured.** The session that wrote this script
+could not run it: this environment's egress proxy returns 403 for the Docker
+Hub CDN host (`production.cloudfront.docker.com`), so `docker pull
+python:3.12-slim` fails before a container ever starts, and the guidance for
+that failure class is to report the blocked host rather than retry or route
+around it. No peak-memory number is recorded here because none was actually
+measured — inventing one would violate the acceptance criteria for this task
+and the standing rule against distorting a result. `render.yaml` and
+`backend/app/core/config.py` keep their pre-09b defaults (`MAX_UPLOAD_FILES:
+8`, `MAX_OUTPUT_PIXELS: 8000000`, `INPUT_LONG_EDGE_CAP: 1600`) unchanged.
+Someone with a normal Docker network path (a laptop, a CI runner without this
+proxy policy) should run the two commands above, three times each per the
+method, and fill in the table below with the results before 09c's Render
+service is treated as memory-verified.
+
+| Profile | Frames | Peak (MB) | Runs | Docker version | Python image | OOM? |
+| --- | --- | --- | --- | --- | --- | --- |
+| worst | 8 @ ~50 MP | _pending_ | _pending_ | _pending_ | `python:3.12-slim` | _pending_ |
+| normal | 3 @ 1600px long edge | _pending_ | _pending_ | _pending_ | `python:3.12-slim` | _pending_ |
+
 ### 7.2 If the budget is exceeded
 
 Lower settings in this order, re-measuring after each change:
