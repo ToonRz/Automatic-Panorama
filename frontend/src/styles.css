@@ -1297,6 +1297,13 @@ input[type="range"]:disabled {
 .pairtable,
 .stagechart {
   padding: 0;
+  overflow: hidden;
+}
+/* panel-head inside panels with padding:0 must not use negative bleed margins */
+.pairtable .panel-head,
+.stagechart .panel-head {
+  margin: 0;
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
 }
 
 /* pair table */
