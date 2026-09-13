@@ -1,0 +1,1875 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pipeline Loader Redesign Mockup — Automatic Panorama Stitcher</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================================
+   DESIGN SYSTEM TOKENS — Matches Automatic Panorama UI Architecture
+   ============================================================================ */
+:root {
+  --bg: #0a0a0b;
+  --surface: #121214;
+  --surface-2: #17171a;
+  --surface-3: #1e1e22;
+  --surface-hover: #232328;
+  --border: rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.14);
+  --border-glow: rgba(142, 140, 255, 0.25);
+  --text: #f4f4f5;
+  --muted: #a1a1aa;
+  --faint: #85858e;
+  --accent: #8e8cff;
+  --accent-ink: #0b0b12;
+  --accent-soft: rgba(142, 140, 255, 0.14);
+  --accent-glow: rgba(142, 140, 255, 0.4);
+  --pass: #3ddc97;
+  --pass-soft: rgba(61, 220, 151, 0.14);
+  --pass-glow: rgba(61, 220, 151, 0.35);
+  --run: #f5b83d;
+  --run-soft: rgba(245, 184, 61, 0.14);
+  --run-glow: rgba(245, 184, 61, 0.35);
+  --fail: #ff6b6b;
+  --fail-soft: rgba(255, 107, 107, 0.14);
+  --matte: #0d0d0f;
+  --dot: rgba(255, 255, 255, 0.05);
+  --scrim: rgba(11, 11, 15, 0.78);
+  
+  --sans: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  
+  --r-lg: 14px;
+  --r-md: 10px;
+  --r-sm: 7px;
+  --r-full: 9999px;
+  --transition-fast: 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  --transition-smooth: 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  padding-bottom: 80px;
+}
+
+/* ---------------- Top Control Bar (Demo Toolbar) ---------------- */
+.demo-bar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(18, 18, 20, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid var(--border-strong);
+  padding: 12px 24px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+}
+
+.demo-title-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.demo-badge {
+  font: 500 11px var(--mono);
+  background: var(--accent-soft);
+  color: var(--accent);
+  border: 1px solid rgba(142, 140, 255, 0.3);
+  padding: 3px 8px;
+  border-radius: var(--r-full);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.demo-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.controller-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface-2);
+  padding: 4px 8px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+}
+
+button.btn-ctrl {
+  background: var(--surface-3);
+  color: var(--text);
+  border: 1px solid var(--border);
+  padding: 6px 12px;
+  border-radius: var(--r-sm);
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all var(--transition-fast);
+}
+button.btn-ctrl:hover {
+  background: var(--surface-hover);
+  border-color: var(--border-strong);
+  transform: translateY(-1px);
+}
+button.btn-ctrl.primary {
+  background: var(--accent);
+  color: var(--accent-ink);
+  border-color: var(--accent);
+  font-weight: 600;
+  box-shadow: 0 0 16px var(--accent-glow);
+}
+button.btn-ctrl.primary:hover {
+  background: #a2a0ff;
+}
+button.btn-ctrl:active {
+  transform: translateY(0);
+}
+
+.stage-jumper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.jump-chip {
+  font: 500 11px var(--mono);
+  padding: 4px 8px;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+.jump-chip:hover {
+  color: var(--text);
+  background: var(--surface-3);
+}
+.jump-chip.active {
+  color: var(--text);
+  background: var(--surface-3);
+  border-color: var(--accent);
+  box-shadow: 0 0 8px var(--accent-soft);
+}
+.jump-chip.done {
+  color: var(--pass);
+}
+
+.variant-tabs {
+  display: flex;
+  gap: 4px;
+  background: var(--surface-2);
+  padding: 3px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+  margin-left: auto;
+}
+.tab-btn {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  padding: 6px 14px;
+  font-size: 12.5px;
+  font-weight: 500;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+.tab-btn:hover {
+  color: var(--text);
+}
+.tab-btn.active {
+  background: var(--surface-3);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+/* ---------------- Main Layout Mockup ---------------- */
+.mockup-container {
+  max-width: 1440px;
+  margin: 24px auto;
+  padding: 0 24px;
+}
+
+.design-intro-banner {
+  background: linear-gradient(135deg, rgba(23,23,26,0.9), rgba(18,18,20,0.9));
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-lg);
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  position: relative;
+  overflow: hidden;
+}
+.design-intro-banner::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+}
+.intro-text h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.intro-text p {
+  color: var(--muted);
+  font-size: 13.5px;
+  max-width: 780px;
+  line-height: 1.6;
+}
+.current-stage-callout {
+  background: var(--surface-3);
+  border: 1px solid var(--border-strong);
+  padding: 12px 18px;
+  border-radius: var(--r-md);
+  text-align: right;
+  min-width: 220px;
+}
+.current-stage-callout .label {
+  font: 500 11px var(--mono);
+  color: var(--faint);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.current-stage-callout .value {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--accent);
+  margin-top: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+/* App Mockup Grid */
+.app-grid {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 20px;
+  align-items: start;
+}
+
+/* Left Sidebar Mock */
+.left-rail {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.mock-panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 16px;
+}
+.panel-header-mini {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+.panel-header-mini .num-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--border-strong);
+  border-radius: 4px;
+  font: 11px var(--mono);
+  color: var(--muted);
+  margin-right: 6px;
+}
+
+.file-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  margin-bottom: 8px;
+}
+.file-thumb {
+  width: 36px;
+  height: 36px;
+  border-radius: 4px;
+  background: #2a2a30;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--faint);
+  font-size: 10px;
+  overflow: hidden;
+}
+.file-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.file-info {
+  flex: 1;
+  min-width: 0;
+}
+.file-name {
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.file-meta {
+  font: 10.5px var(--mono);
+  color: var(--faint);
+}
+
+.method-btn-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 6px;
+}
+.method-card {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  cursor: default;
+}
+.method-card.active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.method-name { font-size: 12px; font-weight: 600; color: var(--text); }
+.method-desc { font-size: 10px; color: var(--muted); }
+
+.stitch-btn-mock {
+  width: 100%;
+  padding: 12px;
+  border-radius: var(--r-md);
+  border: none;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 600;
+  font-size: 13.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 18px var(--accent-soft);
+}
+
+/* ---------------- Right Workspace / Output Canvas ---------------- */
+.output-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.output-head {
+  padding: 14px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+  background: rgba(18, 18, 20, 0.6);
+}
+.output-head-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.output-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: var(--r-full);
+  font: 500 11.5px var(--mono);
+  background: var(--surface-3);
+  border: 1px solid var(--border-strong);
+  color: var(--muted);
+}
+.status-pill.run {
+  color: var(--run);
+  border-color: rgba(245, 184, 61, 0.35);
+  background: var(--run-soft);
+}
+.status-pill.run i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--run);
+  box-shadow: 0 0 8px var(--run);
+  animation: pulse-ring 1.2s infinite;
+}
+.status-pill.pass {
+  color: var(--pass);
+  border-color: rgba(61, 220, 151, 0.35);
+  background: var(--pass-soft);
+}
+.status-pill.pass i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--pass);
+}
+
+.output-head-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.btn-tool-mock {
+  padding: 6px 12px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* Viewport Canvas Area */
+.viewport-area {
+  min-height: 440px;
+  background: radial-gradient(circle at center, #151518 0%, #0d0d0f 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  padding: 32px 24px;
+}
+
+/* Grid background texture */
+.viewport-area::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.08) 1px, transparent 1px);
+  background-size: 24px 24px;
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+/* ============================================================================
+   CONCEPT 1: ENHANCED PROGRESSIVE STEPPER RIBBON (Refined Direct Upgrade)
+   ============================================================================ */
+.concept-wrapper {
+  width: 100%;
+}
+
+.ribbon-c1 {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  position: relative;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+/* Continuous top progress rail */
+.ribbon-c1-progress-bar {
+  position: absolute;
+  top: -1px;
+  left: 0;
+  height: 2px;
+  background: linear-gradient(90deg, var(--pass) 0%, var(--accent) 70%, #ffffff 100%);
+  box-shadow: 0 0 10px var(--accent-glow);
+  transition: width var(--transition-smooth);
+  z-index: 5;
+}
+
+.ribbon-c1 li {
+  padding: 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  border-right: 1px solid var(--border);
+  position: relative;
+  transition: all var(--transition-smooth);
+  background: transparent;
+}
+.ribbon-c1 li:last-child {
+  border-right: none;
+}
+
+/* Status Header inside cell */
+.ribbon-c1 .c1-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.ribbon-c1 .c1-num {
+  font: 500 11px var(--mono);
+  color: var(--faint);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  letter-spacing: 0.02em;
+}
+
+/* Indicators */
+.c1-indicator {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  transition: all var(--transition-fast);
+}
+
+/* STATE: QUEUED */
+.ribbon-c1 li.state-queued {
+  opacity: 0.42;
+}
+.ribbon-c1 li.state-queued .c1-indicator {
+  border: 1.5px solid var(--border-strong);
+  background: transparent;
+}
+.ribbon-c1 li.state-queued .c1-title {
+  color: var(--faint);
+}
+
+/* STATE: ACTIVE (Running) */
+.ribbon-c1 li.state-active {
+  opacity: 1;
+  background: linear-gradient(180deg, rgba(142, 140, 255, 0.12) 0%, rgba(142, 140, 255, 0.02) 100%);
+  box-shadow: inset 0 1px 0 rgba(142, 140, 255, 0.4);
+}
+.ribbon-c1 li.state-active .c1-num {
+  color: var(--accent);
+  font-weight: 600;
+}
+.ribbon-c1 li.state-active .c1-indicator {
+  border: 1.5px solid var(--accent);
+  background: transparent;
+  position: relative;
+}
+.ribbon-c1 li.state-active .c1-indicator::after {
+  content: "";
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: var(--accent);
+  border-radius: 50%;
+  animation: radar-ping 1.4s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+.ribbon-c1 li.state-active .c1-title {
+  color: var(--text);
+  font-weight: 600;
+  text-shadow: 0 0 12px rgba(142, 140, 255, 0.4);
+}
+
+.c1-active-badge {
+  font: 600 9px var(--mono);
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid rgba(142, 140, 255, 0.3);
+  padding: 1px 5px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  animation: pulse-glow 1.5s infinite;
+}
+
+/* STATE: COMPLETED (Done) */
+.ribbon-c1 li.state-done {
+  opacity: 1;
+}
+.ribbon-c1 li.state-done .c1-num {
+  color: var(--pass);
+}
+.ribbon-c1 li.state-done .c1-indicator {
+  background: var(--pass);
+  border: 1px solid var(--pass);
+  color: #0b1e15;
+}
+.ribbon-c1 li.state-done .c1-title {
+  color: var(--text);
+  font-weight: 500;
+}
+.c1-time-tag {
+  font: 500 10.5px var(--mono);
+  color: var(--muted);
+}
+
+.ribbon-c1 .c1-title {
+  font-size: 13px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: color var(--transition-fast);
+}
+.ribbon-c1 .c1-sub {
+  font-size: 11px;
+  color: var(--faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Mini progress sweep on active item */
+.c1-active-shimmer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+  animation: active-glow-bar 1.6s ease-in-out infinite alternate;
+}
+
+/* ============================================================================
+   CONCEPT 2: CYBER PIPELINE HUD + CONNECTED CONDUIT NODES
+   ============================================================================ */
+/* Viewport HUD for Concept 2 */
+.hud-center-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  max-width: 580px;
+  width: 100%;
+  position: relative;
+  z-index: 2;
+  text-align: center;
+}
+
+.hud-ring-wrapper {
+  position: relative;
+  width: 130px;
+  height: 130px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.hud-svg-ring {
+  transform: rotate(-90deg);
+  width: 130px;
+  height: 130px;
+}
+.hud-svg-ring circle {
+  fill: none;
+  stroke-width: 7;
+  stroke-linecap: round;
+}
+.hud-svg-ring .hud-track {
+  stroke: rgba(255, 255, 255, 0.08);
+}
+.hud-svg-ring .hud-progress {
+  stroke: url(#gradient-accent);
+  stroke-dasharray: 360;
+  stroke-dashoffset: 200;
+  transition: stroke-dashoffset var(--transition-smooth);
+  filter: drop-shadow(0 0 6px var(--accent-glow));
+}
+.hud-ring-inner {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.hud-percent-text {
+  font: 700 24px var(--mono);
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+.hud-percent-sub {
+  font: 500 11px var(--mono);
+  color: var(--accent);
+}
+
+.hud-stage-step-tag {
+  font: 600 11px var(--mono);
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid rgba(142, 140, 255, 0.35);
+  padding: 4px 12px;
+  border-radius: var(--r-full);
+  margin-bottom: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.hud-stage-step-tag .blip {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+  animation: pulse-ring 1s infinite;
+}
+
+.hud-stage-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 6px;
+  letter-spacing: -0.01em;
+}
+.hud-stage-desc {
+  font-size: 13.5px;
+  color: var(--muted);
+  max-width: 440px;
+  line-height: 1.5;
+  margin-bottom: 18px;
+}
+
+.hud-metrics-row {
+  display: flex;
+  gap: 16px;
+  background: rgba(23, 23, 26, 0.75);
+  border: 1px solid var(--border-strong);
+  padding: 8px 18px;
+  border-radius: var(--r-md);
+  backdrop-filter: blur(8px);
+}
+.hud-metric-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: 12px var(--mono);
+  color: var(--muted);
+}
+.hud-metric-item b {
+  color: var(--text);
+  font-weight: 600;
+}
+.hud-metric-sep {
+  width: 1px;
+  height: 14px;
+  background: var(--border-strong);
+}
+
+/* Concept 2 Bottom Conduit Pipeline */
+.ribbon-c2 {
+  background: #0d0d10;
+  border-top: 1px solid var(--border-strong);
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  overflow-x: auto;
+}
+
+.c2-track {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  justify-content: space-between;
+  position: relative;
+}
+
+.c2-step-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  z-index: 2;
+  cursor: pointer;
+  min-width: 76px;
+  text-align: center;
+}
+
+.c2-circle {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--surface-2);
+  border: 1.5px solid var(--border-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 600 11px var(--mono);
+  color: var(--faint);
+  transition: all var(--transition-smooth);
+}
+
+.c2-step-node.state-done .c2-circle {
+  background: var(--pass-soft);
+  border-color: var(--pass);
+  color: var(--pass);
+  box-shadow: 0 0 12px var(--pass-glow);
+}
+.c2-step-node.state-active .c2-circle {
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  color: #fff;
+  transform: scale(1.18);
+  box-shadow: 0 0 16px var(--accent-glow);
+}
+.c2-step-node.state-queued .c2-circle {
+  opacity: 0.5;
+}
+
+.c2-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  white-space: nowrap;
+  transition: color var(--transition-fast);
+}
+.c2-step-node.state-active .c2-label {
+  color: var(--accent);
+  font-weight: 600;
+}
+.c2-step-node.state-done .c2-label {
+  color: var(--text);
+}
+
+.c2-connector {
+  flex: 1;
+  height: 2px;
+  background: var(--border);
+  position: relative;
+  margin: 0 6px;
+  top: -12px;
+  overflow: hidden;
+}
+.c2-connector.done {
+  background: var(--pass);
+  box-shadow: 0 0 6px var(--pass-glow);
+}
+.c2-connector.active {
+  background: linear-gradient(90deg, var(--pass), var(--accent));
+}
+.c2-connector.active::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 40%;
+  height: 100%;
+  background: #ffffff;
+  box-shadow: 0 0 8px #ffffff;
+  animation: laser-flow 1.2s infinite linear;
+}
+
+/* ============================================================================
+   CONCEPT 3: SEGMENTED CAPSULE FLOW (Modern Linear / Vercel Aesthetic)
+   ============================================================================ */
+.ribbon-c3 {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 14px 20px;
+}
+.c3-container {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+.c3-card {
+  flex: 1;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  transition: all var(--transition-smooth);
+  position: relative;
+  overflow: hidden;
+}
+.c3-card.state-done {
+  border-color: rgba(61, 220, 151, 0.3);
+  background: rgba(61, 220, 151, 0.04);
+}
+.c3-card.state-done .c3-header {
+  color: var(--pass);
+}
+.c3-card.state-active {
+  flex: 1.4;
+  background: linear-gradient(135deg, rgba(142, 140, 255, 0.12), rgba(23, 23, 26, 0.8));
+  border-color: var(--accent);
+  box-shadow: 0 0 20px var(--accent-soft);
+}
+.c3-card.state-queued {
+  opacity: 0.45;
+}
+
+.c3-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font: 500 11px var(--mono);
+  color: var(--faint);
+}
+.c3-title {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text);
+  white-space: nowrap;
+}
+.c3-card.state-active .c3-title {
+  font-weight: 600;
+  color: #fff;
+}
+.c3-status-desc {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.c3-card.state-active .c3-status-desc {
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.c3-spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--accent-soft);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+/* ============================================================================
+   COMPARISON SHOWCASE SECTION
+   ============================================================================ */
+.comparison-section {
+  margin-top: 48px;
+  border-top: 1px solid var(--border-strong);
+  padding-top: 36px;
+}
+.section-heading {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.section-desc {
+  color: var(--muted);
+  font-size: 14px;
+  margin-bottom: 24px;
+}
+.comparison-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 24px;
+}
+.compare-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+}
+.compare-card-head {
+  padding: 14px 20px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.compare-card-title {
+  font-size: 15px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.compare-tag {
+  font: 500 11px var(--mono);
+  padding: 2px 8px;
+  border-radius: 4px;
+  background: var(--surface-3);
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+.compare-tag.recommend {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: rgba(142,140,255,0.4);
+}
+.compare-notes {
+  padding: 14px 20px;
+  background: var(--surface-2);
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--muted);
+  display: flex;
+  gap: 20px;
+}
+.compare-notes span b {
+  color: var(--text);
+}
+
+/* ============================================================================
+   KEYFRAME ANIMATIONS
+   ============================================================================ */
+@keyframes radar-ping {
+  0% { transform: scale(0.6); opacity: 1; }
+  100% { transform: scale(2.2); opacity: 0; }
+}
+@keyframes pulse-ring {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+@keyframes pulse-glow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+@keyframes active-glow-bar {
+  0% { opacity: 0.4; box-shadow: 0 0 4px var(--accent); }
+  100% { opacity: 1; box-shadow: 0 0 12px var(--accent); }
+}
+@keyframes laser-flow {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Viewport frame cards animation (Stitching preview) */
+.stitching-canvas-demo {
+  position: relative;
+  width: 320px;
+  height: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+.stitch-frame {
+  position: absolute;
+  width: 100px;
+  height: 75px;
+  border-radius: 6px;
+  background: var(--surface-2);
+  border: 1px solid var(--border-strong);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 600 12px var(--mono);
+  color: var(--muted);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  transition: all 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.stitch-frame.f1 { transform: translateX(-60px) rotate(-3deg); }
+.stitch-frame.f2 { transform: translateX(0px); z-index: 2; border-color: var(--accent); }
+.stitch-frame.f3 { transform: translateX(60px) rotate(3deg); }
+
+.state-step-4 .stitch-frame.f1 { transform: translateX(-35px) rotate(0deg); opacity: 0.9; }
+.state-step-4 .stitch-frame.f3 { transform: translateX(35px) rotate(0deg); opacity: 0.9; }
+
+.state-step-6 .stitch-frame {
+  border-color: var(--pass);
+  box-shadow: 0 0 20px var(--pass-glow);
+}
+
+/* Responsive adjustments */
+@media (max-width: 1100px) {
+  .app-grid { grid-template-columns: 1fr; }
+  .ribbon-c1 { grid-template-columns: repeat(4, 1fr); }
+  .ribbon-c1 li:nth-child(n+5) { border-top: 1px solid var(--border); }
+  .c3-container { flex-direction: column; }
+}
+</style>
+</head>
+<body>
+
+<svg style="display:none;">
+  <defs>
+    <linearGradient id="gradient-accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3ddc97" />
+      <stop offset="60%" stop-color="#8e8cff" />
+      <stop offset="100%" stop-color="#f5b83d" />
+    </linearGradient>
+  </defs>
+</svg>
+
+<!-- Interactive Control Header -->
+<header class="demo-bar">
+  <div class="demo-title-group">
+    <span class="demo-badge">Design Mockup</span>
+    <span class="demo-title">Pipeline Loader State Redesign</span>
+  </div>
+
+  <div class="controller-box">
+    <button id="btn-play" class="btn-ctrl primary" onclick="toggleSimulation()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+      <span id="play-text">Simulate Pipeline</span>
+    </button>
+    <button class="btn-ctrl" onclick="prevStep()">◀ Prev</button>
+    <button class="btn-ctrl" onclick="nextStep()">Next ▶</button>
+    <button class="btn-ctrl" onclick="resetSimulation()">↺ Reset</button>
+  </div>
+
+  <div class="stage-jumper">
+    <button class="jump-chip active" id="chip-0" onclick="jumpTo(0)">01 Decode</button>
+    <button class="jump-chip" id="chip-1" onclick="jumpTo(1)">02 Features</button>
+    <button class="jump-chip" id="chip-2" onclick="jumpTo(2)">03 Match</button>
+    <button class="jump-chip" id="chip-3" onclick="jumpTo(3)">04 Homography</button>
+    <button class="jump-chip" id="chip-4" onclick="jumpTo(4)">05 Warp</button>
+    <button class="jump-chip" id="chip-5" onclick="jumpTo(5)">06 Blend</button>
+    <button class="jump-chip" id="chip-6" onclick="jumpTo(6)">07 Encode</button>
+    <button class="jump-chip" id="chip-7" onclick="jumpTo(7)">✓ Complete</button>
+    <button class="jump-chip" id="chip-8" onclick="jumpTo(8)" style="color:var(--fail)">✕ Error</button>
+  </div>
+
+  <div class="variant-tabs">
+    <button class="tab-btn active" onclick="setVariant('concept1', this)">Concept A: Glow Stepper</button>
+    <button class="tab-btn" onclick="setVariant('concept2', this)">Concept B: Cyber-HUD Flow</button>
+    <button class="tab-btn" onclick="setVariant('concept3', this)">Concept C: Glass Capsules</button>
+  </div>
+</header>
+
+<main class="mockup-container">
+
+  <!-- Design Context Banner -->
+  <section class="design-intro-banner">
+    <div class="intro-text">
+      <h2>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48 2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48 2.83-2.83"/></svg>
+        <span id="concept-heading">Concept A: Enhanced Progressive Stepper Ribbon</span>
+      </h2>
+      <p id="concept-summary">
+        อัปเกรด Bottom Ribbon เดิมให้เป็น <b>Active Stepper</b> ที่ชัดเจนในตัว: ขั้นตอนที่ทำเสร็จแสดงเครื่องหมายเช็คถูกสีเขียว (Done), ขั้นตอนปัจจุบันมีไฟสถานะ Pulse + แถบ Shimmer Glow แสดงว่ากำลังประมวลผล (Running), และขั้นตอนถัดไปจะอยู่ในสถานะ Queued อย่างสวยงาม
+      </p>
+    </div>
+    <div class="current-stage-callout">
+      <div class="label">Current Stage Status</div>
+      <div class="value" id="current-stage-display">
+        <span id="stage-badge-dot" style="width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent);"></span>
+        <span id="stage-name-text">01 Decode & Normalize</span>
+      </div>
+      <div style="font: 11px var(--mono); color: var(--muted); margin-top: 4px;" id="stage-timing-text">Elapsed: 0.18s · Step 1/7</div>
+    </div>
+  </section>
+
+  <!-- Complete Application UI Context -->
+  <div class="app-grid">
+    
+    <!-- Left Column: Source frames & Method -->
+    <aside class="left-rail">
+      <!-- 1 Source frames -->
+      <div class="mock-panel">
+        <div class="panel-header-mini">
+          <span><span class="num-badge">1</span> Source frames</span>
+          <span class="mono" style="font-size:11px;color:var(--muted)">3 / 8</span>
+        </div>
+        <div class="file-item">
+          <div class="file-thumb">IMG_1</div>
+          <div class="file-info">
+            <div class="file-name">IMG_0169.HEIC</div>
+            <div class="file-meta">4284×5712 → 750×1000 · 383 KB</div>
+          </div>
+        </div>
+        <div class="file-item">
+          <div class="file-thumb">IMG_2</div>
+          <div class="file-info">
+            <div class="file-name">IMG_0170.HEIC</div>
+            <div class="file-meta">4284×5712 → 750×1000 · 394 KB</div>
+          </div>
+        </div>
+        <div class="file-item">
+          <div class="file-thumb">IMG_3</div>
+          <div class="file-info">
+            <div class="file-name">IMG_0171.HEIC</div>
+            <div class="file-meta">4284×5712 → 750×1000 · 407 KB</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2 Method -->
+      <div class="mock-panel">
+        <div class="panel-header-mini">
+          <span><span class="num-badge">2</span> Method</span>
+          <span style="font-size:11px;color:var(--faint)">Defaults</span>
+        </div>
+        <div class="method-btn-group">
+          <div class="method-card active">
+            <div class="method-name">SIFT</div>
+            <div class="method-desc">Scale-invariant</div>
+          </div>
+          <div class="method-card">
+            <div class="method-name">ORB</div>
+            <div class="method-desc">Binary · faster</div>
+          </div>
+        </div>
+
+        <div style="margin-top:14px;">
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:4px;">
+            <span>Lowe ratio test</span>
+            <span class="mono">0.82</span>
+          </div>
+          <div style="height:4px;background:var(--surface-3);border-radius:2px;overflow:hidden;">
+            <div style="width:70%;height:100%;background:var(--accent);"></div>
+          </div>
+        </div>
+
+        <div style="margin-top:16px;">
+          <button class="stitch-btn-mock" id="mock-stitch-btn" disabled>
+            <span class="c3-spinner" style="border-top-color:var(--accent-ink)"></span>
+            <span id="btn-stitch-text">Processing Stage 1...</span>
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Right Column: Canvas + Pipeline Ribbon -->
+    <section class="output-card">
+      <div class="output-head">
+        <div class="output-head-left">
+          <div class="output-title">
+            <span class="num-badge" style="width:18px;height:18px;border:1px solid var(--border-strong);border-radius:4px;font:11px var(--mono);display:inline-flex;align-items:center;justify-content:center;color:var(--muted)">3</span>
+            Panorama
+          </div>
+          <span class="status-pill run" id="top-status-pill">
+            <i aria-hidden="true"></i>
+            <span id="top-status-text">Stitching in progress</span>
+          </span>
+          <span class="status-pill mono" style="font-size:11px">SIFT</span>
+          <span class="status-pill mono" style="font-size:11px">3 frames</span>
+        </div>
+        <div class="output-head-right">
+          <button class="btn-tool-mock" disabled>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v18M6 8l12 8"/></svg>
+            Seams & inliers
+          </button>
+          <button class="btn-tool-mock" disabled>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
+            Download PNG
+          </button>
+        </div>
+      </div>
+
+      <!-- Viewport area (Contextual) -->
+      <div class="viewport-area" id="viewport-container">
+        
+        <!-- Frame Animation -->
+        <div class="stitching-canvas-demo" id="stitching-animation-box">
+          <div class="stitch-frame f1">01</div>
+          <div class="stitch-frame f2">02</div>
+          <div class="stitch-frame f3">03</div>
+        </div>
+
+        <!-- Center HUD for Concept B, or Standard Viewport for others -->
+        <div id="viewport-center-content" class="hud-center-display">
+          <div class="hud-stage-step-tag">
+            <span class="blip"></span>
+            <span id="hud-step-counter">STAGE 01 OF 07</span>
+          </div>
+          <h3 class="hud-stage-title" id="hud-stage-title">Decode & normalize frames</h3>
+          <p class="hud-stage-desc" id="hud-stage-desc">
+            Reading raw image bytes, parsing EXIF orientations, and downscaling large camera frames into normalized RGB matrices.
+          </p>
+
+          <div class="hud-metrics-row">
+            <div class="hud-metric-item">
+              <span>Overall:</span>
+              <b id="hud-metric-percent">14%</b>
+            </div>
+            <div class="hud-metric-sep"></div>
+            <div class="hud-metric-item">
+              <span>Step Time:</span>
+              <b id="hud-metric-steptime">~18ms</b>
+            </div>
+            <div class="hud-metric-sep"></div>
+            <div class="hud-metric-item">
+              <span>Status:</span>
+              <b id="hud-metric-status" style="color:var(--accent)">Executing...</b>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- DYNAMIC RIBBON AREA: Replaced based on active concept -->
+      <div id="dynamic-ribbon-container">
+        <!-- Injected via JavaScript -->
+      </div>
+
+    </section>
+  </div>
+
+  <!-- Detailed Side-by-Side Comparison Section -->
+  <section class="comparison-section">
+    <h2 class="section-heading">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--pass)" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+      สรุปเปรียบเทียบแนวทาง Redesign ทั้ง 3 แบบ (Interactive Comparison)
+    </h2>
+    <p class="section-desc">
+      คุณสามารถทดสอบคลิกแต่ละแบบเพื่อดูการเคลื่อนไหว (Micro-animations) และพิจารณาความเหมาะสมในการนำไปใช้งานจริง:
+    </p>
+
+    <div class="comparison-grid">
+      
+      <!-- Option A Card -->
+      <div class="compare-card">
+        <div class="compare-card-head">
+          <div class="compare-card-title">
+            <span>Concept A: Enhanced Progressive Stepper Ribbon</span>
+            <span class="compare-tag recommend">แนะนำมากที่สุด (Recommended)</span>
+          </div>
+          <button class="btn-ctrl" onclick="setVariant('concept1')">Switch to Concept A</button>
+        </div>
+        <div style="padding: 16px 20px;">
+          <div id="static-preview-c1"></div>
+        </div>
+        <div class="compare-notes">
+          <span><b>จุดเด่น:</b> รักษาโครงสร้าง 7 ช่องเดิมของ UI ไว้อย่างสมบูรณ์แบบ ไม่กระทบ layout เดิม เพิ่มแถบ Top Glow Rail, ไอคอน Checkmark เมื่อเสร็จ, และไฟ Pulse เรดาร์บนขั้นตอนที่กำลังวิ่ง</span>
+          <span><b>ความชัดเจน:</b> ผู้ใช้มองแวบเดียวรู้ทันทีว่าผ่านไปกี่สเต็ปแล้ว และตอนนี้อยู่ที่ช่องไหน</span>
+        </div>
+      </div>
+
+      <!-- Option B Card -->
+      <div class="compare-card">
+        <div class="compare-card-head">
+          <div class="compare-card-title">
+            <span>Concept B: Cyber-Conduit Node Flow + Centered HUD</span>
+            <span class="compare-tag">High-Tech & Futuristic</span>
+          </div>
+          <button class="btn-ctrl" onclick="setVariant('concept2')">Switch to Concept B</button>
+        </div>
+        <div style="padding: 16px 20px;">
+          <div id="static-preview-c2"></div>
+        </div>
+        <div class="compare-notes">
+          <span><b>จุดเด่น:</b> เชื่อมโยงแต่ละโหนดด้วยเส้นเลเซอร์ (Laser Conduit) ที่มีแสงพัลส์วิ่งจากสเต็ปที่เสร็จไปยังสเต็ปปัจจุบัน เหมาะอย่างยิ่งถ้าต้องการความรู้สึกแบบ AI / Computer Vision Lab</span>
+          <span><b>ความชัดเจน:</b> เส้นเชื่อมต่อแบบ Pipeline ชัดเจนมากว่า Data กำลัง Flow จากภาพต้นฉบับไปสู่ภาพพาโนรามา</span>
+        </div>
+      </div>
+
+      <!-- Option C Card -->
+      <div class="compare-card">
+        <div class="compare-card-head">
+          <div class="compare-card-title">
+            <span>Concept C: Modern Segmented Glass Capsules</span>
+            <span class="compare-tag">Linear / Vercel Style</span>
+          </div>
+          <button class="btn-ctrl" onclick="setVariant('concept3')">Switch to Concept C</button>
+        </div>
+        <div style="padding: 16px 20px;">
+          <div id="static-preview-c3"></div>
+        </div>
+        <div class="compare-notes">
+          <span><b>จุดเด่น:</b> รูปแบบการ์ดแยกชิ้นแคปซูล (Capsules) ซึ่งชิ้นที่กำลังทำงานอยู่จะขยายกว้างขึ้นอัตโนมัติ (Flexible Expansion) พร้อม Spin Loader และข้อความ Sub-status</span>
+          <span><b>ความชัดเจน:</b> ทันสมัยมาก โฟกัสสายตาไปยังช่องที่กำลัง Active โดยตรง</span>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<script>
+/* ============================================================================
+   PIPELINE STAGES DEFINITION & SIMULATION ENGINE
+   ============================================================================ */
+const PIPELINE_STAGES = [
+  { 
+    key: "decode", 
+    short: "Decode", 
+    label: "Decode & normalize frames", 
+    desc: "Decoding HEIC/JPEG buffers, normalizing image orientations, downscaling to processing size.",
+    time: "18ms",
+    substatus: "Reading 3 frames..."
+  },
+  { 
+    key: "features", 
+    short: "Features", 
+    label: "Extract keypoints & descriptors", 
+    desc: "Running SIFT/ORB detector on each frame to compute high-dimensional feature points.",
+    time: "240ms",
+    substatus: "Extracting 2,000 points..."
+  },
+  { 
+    key: "matching", 
+    short: "Match", 
+    label: "KNN match & ratio test", 
+    desc: "Searching nearest neighbours across adjacent frames and applying Lowe's 0.82 ratio test.",
+    time: "115ms",
+    substatus: "Pairwise KNN matching..."
+  },
+  { 
+    key: "homography", 
+    short: "Homography", 
+    label: "RANSAC homography per pair", 
+    desc: "Robust 3x3 projective transformation matrix estimation, filtering out spatial outliers.",
+    time: "65ms",
+    substatus: "RANSAC tolerance 9.5px..."
+  },
+  { 
+    key: "warp", 
+    short: "Warp", 
+    label: "Warp onto the shared canvas", 
+    desc: "Projecting and warping candidate frames onto a uniform cylindrical/planar surface coordinate space.",
+    time: "310ms",
+    substatus: "Canvas geometry 2400×1100..."
+  },
+  { 
+    key: "blend", 
+    short: "Blend & crop", 
+    label: "Blend and crop", 
+    desc: "Multi-band linear gradient feathering over seam overlaps, trimming non-rectangular alpha borders.",
+    time: "145ms",
+    substatus: "Seam boundary blending..."
+  },
+  { 
+    key: "encode", 
+    short: "Encode", 
+    label: "Encode PNG", 
+    desc: "Compressing merged pixel raster into standard PNG format buffer for client download.",
+    time: "85ms",
+    substatus: "Writing PNG buffer..."
+  }
+];
+
+// App State
+let currentStageIndex = 0; // 0..6 (stages), 7 (complete), 8 (error)
+let activeVariant = 'concept1'; // 'concept1' | 'concept2' | 'concept3'
+let isSimulating = false;
+let simulationTimer = null;
+let simulationSpeed = 1200; // ms per stage in demo
+
+/* ---------------- Render Functions for Each Concept ---------------- */
+
+function renderConcept1(targetElement, activeIdx) {
+  const percent = activeIdx >= 7 ? 100 : Math.round(((activeIdx) / 7) * 100);
+  
+  let html = `
+    <div class="concept-wrapper">
+      <div class="ribbon-c1-progress-bar" style="width: ${percent}%;"></div>
+      <ol class="ribbon-c1">
+  `;
+
+  PIPELINE_STAGES.forEach((stage, idx) => {
+    let stateClass = "state-queued";
+    let iconHtml = `<span class="c1-indicator"></span>`;
+    let badgeHtml = "";
+    let shimmerHtml = "";
+
+    if (activeIdx === 8) {
+      // Error state
+      if (idx === 3) {
+        stateClass = "state-active";
+        iconHtml = `<span class="c1-indicator" style="border-color:var(--fail);color:var(--fail)">✕</span>`;
+        badgeHtml = `<span class="c1-active-badge" style="background:var(--fail-soft);color:var(--fail);border-color:var(--fail)">Failed</span>`;
+      } else if (idx < 3) {
+        stateClass = "state-done";
+        iconHtml = `<span class="c1-indicator">✓</span>`;
+      }
+    } else if (idx < activeIdx || activeIdx === 7) {
+      stateClass = "state-done";
+      iconHtml = `<span class="c1-indicator">✓</span>`;
+      badgeHtml = `<span class="c1-time-tag">${stage.time}</span>`;
+    } else if (idx === activeIdx) {
+      stateClass = "state-active";
+      iconHtml = `<span class="c1-indicator"></span>`;
+      badgeHtml = `<span class="c1-active-badge">Active</span>`;
+      shimmerHtml = `<div class="c1-active-shimmer"></div>`;
+    }
+
+    html += `
+      <li class="${stateClass}" title="${stage.label}" onclick="jumpTo(${idx})" style="cursor:pointer">
+        <div class="c1-top">
+          <span class="c1-num">
+            ${iconHtml}
+            0${idx + 1}
+          </span>
+          ${badgeHtml}
+        </div>
+        <div class="c1-title">${stage.short}</div>
+        <div class="c1-sub">${idx === activeIdx ? stage.substatus : stage.label}</div>
+        ${shimmerHtml}
+      </li>
+    `;
+  });
+
+  html += `
+      </ol>
+    </div>
+  `;
+
+  targetElement.innerHTML = html;
+}
+
+function renderConcept2(targetElement, activeIdx) {
+  let html = `
+    <div class="ribbon-c2">
+      <div class="c2-track">
+  `;
+
+  PIPELINE_STAGES.forEach((stage, idx) => {
+    let stateClass = "state-queued";
+    let innerContent = `0${idx + 1}`;
+
+    if (activeIdx === 8) {
+      if (idx === 3) {
+        stateClass = "state-active";
+        innerContent = "✕";
+      } else if (idx < 3) {
+        stateClass = "state-done";
+        innerContent = "✓";
+      }
+    } else if (idx < activeIdx || activeIdx === 7) {
+      stateClass = "state-done";
+      innerContent = "✓";
+    } else if (idx === activeIdx) {
+      stateClass = "state-active";
+      innerContent = `0${idx + 1}`;
+    }
+
+    html += `
+      <div class="c2-step-node ${stateClass}" onclick="jumpTo(${idx})" title="${stage.label}">
+        <div class="c2-circle">${innerContent}</div>
+        <div class="c2-label">${stage.short}</div>
+      </div>
+    `;
+
+    // Connector line between nodes
+    if (idx < PIPELINE_STAGES.length - 1) {
+      let connClass = "";
+      if (activeIdx === 7 || idx < activeIdx - 1) {
+        connClass = "done";
+      } else if (idx === activeIdx - 1) {
+        connClass = "active";
+      }
+      html += `<div class="c2-connector ${connClass}"></div>`;
+    }
+  });
+
+  html += `
+      </div>
+    </div>
+  `;
+
+  targetElement.innerHTML = html;
+}
+
+function renderConcept3(targetElement, activeIdx) {
+  let html = `
+    <div class="ribbon-c3">
+      <div class="c3-container">
+  `;
+
+  PIPELINE_STAGES.forEach((stage, idx) => {
+    let stateClass = "state-queued";
+    let statusText = "Queued";
+    let indicator = "";
+
+    if (activeIdx === 8) {
+      if (idx === 3) {
+        stateClass = "state-active";
+        statusText = "No inliers found";
+        indicator = `<span style="color:var(--fail);font-weight:bold">✕</span>`;
+      } else if (idx < 3) {
+        stateClass = "state-done";
+        statusText = stage.time;
+        indicator = `<span style="color:var(--pass)">✓</span>`;
+      }
+    } else if (idx < activeIdx || activeIdx === 7) {
+      stateClass = "state-done";
+      statusText = `✓ ${stage.time}`;
+      indicator = `<span style="color:var(--pass);font-size:10px;">DONE</span>`;
+    } else if (idx === activeIdx) {
+      stateClass = "state-active";
+      statusText = stage.substatus;
+      indicator = `<div class="c3-spinner"></div>`;
+    }
+
+    html += `
+      <div class="c3-card ${stateClass}" onclick="jumpTo(${idx})" style="cursor:pointer">
+        <div class="c3-header">
+          <span>0${idx + 1}</span>
+          ${indicator}
+        </div>
+        <div class="c3-title">${stage.short}</div>
+        <div class="c3-status-desc">${statusText}</div>
+      </div>
+    `;
+  });
+
+  html += `
+      </div>
+    </div>
+  `;
+
+  targetElement.innerHTML = html;
+}
+
+/* ---------------- Update Main Canvas View ---------------- */
+
+function updateUI() {
+  const container = document.getElementById("dynamic-ribbon-container");
+  
+  // Render main ribbon
+  if (activeVariant === 'concept1') {
+    renderConcept1(container, currentStageIndex);
+  } else if (activeVariant === 'concept2') {
+    renderConcept2(container, currentStageIndex);
+  } else {
+    renderConcept3(container, currentStageIndex);
+  }
+
+  // Update static previews in comparison cards
+  renderConcept1(document.getElementById("static-preview-c1"), currentStageIndex);
+  renderConcept2(document.getElementById("static-preview-c2"), currentStageIndex);
+  renderConcept3(document.getElementById("static-preview-c3"), currentStageIndex);
+
+  // Update HUD and banner text
+  const stageCallout = document.getElementById("stage-name-text");
+  const stageBadgeDot = document.getElementById("stage-badge-dot");
+  const timingText = document.getElementById("stage-timing-text");
+  const hudStepCounter = document.getElementById("hud-step-counter");
+  const hudStageTitle = document.getElementById("hud-stage-title");
+  const hudStageDesc = document.getElementById("hud-stage-desc");
+  const hudMetricPercent = document.getElementById("hud-metric-percent");
+  const hudMetricStepTime = document.getElementById("hud-metric-steptime");
+  const hudMetricStatus = document.getElementById("hud-metric-status");
+  const topStatusPill = document.getElementById("top-status-pill");
+  const topStatusText = document.getElementById("top-status-text");
+  const btnStitchText = document.getElementById("btn-stitch-text");
+
+  // Highlight active chip
+  document.querySelectorAll(".jump-chip").forEach((chip, i) => {
+    chip.classList.remove("active");
+    if (i === currentStageIndex) chip.classList.add("active");
+  });
+
+  if (currentStageIndex === 7) {
+    // Complete
+    stageCallout.textContent = "Panorama Complete!";
+    stageBadgeDot.style.background = "var(--pass)";
+    stageBadgeDot.style.boxShadow = "0 0 8px var(--pass)";
+    timingText.textContent = "Total Time: 0.98s · 7/7 Complete";
+    
+    hudStepCounter.textContent = "ALL STAGES COMPLETE";
+    hudStepCounter.style.color = "var(--pass)";
+    hudStepCounter.style.borderColor = "var(--pass)";
+    hudStageTitle.textContent = "Panorama Ready to Download";
+    hudStageDesc.textContent = "All 3 input frames were successfully registered, homography aligned, warped, and blended with multi-band seams.";
+    
+    hudMetricPercent.textContent = "100%";
+    hudMetricStepTime.textContent = "982ms total";
+    hudMetricStatus.textContent = "Done";
+    hudMetricStatus.style.color = "var(--pass)";
+
+    topStatusPill.className = "status-pill pass";
+    topStatusText.textContent = "Complete";
+    btnStitchText.textContent = "Stitch again";
+  } else if (currentStageIndex === 8) {
+    // Error
+    stageCallout.textContent = "Stage 04 Homography Failed";
+    stageBadgeDot.style.background = "var(--fail)";
+    stageBadgeDot.style.boxShadow = "0 0 8px var(--fail)";
+    timingText.textContent = "Halted at stage 4/7";
+
+    hudStepCounter.textContent = "HOMOGRAPHY ERROR";
+    hudStepCounter.style.color = "var(--fail)";
+    hudStepCounter.style.borderColor = "var(--fail)";
+    hudStageTitle.textContent = "Could not align adjacent frames";
+    hudStageDesc.textContent = "Fewer than 4 reliable inliers between frame 1 and frame 2. Try loosening Lowe ratio or capturing more overlap.";
+
+    hudMetricPercent.textContent = "43%";
+    hudMetricStepTime.textContent = "Failed at 370ms";
+    hudMetricStatus.textContent = "Rejected";
+    hudMetricStatus.style.color = "var(--fail)";
+
+    topStatusPill.className = "status-pill fail";
+    topStatusText.textContent = "Failed";
+    btnStitchText.textContent = "Retry with different settings";
+  } else {
+    // In progress
+    const stg = PIPELINE_STAGES[currentStageIndex];
+    stageCallout.textContent = `0${currentStageIndex + 1} ${stg.label}`;
+    stageBadgeDot.style.background = "var(--accent)";
+    stageBadgeDot.style.boxShadow = "0 0 8px var(--accent)";
+    timingText.textContent = `Step ${currentStageIndex + 1}/7 · Est: ${stg.time}`;
+
+    hudStepCounter.textContent = `STAGE 0${currentStageIndex + 1} OF 07`;
+    hudStepCounter.style.color = "var(--accent)";
+    hudStepCounter.style.borderColor = "rgba(142, 140, 255, 0.35)";
+    hudStageTitle.textContent = stg.label;
+    hudStageDesc.textContent = stg.desc;
+
+    const pct = Math.round(((currentStageIndex + 1) / 7) * 100);
+    hudMetricPercent.textContent = `${pct}%`;
+    hudMetricStepTime.textContent = `~${stg.time}`;
+    hudMetricStatus.textContent = "Executing...";
+    hudMetricStatus.style.color = "var(--accent)";
+
+    topStatusPill.className = "status-pill run";
+    topStatusText.textContent = "Stitching in progress";
+    btnStitchText.textContent = `Processing Stage ${currentStageIndex + 1}...`;
+  }
+
+  // Update canvas mock frame animation
+  const animBox = document.getElementById("stitching-animation-box");
+  animBox.className = "stitching-canvas-demo";
+  if (currentStageIndex >= 3) animBox.classList.add("state-step-4");
+  if (currentStageIndex >= 5) animBox.classList.add("state-step-6");
+}
+
+/* ---------------- Simulation Controls ---------------- */
+
+function toggleSimulation() {
+  if (isSimulating) {
+    pauseSimulation();
+  } else {
+    startSimulation();
+  }
+}
+
+function startSimulation() {
+  isSimulating = true;
+  document.getElementById("btn-play").classList.remove("primary");
+  document.getElementById("btn-play").style.background = "var(--run)";
+  document.getElementById("btn-play").style.color = "#000";
+  document.getElementById("play-text").textContent = "Pause Simulation";
+
+  if (currentStageIndex >= 7) currentStageIndex = 0;
+  updateUI();
+
+  runNextStepWithDelay();
+}
+
+function runNextStepWithDelay() {
+  if (!isSimulating) return;
+
+  simulationTimer = setTimeout(() => {
+    if (currentStageIndex < 6) {
+      currentStageIndex++;
+      updateUI();
+      runNextStepWithDelay();
+    } else if (currentStageIndex === 6) {
+      currentStageIndex = 7; // Complete
+      updateUI();
+      pauseSimulation();
+    }
+  }, simulationSpeed);
+}
+
+function pauseSimulation() {
+  isSimulating = false;
+  clearTimeout(simulationTimer);
+  document.getElementById("btn-play").className = "btn-ctrl primary";
+  document.getElementById("btn-play").style.background = "";
+  document.getElementById("btn-play").style.color = "";
+  document.getElementById("play-text").textContent = "Simulate Pipeline";
+}
+
+function resetSimulation() {
+  pauseSimulation();
+  currentStageIndex = 0;
+  updateUI();
+}
+
+function nextStep() {
+  pauseSimulation();
+  if (currentStageIndex < 7) {
+    currentStageIndex++;
+    updateUI();
+  }
+}
+
+function prevStep() {
+  pauseSimulation();
+  if (currentStageIndex > 0) {
+    currentStageIndex--;
+    updateUI();
+  }
+}
+
+function jumpTo(idx) {
+  pauseSimulation();
+  currentStageIndex = idx;
+  updateUI();
+}
+
+function setVariant(variant, btn) {
+  activeVariant = variant;
+  if (btn) {
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+  } else {
+    const idx = variant === 'concept1' ? 0 : variant === 'concept2' ? 1 : 2;
+    document.querySelectorAll(".tab-btn").forEach((b, i) => {
+      b.classList.toggle("active", i === idx);
+    });
+  }
+
+  // Update banner heading & description
+  const heading = document.getElementById("concept-heading");
+  const summary = document.getElementById("concept-summary");
+  if (variant === 'concept1') {
+    heading.textContent = "Concept A: Enhanced Progressive Stepper Ribbon";
+    summary.innerHTML = "อัปเกรด Bottom Ribbon เดิมให้เป็น <b>Active Stepper</b> ที่ชัดเจนในตัว: ขั้นตอนที่ทำเสร็จแสดงเครื่องหมายเช็คถูกสีเขียว (Done), ขั้นตอนปัจจุบันมีไฟสถานะ Pulse + แถบ Shimmer Glow แสดงว่ากำลังประมวลผล (Running), และขั้นตอนถัดไปจะอยู่ในสถานะ Queued อย่างสวยงาม";
+  } else if (variant === 'concept2') {
+    heading.textContent = "Concept B: Cyber-Conduit Pipeline Flow (Interactive Nodes)";
+    summary.innerHTML = "เชื่อมโยงแต่ละขั้นตอนด้วย <b>Laser Conduit Conduits</b> พร้อมแอนิเมชันแสงวิ่งไหลตามขั้นตอน และแสดง <b>Center Live HUD</b> ในพื้นที่ Viewport บอกเปอร์เซ็นต์และรายละเอียดขั้นตอนชัดเจน";
+  } else {
+    heading.textContent = "Concept C: Modern Segmented Glass Capsules (Vercel Style)";
+    summary.innerHTML = "ดีไซน์แบบ <b>Capsule Cards</b> สไตล์โมเดิร์น แยกเป็นบล็อกแคปซูล โดยช่องที่กำลังประมวลผลอยู่จะขยายกว้างขึ้นอัตโนมัติ (Dynamic Expansion) พร้อม Micro Spinner และ Status รายละเอียด";
+  }
+
+  updateUI();
+}
+
+// Initialize on page load
+window.addEventListener("DOMContentLoaded", () => {
+  updateUI();
+});
+</script>
+</body>
+</html>

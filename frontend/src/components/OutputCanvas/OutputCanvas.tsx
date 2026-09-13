@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { PanelHead } from "../PanelHead";
 import type { ScreenState } from "../../hooks/useStitchRun";
@@ -60,6 +60,20 @@ export function OutputCanvas({
   ransacThreshold,
 }: OutputCanvasProps) {
   const [overlayOn, setOverlayOn] = useState(true);
+  const [workingStageIndex, setWorkingStageIndex] = useState(0);
+
+  useEffect(() => {
+    if (state !== "working") {
+      setWorkingStageIndex(0);
+      return;
+    }
+    setWorkingStageIndex(0);
+    const interval = setInterval(() => {
+      setWorkingStageIndex((prev) => (prev < 6 ? prev + 1 : prev));
+    }, 1200);
+    return () => clearInterval(interval);
+  }, [state]);
+
   const hasOverlay = Boolean(
     result?.diagnostics.seam_lines && result?.diagnostics.sample_correspondences_per_pair,
   );
@@ -186,7 +200,12 @@ export function OutputCanvas({
         )}
         {state === "preparing" && <span className="sr-only">Preparing images…</span>}
         {state === "working" && (
-          <WorkingState fileCount={files.length} detector={detector} isColdStart={isColdStart} />
+          <WorkingState
+            fileCount={files.length}
+            detector={detector}
+            isColdStart={isColdStart}
+            activeStageIndex={workingStageIndex}
+          />
         )}
         {state === "failed" && error && (
           <FailedState status={error.status} detail={error.detail} config={config} files={files} />
@@ -194,7 +213,10 @@ export function OutputCanvas({
         {state === "complete" && result && <ResultPlate result={result} overlayOn={overlayOn} />}
       </div>
 
-      <PipelineRibbon mode={RIBBON_MODE_BY_STATE[state]} />
+      <PipelineRibbon
+        mode={RIBBON_MODE_BY_STATE[state]}
+        activeStageIndex={state === "working" ? workingStageIndex : undefined}
+      />
     </section>
   );
 }
