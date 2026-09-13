@@ -334,7 +334,7 @@ button {
   background: var(--surface-3);
   color: var(--text);
   border: 1px solid var(--border-strong);
-  box-shadow: 0 16px 40px -10px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 16px 40px -10px color-mix(in srgb, black 60%, transparent);
   font-size: 12px;
   white-space: nowrap;
 }
