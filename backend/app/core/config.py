@@ -5,10 +5,11 @@ process (spec section 10). A magic number anywhere else in route, service, or
 stage code is a review comment waiting to happen.
 """
 
+import re
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -23,6 +24,7 @@ class Settings(BaseSettings):
 
     app_env: Literal["development", "test", "production"] = "development"
     backend_cors_origins: str = "http://localhost:5173"
+    backend_cors_origin_regex: str = ""
 
     max_upload_files: int = Field(default=8, ge=2, le=12)
     max_upload_mb: int = Field(default=12, ge=1, le=50)
@@ -47,11 +49,31 @@ class Settings(BaseSettings):
     stitch_timeout_seconds: int = Field(default=60, ge=10, le=300)
     max_concurrent_stitches: int = Field(default=1, ge=1, le=4)
 
+    @field_validator("backend_cors_origin_regex")
+    @classmethod
+    def _validate_cors_origin_regex(cls, value: str) -> str:
+        """Fail at startup, not at the first preflight request, on a bad pattern."""
+
+        if value:
+            try:
+                re.compile(value)
+            except re.error as exc:
+                raise ValueError(
+                    f"BACKEND_CORS_ORIGIN_REGEX is not a valid regular expression: {exc}"
+                ) from exc
+        return value
+
     @property
     def cors_origins(self) -> list[str]:
         """Return normalized CORS origins from a comma-separated setting."""
 
         return [origin.strip() for origin in self.backend_cors_origins.split(",") if origin.strip()]
+
+    @property
+    def cors_origin_regex(self) -> str | None:
+        """Return the configured Preview-origin pattern, or None when unset."""
+
+        return self.backend_cors_origin_regex or None
 
     @property
     def max_upload_bytes(self) -> int:
