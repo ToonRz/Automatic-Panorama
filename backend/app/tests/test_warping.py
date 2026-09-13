@@ -94,3 +94,41 @@ def test_seam_lines_stay_vertical_for_a_pure_horizontal_pan() -> None:
 
     seam = result.seam_lines[0]
     assert seam["top"][0] == pytest.approx(seam["bottom"][0], abs=1e-6)
+
+
+def test_seam_line_is_image_zeros_right_edge_for_a_left_to_right_pan() -> None:
+    size = (200, 150)
+    identity = np.eye(3, dtype=np.float64)
+    pan = np.array([[1.0, 0.0, 140.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]])
+    images = [np.zeros((size[1], size[0], 3), dtype=np.uint8) for _ in range(2)]
+
+    # Image 0 spans x 0-200, image 1 spans x 140-340: the shared boundary is x=200.
+    result = warp_to_common_canvas(images, [identity, pan], max_output_pixels=2_000_000)
+
+    assert result.seam_lines[0]["top"][0] == pytest.approx(200.0, abs=1e-3)
+
+
+def test_seam_line_is_image_zeros_left_edge_for_a_right_to_left_pan() -> None:
+    size = (200, 150)
+    identity = np.eye(3, dtype=np.float64)
+    pan = np.array([[1.0, 0.0, 140.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]])
+    images = [np.zeros((size[1], size[0], 3), dtype=np.uint8) for _ in range(2)]
+
+    # Image 0 spans x 140-340, image 1 spans x 0-200. Image 0's right edge
+    # (x=340) is the canvas border, not a seam; the boundary is x=140.
+    result = warp_to_common_canvas(images, [pan, identity], max_output_pixels=2_000_000)
+
+    assert result.seam_lines[0]["top"][0] == pytest.approx(140.0, abs=1e-3)
+
+
+def test_every_seam_of_a_right_to_left_chain_lies_inside_the_canvas() -> None:
+    size = (200, 150)
+    step = np.array([[1.0, 0.0, -140.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]])
+    transforms = [np.eye(3, dtype=np.float64), step, step @ step]
+    images = [np.zeros((size[1], size[0], 3), dtype=np.uint8) for _ in range(3)]
+
+    result = warp_to_common_canvas(images, transforms, max_output_pixels=2_000_000)
+
+    assert len(result.seam_lines) == 2
+    for seam in result.seam_lines:
+        assert 0.0 < seam["top"][0] < result.canvas_width
