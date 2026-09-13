@@ -139,3 +139,39 @@ def test_exposure_gain_compensates_a_brighter_second_image() -> None:
 
     assert gains[0] == 1.0
     assert gains[1] == pytest.approx(0.5, rel=0.05)
+
+
+def test_compensated_blend_matches_reference_without_mutating_inputs() -> None:
+    from app.cv.blending import blend_with_exposure_compensation
+
+    images, masks = _two_image_scene((90, 120, 150), (60, 80, 100))
+    originals = [image.copy() for image in images]
+    gains = estimate_exposure_gains(images, masks)
+    graded = [
+        np.clip(image.astype(np.float64) * gain, 0, 255).astype(np.uint8)
+        for image, gain in zip(images, gains, strict=True)
+    ]
+    expected = feather_blend(graded, masks)
+    actual = blend_with_exposure_compensation(images, masks)
+    np.testing.assert_allclose(actual, expected, atol=1)
+    for image, original in zip(images, originals, strict=True):
+        np.testing.assert_array_equal(image, original)
+
+
+def test_compensated_blend_temporary_memory_stays_bounded() -> None:
+    import tracemalloc
+
+    from app.cv.blending import blend_with_exposure_compensation
+
+    height, width = 800, 1200
+    images = [np.full((height, width, 3), value, np.uint8) for value in (80, 100, 120)]
+    masks = [np.full((height, width), 255, np.uint8) for _ in images]
+    tracemalloc.start()
+    try:
+        result = blend_with_exposure_compensation(images, masks)
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
+    assert result.shape == images[0].shape
+    # Reserve at most 60 bytes/pixel of scratch space, excluding caller-owned inputs.
+    assert peak < height * width * 60
