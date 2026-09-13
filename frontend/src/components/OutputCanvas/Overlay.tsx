@@ -65,7 +65,7 @@ export function Overlay({
               y1={seam.top[1]}
               x2={seam.bottom[0]}
               y2={seam.bottom[1]}
-              style={{ stroke: "var(--aqua)" }}
+              style={{ stroke: "var(--pass)" }}
               strokeWidth={2.5}
               strokeDasharray="14 12"
               opacity={0.85}
@@ -77,7 +77,7 @@ export function Overlay({
                   y1={sample.from[1]}
                   x2={sample.to[0]}
                   y2={sample.to[1]}
-                  style={{ stroke: "var(--ink)" }}
+                  style={{ stroke: "var(--text)" }}
                   strokeWidth={1.6}
                   opacity={0.35}
                 />
@@ -86,7 +86,7 @@ export function Overlay({
                   cy={sample.from[1]}
                   r={9}
                   fill="none"
-                  style={{ stroke: "var(--coral)" }}
+                  style={{ stroke: "var(--fail)" }}
                   strokeWidth={2}
                   opacity={0.75}
                 />
@@ -95,7 +95,7 @@ export function Overlay({
                   cy={sample.to[1]}
                   r={9}
                   fill="none"
-                  style={{ stroke: "var(--coral)" }}
+                  style={{ stroke: "var(--fail)" }}
                   strokeWidth={2}
                   opacity={0.75}
                 />
@@ -103,7 +103,7 @@ export function Overlay({
             ))}
             <text
               {...labelPosition(seam, index, width, height)}
-              style={{ fill: "var(--aqua)", fontFamily: "var(--mono)" }}
+              style={{ fill: "var(--pass)", fontFamily: "var(--mono)" }}
               fontSize={22}
               letterSpacing={2}
             >
