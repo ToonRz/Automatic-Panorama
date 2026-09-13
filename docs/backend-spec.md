@@ -479,6 +479,7 @@ process. A magic number anywhere else is a review comment.
 | --- | --- | --- | --- |
 | `app_env` | `development` | development, test, production | health payload and log verbosity |
 | `backend_cors_origins` | `http://localhost:5173` | comma list | exact Vercel origin in production |
+| `backend_cors_origin_regex` | empty (no pattern) | a valid regex, or empty | Vercel Preview origins, anchored to this project's account (section 5) |
 | `max_upload_files` | 8 | 2 - 12 | request duration on a free instance |
 | `max_upload_mb` | 12 | 1 - 50 | per-file memory before decode |
 | `max_total_upload_mb` | 48 | 4 - 200 | total request memory before decode |
