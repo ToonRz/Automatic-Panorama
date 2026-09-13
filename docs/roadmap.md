@@ -58,12 +58,16 @@ Exit criteria:
 
 Owners: frontend + deployment/QA. Complete upload UX, loading/cold-start
 messaging, CORS, Render health check, Vercel environment, and public smoke test.
+Execution is `task-plans/09-production-deploy.md` against the production spec
+in `docs/deployment-plan.md`.
 
 Exit criteria:
 
 - public frontend can reach the public backend;
 - SIFT/ORB selection and a bad-input case work from the URL;
-- deployment does not rely on a local filesystem or secret.
+- deployment does not rely on a local filesystem or secret;
+- the backend stays awake under the keep-alive monitor and every item in
+  `docs/deployment-plan.md` section 9 has evidence.
 
 ## Phase 5 - submission hardening
 

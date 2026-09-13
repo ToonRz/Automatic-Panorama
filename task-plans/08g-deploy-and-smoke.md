@@ -1,5 +1,10 @@
 # Task 08g - public deployment and smoke evidence
 
+> **Superseded by `task-plans/09-production-deploy.md`.** The smoke script
+> below shipped here. Every unchecked item moved to task 09, which also adds
+> keep-alive, Preview CORS, a memory budget, and a rollback runbook. Do not
+> work from this file.
+
 - Owner: TBD (needs access to the Render and Vercel projects)
 - Reviewers: TBD
 - Depends on: 08a, 08b, 08c, 08d, 08e, 08f

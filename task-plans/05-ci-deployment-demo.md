@@ -15,5 +15,5 @@ This task keeps CI.
 - [ ] GitHub Actions runs backend tests/lint and frontend build;
 - [ ] demo timer and contribution evidence are ready.
 
-See `task-plans/08g-deploy-and-smoke.md` for Render/Vercel deployment, the
-scripted and manual smoke checks, and the public URLs.
+See `task-plans/09-production-deploy.md` for Render/Vercel deployment, the
+scripted and manual smoke checks, and the public URLs. It supersedes 08g.

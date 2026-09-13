@@ -389,6 +389,10 @@ already emit.
 
 ## 10. Public deployment (08g)
 
+> The production deployment is specified in `docs/deployment-plan.md` and
+> executed by `task-plans/09-production-deploy.md`. With keep-alive in place,
+> the cold-start check below is replaced by section 9.2 of that plan.
+
 - Backend on Render from `render.yaml`; `BACKEND_CORS_ORIGINS` set to the exact
   Vercel production origin plus `http://localhost:5173`.
 - Frontend on Vercel with root `frontend/` and `VITE_API_BASE_URL` set to the
@@ -422,4 +426,4 @@ already emit.
 | I14 | `npm run dev` performs a real network request; `npm run dev:mock` does not; a production build with the flag set fails | 08f |
 | I15 | the stage chart shows seven known stages and no unknown row for a real response | 08f |
 | I16 | changing a diagnostics key in the backend without regenerating snapshots fails the backend test | 08f |
-| I17 | the public URL passes section 10's scripted and manual checks | 08g |
+| I17 | the public URL passes section 10's scripted and manual checks | 08g, closed by 09e |

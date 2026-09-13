@@ -39,7 +39,8 @@ after 08b.
       closed: `scripts/smoke_public.py` exists and passes locally, but no
       public Render/Vercel URL exists yet in this environment, so the
       scripted-against-production and manual real-photo/HEIC/cold-start
-      checks remain open (`task-plans/08g-deploy-and-smoke.md`);
+      checks remain open, now tracked by `task-plans/09-production-deploy.md`
+      (09e), which supersedes 08g;
 - [x] `docs/ui-spec.md` and `docs/backend-spec.md` no longer contradict the
       integration spec;
 - [x] `make test`, `make lint`, and `make frontend-build` are green on `main`.
