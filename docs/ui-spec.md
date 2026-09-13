@@ -1,15 +1,21 @@
 # UI specification
 
-The interface described here is the one drawn in `docs/mockups/ui-mock.html`.
-That file is the visual reference: spacing, type scale, and component shape are
-read from it and are not restated as numbers here. This document owns what the
-mock cannot express — where every value on screen comes from, which state hides
-what, which error code produces which sentence, and what has to be true before
-a slice can merge.
+The interface described here is the one drawn in
+`docs/mockups/ui-mock-v2.html`, in its Graphite theme. That file is the visual
+reference for composition, component shape, and copy. Sections 2 and 3 restate
+its tokens, type scale, spacing, and breakpoints as numbers, because the
+implementation must match them and a mock is easy to misread. This document
+owns what the mock cannot express — where every value on screen comes from,
+which state hides what, which error code produces which sentence, and what has
+to be true before a slice can merge. Where the mock and this document disagree,
+this document wins. The mock's panorama is a drawn illustration and its
+failed-state numbers are invented.
 
-Implementation is split across `task-plans/04a` through `task-plans/04e`. The
-backend contract it reads from is `docs/backend-spec.md`; the overlay fields in
-section 6.2 are owed by `task-plans/07h` and `task-plans/07i`.
+`docs/mockups/ui-mock.html` is the v1 reference, kept as history. The original
+implementation was split across `task-plans/04a` through `task-plans/04e`; the
+Graphite redesign is `task-plans/10-graphite-redesign.md`. The backend contract
+it reads from is `docs/backend-spec.md`; the overlay fields in section 6.2 are
+owed by `task-plans/07h` and `task-plans/07i`.
 
 ## 1. Scope
 
@@ -26,59 +32,210 @@ In scope for v1:
 Explicitly out of scope for v1, decided against the mock's own open list:
 
 - drag-to-reorder frames. v1 chains the frames in upload order, so the order
-  does matter, and the input rail says so in one line above the file list. A
+  does matter, and the input rail says so in one line under the file list, beside the upload total. A
   reorder control is a v2 affordance, not a v1 omission dressed up as a
   decision. `docs/backend-spec.md` section 7.2 has the ordering rule;
 - a side-by-side match visualization tab. It needs correspondence data beyond
   what section 6 asks for;
-- a light theme. The product is dark-committed.
+- a light theme or a theme switcher. The product is dark-committed and
+  Graphite is its only theme. The v2 mock was also drawn in Navy and Light
+  palettes; both were considered and dropped on 2026-09-13.
 
 ## 2. Visual system
 
-Tokens replace the current `frontend/src/styles.css` values with the mock's set.
+### 2.1 Colour tokens
 
-| Token | Value | Meaning |
+Graphite. Tokens live on `:root` in `frontend/src/styles.css`. Components refer
+to tokens only; no component carries a hex value or an inline colour.
+
+| Token | Value | Role |
 | --- | --- | --- |
-| `--ground` | `#0a1421` | page background |
-| `--ground-lift` | `#0e1a2b` | raised background |
-| `--panel` | `#13243c` | panel surface |
-| `--panel-soft` | `#1a2f4a` | inset surface |
-| `--ink` | `#f3f0e8` | primary text |
-| `--muted` | `#8ba0b9` | secondary text |
-| `--line` | `rgba(243,240,232,0.13)` | border |
-| `--line-soft` | `rgba(243,240,232,0.07)` | hairline |
-| `--aqua` | `#6fe3cf` | accepted, complete, online |
-| `--aqua-deep` | `#2f8d7e` | aqua on a filled surface |
-| `--coral` | `#ff8469` | rejected, offline |
-| `--amber` | `#efc96b` | running, waking, not yet built |
+| `--bg` | `#0a0a0b` | page ground, top bar (at 82% with blur) |
+| `--surface` | `#121214` | panels |
+| `--surface-2` | `#17171a` | insets: dropzone, file rows, segmented track, value boxes, chips, rail action footer |
+| `--surface-3` | `#1e1e22` | raised insets: checked segment, slider track, pair index badges |
+| `--matte` | `#0d0d0f` | panorama viewport ground |
+| `--dot` | `rgba(255,255,255,.05)` | viewport dot grid, 18px pitch |
+| `--scrim` | `rgba(11,11,15,.78)` | backing behind overlay labels on the panorama |
+| `--border` | `rgba(255,255,255,.07)` | panel borders, row borders, dividers |
+| `--border-strong` | `rgba(255,255,255,.13)` | control borders, dashed dropzone, index badges |
+| `--text` | `#f4f4f5` | primary text |
+| `--muted` | `#a1a1aa` | secondary text, field labels |
+| `--faint` | `#85858e` | metadata, hints, placeholders, table headers |
+| `--accent` | `#8e8cff` | the one interactive colour: primary button, checked segment name, slider fill, pressed toggle, focus ring |
+| `--accent-ink` | `#0b0b12` | text on `--accent` |
+| `--accent-soft` | `rgba(142,140,255,.14)` | pressed toggle fill, dropzone hover and drag-active fill, slider thumb halo, frames-illustration overlap |
+| `--pass` | `#3ddc97` | accepted, complete, online |
+| `--run` | `#f5b83d` | running, waking, preparing, stale |
+| `--fail` | `#ff6b6b` | rejected, offline, invalid |
 
 The colour rule is absolute and is what makes the screen readable at a glance:
-aqua means a thing passed, amber means a thing is in motion or not yet real,
-coral means a thing was rejected. No component may use these three colours
-decoratively.
+`--pass` means a thing passed, `--run` means a thing is in motion or not yet
+real, `--fail` means a thing was rejected. No component may use these three
+decoratively. Interaction is `--accent` and nothing else, which is why the
+primary button is violet rather than green: a green button would read as
+"already accepted". The one recorded exception is the overlay (section 6.2),
+whose seam lines are drawn in `--pass` and sampled correspondences in `--fail`,
+as in v1.
 
-Three families are self-hosted as `woff2`, latin subset only, served from the
-frontend bundle rather than a CDN. A cold Render backend already costs the demo
-time; a font CDN is one more thing that can stall in a lecture hall.
+`--faint` is `#85858e`, not the `#6b6b74` of the first v2 draft, so that it
+reaches 4.5:1 on every surface (A14).
+
+### 2.2 Type
 
 | Role | Family | Cut | Fallback |
 | --- | --- | --- | --- |
-| display | Fraunces | variable, 300-600 | Georgia, "Times New Roman", serif |
-| body | DM Sans | variable, 400-700 | "Avenir Next", Avenir, system-ui, sans-serif |
-| numeric | JetBrains Mono | 400, 600 | ui-monospace, "SF Mono", Menlo, monospace |
+| sans: titles, body, labels | Geist | variable, 400-700 | system-ui, -apple-system, "Segoe UI", sans-serif |
+| mono: numbers, codes, chips | Geist Mono | variable, 400-500 | ui-monospace, "SF Mono", Menlo, monospace |
 
-Every measurement, count, ratio, error value, code, and uppercase label is set
-in the mono family with tabular figures, so that columns of numbers align.
+| Element | Size / weight / tracking | Family |
+| --- | --- | --- |
+| page title (h1) | 26px / 600 / -0.025em; 22px below 600px | sans |
+| brand name | 15px / 600 / -0.01em | sans |
+| diagnostics title | 16px / 600 / -0.01em | sans |
+| panel title (h2) | 14px / 600 | sans |
+| viewport heading (h3) | 18px / 600; failed card 20px | sans |
+| body | 14px / 400, line-height 1.5 | sans |
+| field label | 13px / 500 | sans |
+| secondary label, KPI label | 12.5px / 500 | sans |
+| hint, metadata | 12px / 400 | sans |
+| KPI value | 26px / 500 / -0.03em, unit 14px | mono |
+| table numerics, value boxes | 12-12.5px / 400 | mono |
+| chips, captions, index badges | 11-11.5px / 400 | mono |
 
-Fonts are licensed under the SIL Open Font License. The licence files ship
-alongside the font files.
+Every measurement, count, ratio, error value, and error code is set in mono with
+tabular figures, so that columns of numbers align. The v1 uppercase,
+letter-spaced kickers ("INPUT", "OUTPUT", "METHOD") are removed. A panel is
+named by a numbered index badge and a sentence-case title.
+
+Both families are self-hosted as `woff2`, latin subset only, served from the
+frontend bundle rather than a CDN. A cold Render backend already costs the demo
+time; a font CDN is one more thing that can stall in a lecture hall. The v2 mock
+loads them from Google Fonts only because it is a standalone file. Geist and
+Geist Mono are licensed under the SIL Open Font License, and the licence files
+ship alongside the font files. The v1 families (Fraunces, DM Sans, JetBrains
+Mono) and their licences are removed.
+
+### 2.3 Shape, spacing, elevation, motion
+
+| Token or rule | Value |
+| --- | --- |
+| `--r-lg` | 14px: panels |
+| `--r-md` | 10px: dropzone, file rows, viewport, primary and secondary buttons, segmented track |
+| `--r-sm` | 6-7px: chips, value boxes, segments, index badges, tool buttons (8px) |
+| border | 1px everywhere; the dropzone is dashed |
+| panel gap | 16px, both between the workspace panels and inside the diagnostics band |
+| panel head | 14px 18px padding, 56px min-height, `--border` underneath |
+| rail section | 16px 18px 18px padding |
+| shell | max width 1520px; 28px 32px 96px padding; 20px 14px 110px below 600px |
+
+Panels have no shadow. Two things do: the primary button (a soft `--accent`
+glow, removed when disabled) and the panorama image (a drop shadow on the
+matte).
+
+Motion is limited to three cues, all in the working state: the frames
+illustration easing into alignment, the ribbon's pending pulse, and the
+indeterminate bar. Hover and colour transitions last 0.2s or less.
+`prefers-reduced-motion: reduce` stops all three cues and every transition. The
+state change itself stays visible, because it is carried by text and colour,
+not motion.
+
+Focus is a 2px solid `--accent` outline with a 2px offset on every focusable
+element.
 
 ## 3. Layout
 
-Two columns above 900px: the control rail on the left, the output canvas on the
-right, with the diagnostics block spanning the full width underneath. At 900px
-and below the canvas stacks under the rail and the diagnostics table scrolls
-horizontally inside its own container rather than forcing the page to scroll.
+From top to bottom:
+
+1. **Top bar.** Sticky, 60px, with a full-width bottom border, and its content
+   capped at the shell width. On the left: the brand mark (two overlapping
+   rounded squares, the right one in `--accent`), the product name
+   "Automatic Panorama Stitcher", and the method line
+   "SIFT / ORB · RANSAC · warp · blend". On the right: the privacy line
+   "Processed in memory · never stored" with a lock icon, and the status pill.
+   The top bar replaces v1's hero pill and footer.
+2. **Page head.** The h1 "Stitch overlapping photos into one panorama" and a
+   single lede line, "Upload {min}–{max} frames in capture order. Every seam
+   comes with the evidence behind it.", with the numbers read from
+   `ClientConfig`.
+3. **Workspace.** A grid of `384px minmax(0, 1fr)` with a 16px gap and
+   `align-items: stretch`. The control rail and the output panel are always
+   the same height. The output viewport is `flex: 1` and absorbs the
+   difference; the rail's action footer uses `margin-top: auto` to sit at the
+   rail's bottom.
+4. **Diagnostics band.** Full width and rendered in every state (section 6.4):
+   a heading row; the KPI strip (one panel, six equal cells split by 1px
+   dividers); then a row holding the per-pair table panel and the stage timing
+   panel at 7fr / 5fr and equal height.
+
+| Width | Change |
+| --- | --- |
+| above 1180px | the layout above |
+| 1180px and below | KPI strip becomes 3 × 2; the table and timing panels stack |
+| 960px and below | the workspace becomes one column, rail first; viewport min-height 300px; ribbon wraps 4 + 3; the privacy line hides |
+| 600px and below | shell padding narrows; h1 22px; KPI strip becomes 2 × 3; the stage tools wrap to their own full-width row; the method line hides; the download label drops the word "Download" visually |
+
+The per-pair table scrolls horizontally inside its own container. The page
+never scrolls horizontally.
+
+### 3.1 Component anatomy
+
+**Panel head.** A 22px index badge (mono 11px, `--border-strong`, 6px radius),
+the h2 title, an optional aside on the right (12.5px `--faint`), and optional
+trailing content.
+
+**Control rail**
+
+| Part | Anatomy |
+| --- | --- |
+| head 1 | `1` · "Source frames" · aside `n / max` in mono, with `n` in `--text` |
+| dropzone, no files | column, centred, 30px vertical padding: 38px icon tile, "Drop overlapping images", "JPG · PNG · WEBP · BMP · TIFF — up to {max_upload_mb} MB each", a "Browse files" affordance |
+| dropzone, files chosen | row: 38px icon tile, "Add more frames" over "Appended after frame NN", and a "Browse" affordance on the right |
+| dropzone surface | `--surface-2`, 1px dashed `--border-strong`; hover and drag-active switch to an `--accent` border and `--accent-soft` fill. The whole zone is the `label` for the hidden file input; Browse is a styled span, not a nested button |
+| file row | grid of a 44 × 32px thumbnail (5px radius, cover, two-digit mono index overlaid bottom-left), name (13px / 500, ellipsis) over mono meta `W×H → W×H · size` in `--faint`, and a 26px remove button; `--surface-2`, `--border`, `--r-md` |
+| invalid file row | border in `--fail` at 45%, the error line in `--fail` under the meta |
+| order and total | one row under the list: "Frames stitch in list order — capture order, left to right." on the left, the mono prepared total on the right; a total error in `--fail` underneath |
+| head 2 | `2` · "Method" · aside "Defaults from server" |
+| detector | a radio group named "Feature detector": two native radios, visually hidden, inside a segmented `--surface-2` track with 4px padding. Each option is its name (13px / 600) over a sub-line (11.5px `--faint`): "Scale-invariant · slower", "Binary · faster". The checked option sits on `--surface-3` with an inset `--border-strong` ring and its name in `--accent` |
+| slider field | the label (13px `--text`) on the left and a value box on the right (mono 12px, `--surface-2`, 58px min width); a 4px track in `--surface-3` filled with `--accent` up to the value; a 16px white thumb with an `--accent-soft` halo; a mono 10.5px scale line from `constants/thresholds.ts` ("0.50 strict" / "0.95 loose", "1 px" / "10 px"); a one-line hint |
+| hints | ratio: "Keeps a match only when it clearly beats its runner-up." RANSAC: "Largest reprojection error that still counts as an inlier." |
+| action footer | pinned to the rail bottom, `--surface-2`, top border. Primary button 44px, full width, `--accent` fill, `--accent-ink` 14px / 600 label, no arrow glyph. Disabled: `--surface-3` fill, `--faint` label, no glow. Ghost (failed, busy countdown): transparent with a `--border-strong` border. Cancel: a 36px outlined secondary under it, in `working` only. A meta row (12px `--faint`) reads `{n} frames · {detector}` and mono `≈ {bytes} upload` once any file is chosen |
+
+**Output stage**
+
+| State | Title | Chips, left to right | Tools | Viewport | Ribbon |
+| --- | --- | --- | --- | --- | --- |
+| `empty` | Panorama | `Waiting for frames` | none | placeholder, empty copy | idle |
+| `preparing` | Panorama | `Preparing` in `--run` | none | placeholder, ready copy | idle |
+| `ready` | Panorama | `Ready · {n} frames` | none | placeholder, ready copy | idle |
+| `working` | Stitching | `Running` in `--run` | none | working illustration | pending |
+| `complete` | Panorama | `Complete` in `--pass`, `{detector}`, `{n} frames`, `order 1 → 2 → 3`, and `Produced with previous settings` in `--run` when stale | overlay toggle when the section 6.2 fields exist; download | panorama plate | done |
+| `failed` | Not stitched | `Rejected` in `--fail` | none | failed card | idle |
+
+| Part | Anatomy |
+| --- | --- |
+| chip | 24px tall, 6px radius, `--surface-2`, `--border`, mono 11.5px `--muted`; a status chip adds a 6px dot and takes the status colour |
+| tools | 32px buttons, 8px radius. Overlay toggle "Seams & inliers": outlined; pressed means an `--accent-soft` fill, an `--accent` border at 45%, and `--accent` text. Download: inverted (`--text` fill, `--bg` label, 500), reading "Download PNG" plus mono `W×H` |
+| viewport | 14px inset, `--r-md`, `--matte` with the `--dot` grid, `--border`; min-height 460px (300px at 960px, 220px at 600px); content centred |
+| panorama plate | the image at the viewport width minus 48px (minus 20px below 600px), 4px radius, drop shadow; the overlay SVG sits exactly on the image, with label backings in `--scrim`; a caption in the bottom-right corner, mono 11px `--faint`: `W × H · MP · PNG` |
+| placeholder | a decorative 300 × 130 SVG (three outlined frames, `--accent-soft` overlaps, dashed `--accent` match lines, `aria-hidden`); h3; a body line (13.5px `--muted`, 440px max); a legend of the three status colours labelled accepted / in progress / rejected |
+| empty copy | h3 "The panorama lands here"; body: "Add at least two overlapping frames. You'll get the stitched image plus keypoints, matches, inlier ratio and reprojection error for every pair." |
+| ready copy | h3 "{n} frames ready to stitch" (preparing: "Preparing {n} frames…"); body: "Frames will be matched with {detector} at ratio {ratio} and aligned with RANSAC at {tolerance} px." |
+| working | the same illustration, outer frames easing into alignment (2.4s, alternating); h3 "Stitching {n} frames with {detector}…"; body "The server answers once, at the end. Real stage timings appear as soon as it does."; a 240 × 3px indeterminate `--run` bar; the cold-start note (section 9) below it when it applies |
+| failed card | 520px max, left-aligned: the code eyebrow (mono 12px, `--fail` text on a 12% `--fail` fill with a 30% `--fail` border), the h3 heading, the message in `--muted`, context chips, and the remedy list in a `--surface-2` box (section 7) |
+| ribbon | seven equal cells under the viewport, split by `--border`; each cell holds a mono two-digit index with a 7px dot, then the stage's short label (12.5px). Idle: hollow dot, `--muted` label. Pending: pulsing `--run` ring. Done: filled `--pass` dot, `--text` label. The full stage label is the cell's `title`. The ribbon never shows a timing |
+
+Short stage labels, in `PIPELINE_STAGES` order: Decode, Features, Match,
+Homography, Warp, Blend & crop, Encode.
+
+**Diagnostics band**
+
+| Part | Anatomy |
+| --- | --- |
+| heading row | h2 "Alignment diagnostics" with the lede (13px `--faint`) beside it; the lede per state is in section 6.4 |
+| KPI cell | 16px 18px 18px padding; the label (12.5px `--muted`) with its qualifier ("lowest pair", "worst pair") right-aligned in 11px `--faint`; the value in mono 26px; a mono 11.5px `--faint` secondary line with ellipsis |
+| pair table panel | head "Per-pair geometry", aside "{k} pairs · all accepted"; headers 12px / 500 `--faint`; cells 13px with 13px 18px padding; numerics right-aligned in mono; the pair cell as two 22px index badges with an arrow; the inlier-ratio cell as a 64px `--pass` bar (width = ratio) with its value; the verdict as a `--pass` pill on a 12% fill |
+| stage timing panel | head "Stage timings", mono aside "{total} ms total"; rows of a 92px short label, an 8px `--surface-2` track with an `--accent` fill (the peak at full opacity, the rest at 85%), and a right-aligned mono `x.x ms`. An unrecognised key uses the key as its label |
 
 ## 4. States
 
@@ -154,9 +311,13 @@ sequence would put invented numbers on screen. The real timings arrive in
 `stage_timings_ms` and are rendered in the diagnostics chart once the response
 lands.
 
-The checklist therefore shows all seven stages in a single pending treatment with
-an indeterminate motion cue. The mock's per-stage ticks and millisecond values
-are a picture of the finished run, not a live feed.
+The seven stages are therefore shown as the stage ribbon under the viewport
+(section 3.1), all in the same pending treatment: every dot pulses in `--run`,
+no stage is ticked, and no stage is ahead of another. The viewport above it
+carries the one other motion cue, an indeterminate bar. The v1 mock's
+per-stage ticks and millisecond values were a picture of the finished run, not
+a live feed. The ribbon turns `--pass` only in the complete state, and even
+then it carries no timings; those belong to the stage timing chart.
 
 If the request has been in flight longer than the cold-start threshold in
 section 9, the cold-start message appears below the checklist.
@@ -176,12 +337,12 @@ frontend except the sums and the bar widths marked below.
 | --- | --- |
 | panorama image | `image.data_url` |
 | output dimensions on the download button | `image.width`, `image.height` |
-| header chip "SIFT / n frames / order" | `diagnostics.detector`, `image_count`, `image_order` |
+| stage head chips: detector, frame count, order (section 3.1) | `diagnostics.detector`, `image_count`, `image_order` |
 | Keypoints card, total and per image | sum of `keypoints_per_image`, then the list |
 | Ratio-passed card | sum of `ratio_passed_matches_per_pair`, then the list |
 | Inliers card | sum of `inliers_per_pair`, then the list |
-| Inlier ratio card | minimum of `inlier_ratio_per_pair`, labelled as the lowest pair |
-| Reprojection card | maximum of `reprojection_error_per_pair`, labelled as the worst pair |
+| Inlier ratio card | minimum of `inlier_ratio_per_pair`, labelled as the lowest pair and naming that pair one-based; the first pair wins a tie |
+| Reprojection card | maximum of `reprojection_error_per_pair`, labelled as the worst pair and naming that pair one-based; the first pair wins a tie |
 | Output card | `diagnostics.output_width`, `output_height`, megapixels, `image.mime_type` |
 | per-pair table rows | one row per pair, index `i` reads element `i` of each per-pair array |
 | stage chart bars | `stage_timings_ms`, bar width is the stage over the largest stage |
@@ -229,8 +390,8 @@ rule that OpenCV work lives in `backend/app/cv/`.
   the UI may count these points or present their number as a measurement. The
   inlier count comes from `inliers_per_pair` and nowhere else.
 
-The overlay renders, per pair: a dashed aqua line from the seam's top point to
-its bottom point, coral circles on both points of each sampled correspondence, a
+The overlay renders, per pair: a dashed `--pass` line from the seam's top point to
+its bottom point, `--fail` circles on both points of each sampled correspondence, a
 faint connecting line between them, and a mono label reading the seam number and
 the inlier count from `inliers_per_pair`. The label is anchored to the seam's
 top point, so it follows a tilted seam instead of floating away from it.
@@ -250,15 +411,38 @@ be saved is unambiguous.
 
 Filename: `panorama-<detector>-<width>x<height>.png`, lowercased.
 
+### 6.4 Diagnostics before a result
+
+The diagnostics band is part of the page composition in every state, not only
+in complete, so the page does not collapse to a short column before the first
+run. Outside complete it renders its frame with no measurement in it:
+
+- the six KPI cells keep their labels and qualifiers, and show `—` as the value
+  and as the secondary line;
+- the per-pair table keeps its header row and renders one row,
+  "No accepted pairs yet";
+- the stage timing panel shows "Timings arrive with the response";
+- the heading lede reads "Filled in after a successful run." In complete it
+  reads "Read from the server response. Ratio and error show the worst pair,
+  not an average."
+
+No number, zero, previous-run value, or loading shimmer may appear in the band
+outside complete. A zero reads as a measurement, and a shimmer claims that
+results are streaming in when `POST /api/v1/stitch` answers once. While a
+stale complete result is on screen (section 4), the band keeps its numbers,
+because the stale chip in the stage head already says which settings produced
+them.
+
 ## 7. The failed state
 
 Every failure names what was measured and what was required. No distorted image
 is ever shown in place of an error.
 
-The error block renders four things, in this order: a heading naming the images
-involved when the code identifies a pair, the HTTP status and error code in
-mono, the backend `message`, and a row of context chips built from
-`detail.context`. Each chip shows its key and value. The chip row is omitted
+The error block is a card centred in the viewport (section 3.1) and renders
+five things, in this order: the HTTP status and error code in mono as an
+eyebrow, a heading naming the images involved when the code identifies a pair,
+the backend `message`, a row of context chips built from `detail.context`, and
+the remedy list from section 7.1. Each chip shows its key and value. The chip row is omitted
 when `context` is absent.
 
 The heading names frames one-based, with the file name from the current
@@ -388,7 +572,11 @@ rejection, an `IMAGE_TOO_LARGE` rejection, and an unrecognised code.
 - interface slider ranges and retry bounds are named constants. Server-owned
   file limits and defaults come from `ClientConfig`, with one generated-snapshot
   `FALLBACK_CONFIG`; remedy text receives the same config instead of embedding
-  policy numbers in JSX.
+  policy numbers in JSX;
+- colours, radii, and fonts are the section 2 tokens in
+  `frontend/src/styles.css`. The stylesheet is split into comment-delimited
+  blocks (tokens and base, shell, rail, stage, diagnostics), so slices that
+  touch different regions do not conflict.
 
 ## 12. Acceptance
 
@@ -404,9 +592,15 @@ Per state, with the fixture that drives it:
 | A6 | download produces the clean image under the section 6.3 filename |
 | A7 | every code in the section 7.1 table renders its remedy, and an unknown code renders the generic one |
 | A9 | the pill distinguishes waking from offline |
-| A10 | the layout stacks at 900px and the table scrolls inside its container |
-| A11 | keyboard reaches every control, and focus is visible on the dark ground |
+| A10 | the workspace stacks at 960px, the table scrolls inside its container, and the page never scrolls horizontally at 1440px, 960px, or 375px |
+| A11 | keyboard reaches every control, and the `--accent` focus ring is visible on every surface |
 | A12 | the production build contains neither the state switcher nor the fixtures |
+| A13 | above 960px the control rail and the output panel have equal height in every state, and the rail's action footer sits at the rail's bottom |
+| A14 | `--text`, `--muted`, and `--faint` reach 4.5:1 on `--surface`, `--surface-2`, and `--surface-3`, and `--accent-ink` reaches 4.5:1 on `--accent` |
+| A15 | outside complete the diagnostics band renders its section 6.4 frame, and no digit appears in any KPI value, table body, or timing row |
+| A16 | fonts are served from the bundle, the built page requests no font CDN, and no v1 font family name remains in the frontend source |
+| A17 | the detector is a radio group named "Feature detector", operable with arrow keys, and disabled while working or preparing |
 
-Evidence required on every pull request that touches this UI: Vitest green, and
-screenshots of the states the change affects.
+Evidence required on every pull request that touches this UI: Vitest green,
+screenshots of the states the change affects at 1440px, and the same states at
+375px when the change touches layout.

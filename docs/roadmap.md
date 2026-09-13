@@ -61,6 +61,10 @@ messaging, CORS, Render health check, Vercel environment, and public smoke test.
 Execution is `task-plans/09-production-deploy.md` against the production spec
 in `docs/deployment-plan.md`.
 
+The Graphite visual redesign is `task-plans/10-graphite-redesign.md`, specified
+in `docs/ui-spec.md` sections 2, 3, and 6.4. It changes presentation and layout
+only; the API contract and the stitch state machine are untouched.
+
 Exit criteria:
 
 - public frontend can reach the public backend;

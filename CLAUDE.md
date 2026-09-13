@@ -20,7 +20,7 @@ stateless and its pipeline is covered by synthetic and end-to-end tests.
 | The backend contract, errors, settings | `docs/backend-spec.md` |
 | How the frontend and backend integrate | `docs/integration-spec.md` |
 | Why the CV stages work as they do | `docs/cv-pipeline.md` |
-| What the interface must do | `docs/ui-spec.md`, `docs/mockups/ui-mock.html` |
+| What the interface must do | `docs/ui-spec.md`, `docs/mockups/ui-mock-v2.html` |
 | Technology and hosting choices | `docs/tech-stack.md`, `docs/deployment-plan.md` |
 | What to build next | `docs/roadmap.md`, `task-plans/` |
 | Who owns each slice | `docs/contribution-plan.md` |
