@@ -360,25 +360,35 @@ With screenshots:
 
 ## 10. Public URLs and operations log
 
-Backend is live (09c). Frontend/Vercel items are **pending manual setup** —
-see the hand-off list in the 09c PR and the session's final report: the
-Vercel MCP connector available to this deploy session had no team linked and
-its CLI was logged out, so the Vercel side of 09c could not be automated.
+Backend and frontend are both live. The Vercel side of 09c (project root
+directory, env vars, confirming the production domain) had to be completed
+manually by ToonRz after this session's deploy pass: the Vercel MCP
+connector available to this deploy session had no team linked and its CLI
+was logged out, so it could not be automated — see the hand-off list in the
+09c PR and the session's final report. ToonRz also found and fixed a Root
+Directory misconfiguration (the Vercel project was scanning the whole repo
+and trying to deploy `backend/app/main.py` as a Python/FastAPI serverless
+function instead of building `frontend/` with Vite) that had been the real
+cause of every failed "Vercel" GitHub check throughout this session, not
+solely the D-009 commit-author rule as first suspected.
 
 | Item | Value |
 | --- | --- |
-| Frontend (Vercel Production) | _pending — hand-off: confirm the production domain for the `automatic-panorama` project under the `toonrzs-projects` team and record it here_ |
-| `test` branch Preview | _pending — same hand-off_ |
+| Frontend (Vercel Production) | `https://automatic-panorama.vercel.app` |
+| `test` branch Preview | _pending confirmation — should build correctly now that Root Directory is fixed; verify in the Vercel Deployments tab_ |
 | Backend (Render) | `https://automatic-panorama-api.onrender.com` (Free, Singapore) |
-| Served commit | `952a044da690da07b05d2ed99b765e8697c2302d` (merge of PR #4, 09c docs) |
+| Served commit | `41eea181272b1a13e520e1bbacbb5030a8eff5c5` (merge of PR #5, 09e docs) |
 | Preview CORS pattern | `^https://automatic-panorama-[a-z0-9-]+-toonrzs-projects\.vercel\.app$` (set on Render; verified in Python against the branch-preview host, a commit-hash host, an `.evil.com` suffix, another project name, and `http://`, per section 5) |
 | UptimeRobot monitor | _pending — hand-off, requires a human-owned account (09d)_ |
 | Keep-alive enabled on | _pending_ |
 | Keep-alive disabled on | _still on_ |
 
-Note: `BACKEND_CORS_ORIGINS` on Render is still `http://localhost:5173` only
-— the real Vercel production origin could not be confirmed from this session
-(see above) and must be added once known, per section 6 of the 09c hand-off.
+`BACKEND_CORS_ORIGINS` on Render is now
+`https://automatic-panorama.vercel.app,http://localhost:5173`. Not yet
+verified end to end from this session (network egress to `*.onrender.com`
+and `*.vercel.app` is still blocked here — see the 09e note below); confirm
+with a real browser stitch and/or the curl checks in section 9.1 once
+reachable.
 
 ### 09e automated-evidence attempt
 
