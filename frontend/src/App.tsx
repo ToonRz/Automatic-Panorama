@@ -4,6 +4,7 @@ import { ControlRail } from "./components/ControlRail/ControlRail";
 import { Diagnostics } from "./components/Diagnostics/Diagnostics";
 import { OutputCanvas } from "./components/OutputCanvas/OutputCanvas";
 import { StatusPill } from "./components/StatusPill";
+import { IntroCover } from "./components/IntroCover/IntroCover";
 import { MIN_FILES } from "./constants/thresholds";
 import type { DebugStateKey } from "./dev/debugStates";
 import { StateSwitcher } from "./dev/StateSwitcher";
@@ -22,6 +23,7 @@ export default function App() {
   const { config } = useClientConfig(backendStatus);
   const run = useStitchRun(config, undefined, backendStatus);
   const [debugState, setDebugState] = useState<DebugStateKey | null>(null);
+  const [isIntroDismissed, setIsIntroDismissed] = useState(false);
 
   function handleDebugSelect(key: DebugStateKey) {
     setDebugState(key);
@@ -30,7 +32,12 @@ export default function App() {
 
   return (
     <>
-      <header className="topbar">
+      <IntroCover
+        backendStatus={backendStatus}
+        onDismiss={() => setIsIntroDismissed(true)}
+      />
+      <div className={`app-studio-wrapper ${isIntroDismissed ? "is-revealed" : ""}`}>
+        <header className="topbar">
         <div className="topbar-inner">
           <div className="brand">
             <svg width="26" height="26" viewBox="0 0 26 26" aria-hidden="true">
@@ -133,6 +140,7 @@ export default function App() {
 
         <Diagnostics result={run.result} files={run.files} />
       </main>
+      </div>
     </>
   );
 }

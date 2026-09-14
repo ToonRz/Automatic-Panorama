@@ -1,0 +1,298 @@
+/* ============================================================================
+   INTRO COVER — TokenMe-Inspired Typewriter & Connection Gate
+   ============================================================================ */
+
+.intro-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: #0a0a0a;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: clamp(20px, 5vh, 48px) clamp(20px, 4vw, 40px);
+  will-change: transform;
+  transition: transform 0.85s cubic-bezier(0.76, 0, 0.24, 1);
+  overflow: hidden;
+  user-select: none;
+}
+
+/* Slide-up Curtain Reveal State */
+.intro-overlay.is-dismissed {
+  transform: translateY(-101%);
+  pointer-events: none;
+}
+
+/* Top minimal header */
+.intro-topbar {
+  width: 100%;
+  max-width: 1200px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  opacity: 0;
+  animation: introFadeIn 0.8s 0.2s forwards;
+}
+
+.intro-brand-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.intro-brand-chip .mono-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.intro-tech-pill {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--faint);
+  letter-spacing: 0.05em;
+}
+
+/* Center: Giant Typography Stage (Faithful to tokenme.limited) */
+.intro-center {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  flex: 1;
+  width: 100%;
+}
+
+.typewriter-stage {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(2px, 0.5vw, 6px);
+  align-items: flex-start;
+}
+
+.tw-line {
+  font-family: var(--sans);
+  font-size: clamp(2.8rem, 11.5vw, 8.5rem);
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 0.98;
+  letter-spacing: -0.045em;
+  white-space: nowrap;
+  overflow: hidden;
+  width: 0;
+  border-right: 0.07em solid transparent;
+  text-transform: uppercase;
+}
+
+.tw-line.typing {
+  border-right-color: #ffffff;
+}
+
+@keyframes introCaretBlink {
+  0%, 49% { border-right-color: #ffffff; }
+  50%, 100% { border-right-color: transparent; }
+}
+
+.tw-line.last.done {
+  border-right-color: #ffffff;
+  animation: introCaretBlink 0.75s step-end infinite;
+}
+
+/* Bottom Area: Server Status Pill & Entrance Gate */
+.intro-bottom {
+  width: 100%;
+  max-width: 680px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  z-index: 10;
+}
+
+/* Minimalist Connection Status Pill */
+.server-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 16px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--border);
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+  transition: all 0.35s ease;
+}
+
+.status-beacon {
+  position: relative;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.status-beacon .beacon-dot {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  display: block;
+}
+
+.status-beacon .beacon-ring {
+  position: absolute;
+  inset: -3px;
+  border-radius: 50%;
+  opacity: 0;
+}
+
+/* State: Checking / Waking (amber) */
+.server-status-pill.is-waking .beacon-dot {
+  background: var(--run);
+  box-shadow: 0 0 10px var(--run-glow);
+}
+.server-status-pill.is-waking .beacon-ring {
+  border: 1.5px solid var(--run);
+  animation: beaconPulse 1.8s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+}
+.server-status-pill.is-waking .status-badge {
+  color: var(--run);
+  font-weight: 600;
+}
+
+/* State: Online (green) */
+.server-status-pill.is-online {
+  background: rgba(61, 220, 151, 0.06);
+  border-color: rgba(61, 220, 151, 0.25);
+  color: #e4e4e7;
+}
+.server-status-pill.is-online .beacon-dot {
+  background: var(--pass);
+  box-shadow: 0 0 12px var(--pass-glow);
+}
+.server-status-pill.is-online .beacon-ring {
+  border: 1.5px solid var(--pass);
+  animation: beaconPulse 2.2s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+}
+.server-status-pill.is-online .status-badge {
+  color: var(--pass);
+  font-weight: 600;
+}
+
+/* State: Offline (fallback) */
+.server-status-pill.is-offline {
+  background: rgba(255, 107, 107, 0.08);
+  border-color: rgba(255, 107, 107, 0.25);
+  color: #fca5a5;
+}
+.server-status-pill.is-offline .beacon-dot {
+  background: var(--fail);
+}
+.server-status-pill.is-offline .status-badge {
+  color: var(--fail);
+  font-weight: 600;
+}
+
+@keyframes beaconPulse {
+  0% { transform: scale(0.7); opacity: 0.9; }
+  70% { transform: scale(2.2); opacity: 0; }
+  100% { transform: scale(2.4); opacity: 0; }
+}
+
+/* Swipe Up / Enter Trigger */
+.swipe-gate-trigger {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(12px);
+  pointer-events: none;
+  transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1), transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 10px 20px;
+  border-radius: 12px;
+  background: transparent;
+  border: none;
+  color: inherit;
+}
+
+.swipe-gate-trigger:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.swipe-gate-trigger.is-ready {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.swipe-chevron-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  animation: chevronBob 1.6s ease-in-out infinite;
+}
+
+.swipe-chevron-wrap svg {
+  color: #fff;
+  transition: transform 0.2s ease;
+}
+
+.swipe-gate-trigger:hover .swipe-chevron-wrap {
+  background: #ffffff;
+}
+
+.swipe-gate-trigger:hover .swipe-chevron-wrap svg {
+  color: #0a0a0a;
+  transform: translateY(-2px);
+}
+
+.swipe-title {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #ffffff;
+}
+
+.swipe-subtitle {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--faint);
+  letter-spacing: 0.04em;
+}
+
+@keyframes chevronBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+@keyframes introFadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Scaling container for main app studio */
+.app-studio-wrapper {
+  transform: scale(0.98);
+  transition: transform 0.9s cubic-bezier(0.76, 0, 0.24, 1), filter 0.9s cubic-bezier(0.76, 0, 0.24, 1);
+  filter: brightness(0.65) blur(1px);
+}
+
+.app-studio-wrapper.is-revealed {
+  transform: scale(1);
+  filter: brightness(1) blur(0px);
+}

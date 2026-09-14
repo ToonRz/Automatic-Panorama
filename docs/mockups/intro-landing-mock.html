@@ -1,0 +1,994 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Intro Landing & Cold-Start Connection Mockup — Automatic Panorama</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-black: #0a0a0a;
+    --bg-dark: #0f0f12;
+    --surface-1: #151518;
+    --surface-2: #1a1a1f;
+    --border: rgba(255, 255, 255, 0.08);
+    --border-strong: rgba(255, 255, 255, 0.16);
+    --text-pure: #ffffff;
+    --text-primary: #f4f4f5;
+    --text-muted: #a1a1aa;
+    --text-faint: #52525b;
+    --accent: #8e8cff;
+    --accent-glow: rgba(142, 140, 255, 0.45);
+    --pass: #3ddc97;
+    --pass-glow: rgba(61, 220, 151, 0.4);
+    --run: #f5b83d;
+    --run-glow: rgba(245, 184, 61, 0.4);
+    --sans: "Geist", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --mono: "Geist Mono", ui-monospace, monospace;
+    --ease-curtain: cubic-bezier(0.76, 0, 0.24, 1);
+    --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: var(--bg-black);
+    color: var(--text-primary);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ==========================================================================
+     TEST CONTROLLER BAR (Float at very top for testing states & interactions)
+     ========================================================================== */
+  .demo-bar {
+    position: fixed;
+    top: 14px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(20, 20, 24, 0.85);
+    border: 1px solid var(--border-strong);
+    padding: 6px 12px;
+    border-radius: 999px;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+    font-size: 12px;
+    color: var(--text-muted);
+    user-select: none;
+  }
+  .demo-bar .pill-title {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--accent);
+    padding-right: 6px;
+    border-right: 1px solid var(--border);
+    letter-spacing: 0.05em;
+  }
+  .demo-bar button {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    font-family: var(--sans);
+    font-size: 11.5px;
+    font-weight: 500;
+    padding: 4px 10px;
+    border-radius: 999px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .demo-bar button:hover {
+    background: rgba(255, 255, 255, 0.14);
+    border-color: rgba(255, 255, 255, 0.3);
+    color: #fff;
+  }
+  .demo-bar button.active {
+    background: var(--accent);
+    color: #0b0b12;
+    font-weight: 600;
+    border-color: var(--accent);
+  }
+
+  /* ==========================================================================
+     COVER / INTRO OVERLAY (tokenme.limited style typewriter & connection gate)
+     ========================================================================== */
+  .intro-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: var(--bg-black);
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    padding: clamp(24px, 5vh, 48px) clamp(20px, 4vw, 40px);
+    will-change: transform;
+    transition: transform 0.85s var(--ease-curtain);
+  }
+
+  /* State: Curtain opened (reveals main app) */
+  .intro-overlay.dismissed {
+    transform: translateY(-101%);
+    pointer-events: none;
+  }
+
+  /* Top Minimal Branding Header on Intro */
+  .intro-topbar {
+    width: 100%;
+    max-width: 1200px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    opacity: 0;
+    animation: fadeIn 0.8s 0.2s forwards;
+  }
+  .intro-brand-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+  }
+  .intro-brand-chip .mono-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+  }
+  .intro-tech-pill {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-faint);
+    letter-spacing: 0.05em;
+  }
+
+  /* Center: Giant Typography Stage (Faithful to tokenme.limited) */
+  .intro-center {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    flex: 1;
+    width: 100%;
+    user-select: none;
+  }
+
+  .typewriter-stage {
+    display: flex;
+    flex-direction: column;
+    gap: clamp(2px, 0.5vw, 6px);
+    align-items: flex-start;
+  }
+
+  .tw-line {
+    font-family: var(--sans);
+    font-size: clamp(3rem, 11.5vw, 8.5rem);
+    font-weight: 800;
+    color: var(--text-pure);
+    line-height: 0.98;
+    letter-spacing: -0.045em;
+    white-space: nowrap;
+    overflow: hidden;
+    width: 0;
+    border-right: 0.07em solid transparent;
+    text-transform: uppercase;
+  }
+
+  .tw-line.typing {
+    border-right-color: #ffffff;
+  }
+
+  @keyframes caretBlink {
+    0%, 49% { border-right-color: #ffffff; }
+    50%, 100% { border-right-color: transparent; }
+  }
+
+  .tw-line.last.done {
+    border-right-color: #ffffff;
+    animation: caretBlink 0.75s step-end infinite;
+  }
+
+  /* Bottom Area: Server Status Pill & Swipe Up Prompt */
+  .intro-bottom {
+    width: 100%;
+    max-width: 680px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    z-index: 10;
+  }
+
+  /* Status Pill (Render Cold-Start & Live State) */
+  .server-status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 16px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-muted);
+    letter-spacing: 0.02em;
+    transition: all 0.35s var(--ease-out-expo);
+  }
+
+  .status-beacon {
+    position: relative;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+  }
+  .status-beacon .beacon-dot {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    display: block;
+  }
+  .status-beacon .beacon-ring {
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    opacity: 0;
+  }
+
+  /* State: Waking */
+  .server-status-pill.is-waking .beacon-dot {
+    background: var(--run);
+    box-shadow: 0 0 10px var(--run-glow);
+  }
+  .server-status-pill.is-waking .beacon-ring {
+    border: 1.5px solid var(--run);
+    animation: beaconPulse 1.8s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+  }
+  .server-status-pill.is-waking .status-badge {
+    color: var(--run);
+    font-weight: 600;
+  }
+
+  /* State: Online */
+  .server-status-pill.is-online {
+    background: rgba(61, 220, 151, 0.06);
+    border-color: rgba(61, 220, 151, 0.25);
+    color: #e4e4e7;
+  }
+  .server-status-pill.is-online .beacon-dot {
+    background: var(--pass);
+    box-shadow: 0 0 12px var(--pass-glow);
+  }
+  .server-status-pill.is-online .beacon-ring {
+    border: 1.5px solid var(--pass);
+    animation: beaconPulse 2.2s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+  }
+  .server-status-pill.is-online .status-badge {
+    color: var(--pass);
+    font-weight: 600;
+  }
+
+  @keyframes beaconPulse {
+    0% { transform: scale(0.7); opacity: 0.9; }
+    70% { transform: scale(2.2); opacity: 0; }
+    100% { transform: scale(2.4); opacity: 0; }
+  }
+
+  /* Swipe Up / Enter Trigger Button */
+  .swipe-gate-trigger {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+    opacity: 0;
+    transform: translateY(12px);
+    pointer-events: none;
+    transition: opacity 0.5s var(--ease-out-expo), transform 0.5s var(--ease-out-expo);
+    padding: 12px 24px;
+    border-radius: 12px;
+  }
+  .swipe-gate-trigger:hover {
+    background: rgba(255, 255, 255, 0.03);
+  }
+
+  .swipe-gate-trigger.ready {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .swipe-chevron-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    animation: chevronBob 1.6s ease-in-out infinite;
+  }
+  .swipe-chevron-wrap svg {
+    color: #fff;
+    transition: transform 0.2s ease;
+  }
+  .swipe-gate-trigger:hover .swipe-chevron-wrap {
+    background: #fff;
+  }
+  .swipe-gate-trigger:hover .swipe-chevron-wrap svg {
+    color: #0a0a0a;
+    transform: translateY(-2px);
+  }
+
+  .swipe-title {
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .swipe-subtitle {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-faint);
+    letter-spacing: 0.04em;
+  }
+
+  @keyframes chevronBob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ==========================================================================
+     MAIN APPLICATION (Studio Page that sits underneath the cover)
+     ========================================================================== */
+  .app-viewport {
+    width: 100%;
+    height: 100vh;
+    overflow-y: auto;
+    background: #0b0b0d;
+    color: var(--text-primary);
+    transform: scale(0.975);
+    transition: transform 0.9s var(--ease-curtain), filter 0.9s var(--ease-curtain);
+    filter: brightness(0.6) blur(2px);
+  }
+  .app-viewport.revealed {
+    transform: scale(1);
+    filter: brightness(1) blur(0px);
+  }
+
+  /* App Topbar */
+  .topbar {
+    height: 52px;
+    border-bottom: 1px solid var(--border);
+    background: rgba(14, 14, 17, 0.92);
+    backdrop-filter: blur(12px);
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    position: sticky;
+    top: 0;
+    z-index: 50;
+  }
+  .topbar-inner {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    font-size: 13.5px;
+    color: #fff;
+  }
+  .crumb {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-faint);
+    letter-spacing: 0.04em;
+    padding-left: 12px;
+    border-left: 1px solid var(--border);
+  }
+  .spacer { flex: 1; }
+  .privacy-chip {
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .app-status-pill {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(61, 220, 151, 0.1);
+    border: 1px solid rgba(61, 220, 151, 0.25);
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--pass);
+  }
+  .app-status-pill .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--pass);
+  }
+
+  /* Studio Workspace */
+  .shell {
+    max-width: 1380px;
+    margin: 0 auto;
+    padding: 36px 24px 60px;
+  }
+  .pagehead {
+    margin-bottom: 28px;
+  }
+  .pagehead h1 {
+    font-size: 26px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: #fff;
+    margin-bottom: 6px;
+  }
+  .pagehead p {
+    font-size: 14px;
+    color: var(--text-muted);
+  }
+
+  .work-grid {
+    display: grid;
+    grid-template-columns: 340px 1fr;
+    gap: 20px;
+    align-items: start;
+  }
+  @media (max-width: 960px) {
+    .work-grid { grid-template-columns: 1fr; }
+  }
+
+  /* Control Rail Mock */
+  .control-rail {
+    background: #121215;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+  }
+  .rail-section-title {
+    font-size: 12px;
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-faint);
+  }
+  .dropzone {
+    border: 1.5px dashed var(--border-strong);
+    border-radius: 10px;
+    padding: 32px 16px;
+    text-align: center;
+    background: rgba(255, 255, 255, 0.015);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+  }
+  .dropzone-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background: rgba(142, 140, 255, 0.1);
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .dropzone h3 { font-size: 14px; font-weight: 600; color: #fff; }
+  .dropzone p { font-size: 12px; color: var(--text-muted); }
+
+  /* Output Canvas Mock */
+  .canvas-card {
+    background: #121215;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+  .canvas-header {
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(255,255,255,0.02);
+  }
+  .pipeline-ribbon-mock {
+    display: flex;
+    gap: 6px;
+  }
+  .ribbon-cell {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-faint);
+    border: 1px solid transparent;
+  }
+  .ribbon-cell.active {
+    background: rgba(142, 140, 255, 0.15);
+    color: var(--accent);
+    border-color: rgba(142, 140, 255, 0.3);
+  }
+
+  .canvas-stage {
+    min-height: 440px;
+    background: radial-gradient(circle at center, #191920 0%, #0d0d10 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    text-align: center;
+    gap: 16px;
+    border-bottom: 1px solid var(--border);
+  }
+  .empty-graphic {
+    width: 68px;
+    height: 68px;
+    border-radius: 18px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border-strong);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+  }
+
+  /* Hint footer */
+  .interaction-toast {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(30px);
+    background: rgba(20, 20, 25, 0.95);
+    border: 1px solid var(--border-strong);
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    color: var(--text-muted);
+    pointer-events: none;
+    opacity: 0;
+    transition: all 0.25s ease;
+    z-index: 10000;
+  }
+  .interaction-toast.visible {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+</style>
+</head>
+<body>
+
+<!-- Interactive Mockup Controller (For Testing / Review) -->
+<div class="demo-bar">
+  <span class="pill-title">MOCKUP CONTROLS</span>
+  <button id="btnStateWaking" class="active" onclick="setSimulatedState('waking')">1. Simulate Waking</button>
+  <button id="btnStateLive" onclick="setSimulatedState('online')">2. Simulate Live</button>
+  <button onclick="replayTypewriter()">Replay Typing</button>
+  <button onclick="toggleCurtain()">Toggle Curtain</button>
+</div>
+
+<!-- ========================================================================
+     INTRO COVER OVERLAY (Faithful to tokenme.limited + Cold-start Gate)
+     ======================================================================== -->
+<section id="introOverlay" class="intro-overlay">
+  <!-- Top brand line -->
+  <header class="intro-topbar">
+    <div class="intro-brand-chip">
+      <span class="mono-dot"></span>
+      <span>AUTOMATIC PANORAMA · V2</span>
+    </div>
+    <div class="intro-tech-pill">RENDER × VERCEL</div>
+  </header>
+
+  <!-- Center: Giant Stepped Typography (3 lines) -->
+  <main class="intro-center">
+    <div class="typewriter-stage">
+      <div class="tw-line" data-text="AUTOMATIC">AUTOMATIC</div>
+      <div class="tw-line" data-text="PANORAMA">PANORAMA</div>
+      <div class="tw-line last" data-text="STITCHER">STITCHER</div>
+    </div>
+  </main>
+
+  <!-- Bottom: Connection Pill & Swipe Up Gate -->
+  <footer class="intro-bottom">
+    <!-- Server Status Pill -->
+    <div id="statusPill" class="server-status-pill is-waking">
+      <span class="status-beacon">
+        <span class="beacon-ring"></span>
+        <span class="beacon-dot"></span>
+      </span>
+      <span id="statusLabelText">
+        <span class="status-badge">WAKING UP SERVER</span> · Render cold start <span id="wakingTimer">~32s</span>
+      </span>
+    </div>
+
+    <!-- Swipe Up / Enter Trigger (Revealed once Live) -->
+    <div id="swipeTrigger" class="swipe-gate-trigger" onclick="unlockAndEnter('click')">
+      <div class="swipe-chevron-wrap">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="18 15 12 9 6 15"></polyline>
+        </svg>
+      </div>
+      <div class="swipe-title">SWIPE UP TO ENTER</div>
+      <div class="swipe-subtitle">or scroll / click / press space</div>
+    </div>
+  </footer>
+</section>
+
+<!-- ========================================================================
+     MAIN STUDIO APPLICATION (Revealed when curtain opens)
+     ======================================================================== -->
+<div id="appViewport" class="app-viewport">
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <svg width="24" height="24" viewBox="0 0 26 26" aria-hidden="true">
+          <rect x="1.5" y="6" width="14" height="14" rx="3" fill="none" stroke="currentColor" stroke-opacity=".45" stroke-width="1.5" />
+          <rect x="10.5" y="6" width="14" height="14" rx="3" fill="var(--accent)" fill-opacity=".22" stroke="var(--accent)" stroke-width="1.5" />
+        </svg>
+        <span>Automatic Panorama Stitcher</span>
+      </div>
+      <span class="crumb">SIFT / ORB · RANSAC · warp · blend</span>
+      <span class="spacer"></span>
+      <span class="privacy-chip">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="4" y="11" width="16" height="10" rx="2" />
+          <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+        </svg>
+        In-memory processing
+      </span>
+      <div class="app-status-pill">
+        <span class="dot"></span>
+        <span>ONLINE · READY</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="shell">
+    <div class="pagehead">
+      <h1>Stitch overlapping photos into one panorama</h1>
+      <p>Upload 2–12 frames in capture order. Every seam comes with the evidence behind it.</p>
+    </div>
+
+    <div class="work-grid">
+      <!-- Control Rail -->
+      <aside class="control-rail">
+        <span class="rail-section-title">Input Frames</span>
+        <div class="dropzone">
+          <div class="dropzone-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="17 8 12 3 7 8"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+          </div>
+          <div>
+            <h3>Drop photos here</h3>
+            <p>PNG, JPEG, WebP up to 25MB each</p>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Output Canvas Area -->
+      <section class="canvas-card">
+        <div class="canvas-header">
+          <div class="pipeline-ribbon-mock">
+            <span class="ribbon-cell active">01 SIFT</span>
+            <span class="ribbon-cell">02 MATCH</span>
+            <span class="ribbon-cell">03 RANSAC</span>
+            <span class="ribbon-cell">04 HOMOG</span>
+            <span class="ribbon-cell">05 WARP</span>
+            <span class="ribbon-cell">06 BLEND</span>
+          </div>
+          <span style="font-family: var(--mono); font-size: 11px; color: var(--text-faint);">STAGE 0/6</span>
+        </div>
+        <div class="canvas-stage">
+          <div class="empty-graphic">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
+              <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+              <circle cx="8.5" cy="8.5" r="1.5"></circle>
+              <polyline points="21 15 16 10 5 21"></polyline>
+            </svg>
+          </div>
+          <div>
+            <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 4px;">Canvas Ready</h3>
+            <p style="font-size: 13px; color: var(--text-muted); max-width: 360px;">
+              Select frames on the left rail to preview SIFT keypoints and initiate automated stitching.
+            </p>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<!-- Toast notification for interaction feedback -->
+<div id="toast" class="interaction-toast">Action triggered</div>
+
+<script>
+  // ==========================================================================
+  // TYPEWRITER ANIMATION LOGIC (Faithful to tokenme.limited step algorithm)
+  // ==========================================================================
+  const lines = Array.from(document.querySelectorAll('.tw-line'));
+  let isTyping = false;
+
+  function measureNaturalWidths() {
+    return lines.map(el => {
+      const prev = el.style.width;
+      el.style.width = 'max-content';
+      const w = el.getBoundingClientRect().width;
+      el.style.width = prev;
+      return Math.ceil(w);
+    });
+  }
+
+  function typeSingleLine(el, targetW, perCharMs) {
+    return new Promise(resolve => {
+      const isLast = el.classList.contains('last');
+      el.style.borderRightColor = '#ffffff';
+      if (isLast) el.classList.add('typing');
+
+      const charsCount = Math.max(el.textContent.trim().length, 1);
+      const duration = charsCount * perCharMs;
+      const start = performance.now();
+
+      function frame(now) {
+        const progress = Math.min((now - start) / duration, 1);
+        const stepped = Math.floor(progress * charsCount) / charsCount;
+        el.style.width = (targetW * stepped) + 'px';
+
+        if (progress < 1) {
+          requestAnimationFrame(frame);
+        } else {
+          el.style.width = targetW + 'px';
+          if (isLast) {
+            el.classList.remove('typing');
+            el.classList.add('done');
+          } else {
+            el.style.borderRightColor = 'transparent';
+          }
+          resolve();
+        }
+      }
+      requestAnimationFrame(frame);
+    });
+  }
+
+  function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  async function startTypewriterSequence() {
+    if (isTyping) return;
+    isTyping = true;
+
+    // Reset lines
+    lines.forEach(line => {
+      line.style.width = '0px';
+      line.style.borderRightColor = 'transparent';
+      line.classList.remove('typing', 'done');
+    });
+
+    await document.fonts.ready;
+    const widths = measureNaturalWidths();
+    await sleep(250);
+
+    // Line 1: "AUTOMATIC"
+    await typeSingleLine(lines[0], widths[0], 90);
+    await sleep(180);
+
+    // Line 2: "PANORAMA"
+    await typeSingleLine(lines[1], widths[1], 105);
+    await sleep(180);
+
+    // Line 3: "STITCHER"
+    await typeSingleLine(lines[2], widths[2], 110);
+
+    isTyping = false;
+  }
+
+  // ==========================================================================
+  // STATE MANAGEMENT & COLD START SIMULATION
+  // ==========================================================================
+  let currentState = 'waking';
+  let wakingCountdown = 28;
+  let timerInterval = null;
+
+  const statusPill = document.getElementById('statusPill');
+  const statusLabelText = document.getElementById('statusLabelText');
+  const swipeTrigger = document.getElementById('swipeTrigger');
+  const wakingTimerEl = document.getElementById('wakingTimer');
+  const introOverlay = document.getElementById('introOverlay');
+  const appViewport = document.getElementById('appViewport');
+  const btnWaking = document.getElementById('btnStateWaking');
+  const btnLive = document.getElementById('btnStateLive');
+
+  function updateCountdownText() {
+    if (wakingTimerEl) {
+      wakingTimerEl.textContent = `~${wakingCountdown}s`;
+    }
+  }
+
+  function startWakingTicker() {
+    clearInterval(timerInterval);
+    wakingCountdown = 28;
+    updateCountdownText();
+    timerInterval = setInterval(() => {
+      wakingCountdown -= 1;
+      if (wakingCountdown <= 0) {
+        clearInterval(timerInterval);
+        setSimulatedState('online');
+      } else {
+        updateCountdownText();
+      }
+    }, 1000);
+  }
+
+  function setSimulatedState(state) {
+    currentState = state;
+    if (state === 'waking') {
+      btnWaking.classList.add('active');
+      btnLive.classList.remove('active');
+
+      statusPill.className = 'server-status-pill is-waking';
+      statusLabelText.innerHTML = `<span class="status-badge">WAKING UP SERVER</span> · Render cold start <span id="wakingTimer">~28s</span>`;
+      swipeTrigger.classList.remove('ready');
+
+      startWakingTicker();
+      showToast("Simulating Render Cold Start (Waking up…)");
+    } else {
+      clearInterval(timerInterval);
+      btnWaking.classList.remove('active');
+      btnLive.classList.add('active');
+
+      statusPill.className = 'server-status-pill is-online';
+      statusLabelText.innerHTML = `<span class="status-badge">SERVER LIVE</span> · Connected to Render backend`;
+      swipeTrigger.classList.add('ready');
+
+      showToast("Server Live! Swipe up, scroll or click to enter");
+    }
+  }
+
+  // ==========================================================================
+  // INTERACTION HANDLERS: SWIPE UP, SCROLL, CLICK, KEYBOARD
+  // ==========================================================================
+  let touchStartY = null;
+  let isCurtainDismissed = false;
+
+  function unlockAndEnter(triggerMethod) {
+    if (currentState !== 'online') {
+      showToast("Waiting for backend connection before entering…");
+      return;
+    }
+    if (isCurtainDismissed) return;
+
+    isCurtainDismissed = true;
+    introOverlay.classList.add('dismissed');
+    appViewport.classList.add('revealed');
+    showToast(`Entered studio via [${triggerMethod}]`);
+  }
+
+  function toggleCurtain() {
+    if (isCurtainDismissed) {
+      isCurtainDismissed = false;
+      introOverlay.classList.remove('dismissed');
+      appViewport.classList.remove('revealed');
+      showToast("Cover pulled down");
+    } else {
+      unlockAndEnter('toggle-button');
+    }
+  }
+
+  // 1. Touch Gesture (Swipe Up on mobile)
+  window.addEventListener('touchstart', (e) => {
+    if (isCurtainDismissed) return;
+    touchStartY = e.touches[0].clientY;
+  }, { passive: true });
+
+  window.addEventListener('touchmove', (e) => {
+    if (isCurtainDismissed || touchStartY === null) return;
+    const currentY = e.touches[0].clientY;
+    const deltaY = currentY - touchStartY;
+    // Upward swipe of 45px or more
+    if (deltaY < -45) {
+      touchStartY = null;
+      unlockAndEnter('swipe-up');
+    }
+  }, { passive: true });
+
+  window.addEventListener('touchend', () => {
+    touchStartY = null;
+  }, { passive: true });
+
+  // 2. Wheel / Trackpad Scroll (Desktop)
+  let wheelAccumulator = 0;
+  window.addEventListener('wheel', (e) => {
+    if (isCurtainDismissed) return;
+    // When user scrolls down (which is equivalent to moving the page up)
+    if (e.deltaY > 18) {
+      unlockAndEnter('wheel-scroll');
+    }
+  }, { passive: true });
+
+  // 3. Keyboard (Space, Enter, ArrowUp)
+  window.addEventListener('keydown', (e) => {
+    if (isCurtainDismissed) return;
+    if (['Space', 'Enter', 'ArrowUp', 'KeyW'].includes(e.code)) {
+      e.preventDefault();
+      unlockAndEnter(`key: ${e.code}`);
+    }
+  });
+
+  // 4. Click anywhere on cover when ready
+  introOverlay.addEventListener('click', (e) => {
+    if (isCurtainDismissed) return;
+    // Don't trigger if clicking inside demo control bar
+    if (e.target.closest('.demo-bar')) return;
+    if (currentState === 'online') {
+      unlockAndEnter('click-cover');
+    }
+  });
+
+  function replayTypewriter() {
+    startTypewriterSequence();
+    showToast("Replaying typewriter animation");
+  }
+
+  function showToast(msg) {
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('visible');
+    clearTimeout(toast._timeout);
+    toast._timeout = setTimeout(() => {
+      toast.classList.remove('visible');
+    }, 2400);
+  }
+
+  // Auto-run typing sequence on load
+  window.addEventListener('DOMContentLoaded', () => {
+    startTypewriterSequence();
+    startWakingTicker();
+  });
+</script>
+</body>
+</html>
