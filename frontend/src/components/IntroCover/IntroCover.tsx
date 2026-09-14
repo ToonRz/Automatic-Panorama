@@ -57,8 +57,12 @@ export function IntroCover({ backendStatus, onDismiss }: IntroCoverProps) {
         el.style.width = "max-content";
         const measured = el.getBoundingClientRect().width;
         el.style.width = prev;
-        // Fallback for jsdom where layout width is 0
-        return Math.max(Math.ceil(measured), (el.textContent?.trim().length ?? 9) * 45);
+        // In real browsers, measured is the true rendered width.
+        // Fallback to proportional estimate ONLY in headless test environments (jsdom) where measured is 0.
+        if (measured > 0) {
+          return Math.ceil(measured);
+        }
+        return (el.textContent?.trim().length ?? 9) * 22;
       });
 
       // Type each line sequentially
@@ -88,7 +92,7 @@ export function IntroCover({ backendStatus, onDismiss }: IntroCoverProps) {
             if (progress < 1) {
               requestAnimationFrame(frame);
             } else {
-              el.style.width = `${targetW}px`;
+              el.style.width = "max-content";
               if (isLast) {
                 el.classList.remove("typing");
                 el.classList.add("done");
