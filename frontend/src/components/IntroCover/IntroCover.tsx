@@ -190,15 +190,6 @@ export function IntroCover({ backendStatus, onDismiss }: IntroCoverProps) {
       onClick={isReadyToEnter ? handleDismiss : undefined}
       onTransitionEnd={handleTransitionEnd}
     >
-      {/* Top minimal header */}
-      <header className="intro-topbar">
-        <div className="intro-brand-chip">
-          <span className="mono-dot" />
-          <span>AUTOMATIC PANORAMA · V2</span>
-        </div>
-        <div className="intro-tech-pill">SIFT · RANSAC · WARP · BLEND</div>
-      </header>
-
       {/* Center: Giant Typography Stage */}
       <main className="intro-center">
         <div className="typewriter-stage" aria-label="AUTOMATIC PANORAMA STITCHER">
