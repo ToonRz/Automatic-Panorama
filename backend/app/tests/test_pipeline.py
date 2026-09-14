@@ -86,6 +86,94 @@ def test_disconnected_frame_raises_disconnected_images_naming_it() -> None:
     assert excinfo.value.context["image"] == 2
 
 
+def test_disconnected_images_preserves_the_original_gate_7_cause() -> None:
+    """The real measured rejection must survive the DISCONNECTED_IMAGES re-report.
+
+    Gate 8's "no view shared" story is an interpretation, not a separate
+    measurement (`cv/pipeline.py` module docstring); the pair's own code,
+    message, and numbers must still be reachable underneath it.
+    """
+
+    chain = three_frame_chain(seed=1)
+    unrelated = overlapping_pair(seed=777).frame_a
+    unrelated_resized = unrelated[: chain.frames[2].shape[0], : chain.frames[2].shape[1]]
+
+    with pytest.raises(StitchPipelineError) as excinfo:
+        _build([chain.frames[0], chain.frames[1], unrelated_resized])
+
+    cause = excinfo.value.context["cause"]
+    assert cause["code"] in {
+        "INSUFFICIENT_INLIERS",
+        "DEGENERATE_HOMOGRAPHY",
+        "INSUFFICIENT_MATCHES",
+    }
+    assert cause["message"]
+    assert cause["context"]["pair"] == [1, 2]
+    assert excinfo.value.message != "Image 3 shares no view with the others."
+    assert cause["message"] in excinfo.value.message
+
+
+def test_disconnected_images_carries_partial_diagnostics_for_every_pair() -> None:
+    chain = three_frame_chain(seed=1)
+    unrelated = overlapping_pair(seed=777).frame_a
+    unrelated_resized = unrelated[: chain.frames[2].shape[0], : chain.frames[2].shape[1]]
+
+    with pytest.raises(StitchPipelineError) as excinfo:
+        _build([chain.frames[0], chain.frames[1], unrelated_resized])
+
+    partial = excinfo.value.context["partial_diagnostics"]
+    assert len(partial) == 2
+    assert partial[0]["status"] == "passed"
+    assert partial[0]["pair"] == [0, 1]
+    assert "inlier_count" in partial[0]
+    assert partial[1]["status"] == "failed"
+    assert partial[1]["pair"] == [1, 2]
+    assert "failure" in partial[1]
+    assert excinfo.value.context["stopped_at_stage"] in {"matching", "homography"}
+
+
+def test_two_image_rejection_carries_only_that_one_failed_pair() -> None:
+    from app.tests.fixtures import non_overlapping_pair
+
+    pair = non_overlapping_pair(seed=1)
+
+    with pytest.raises(StitchPipelineError) as excinfo:
+        _build([pair.frame_a, pair.frame_b])
+
+    partial = excinfo.value.context["partial_diagnostics"]
+    assert len(partial) == 1
+    assert partial[0]["status"] == "failed"
+    assert partial[0]["pair"] == [0, 1]
+
+
+def test_middle_pair_failure_in_a_longer_chain_marks_later_pairs_not_processed() -> None:
+    """A four-frame chain whose middle pair fails must not fabricate data for
+
+    the pair after it (fail-fast, spec section 3): that pair is marked
+    ``not_processed``, never given a synthetic zero.
+    """
+
+    chain = three_frame_chain(seed=2)
+    unrelated = overlapping_pair(seed=999).frame_a
+    unrelated_resized = unrelated[: chain.frames[0].shape[0], : chain.frames[0].shape[1]]
+    trailing = overlapping_pair(seed=1234).frame_b
+    trailing_resized = trailing[: chain.frames[0].shape[0], : chain.frames[0].shape[1]]
+    frames = [chain.frames[0], chain.frames[1], unrelated_resized, trailing_resized]
+
+    with pytest.raises(StitchPipelineError) as excinfo:
+        _build(frames)
+
+    partial = excinfo.value.context["partial_diagnostics"]
+    assert len(partial) == 3
+    assert partial[0]["status"] == "passed"
+    assert partial[0]["pair"] == [0, 1]
+    assert partial[1]["status"] == "failed"
+    assert partial[1]["pair"] == [1, 2]
+    assert partial[2]["status"] == "not_processed"
+    assert partial[2]["pair"] == [2, 3]
+    assert "inlier_count" not in partial[2]
+
+
 def test_two_image_rejection_surfaces_the_raw_gate_7_code() -> None:
     from app.tests.fixtures import non_overlapping_pair
 

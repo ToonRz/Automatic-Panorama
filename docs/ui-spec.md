@@ -427,11 +427,34 @@ run. Outside complete it renders its frame with no measurement in it:
   not an average."
 
 No number, zero, previous-run value, or loading shimmer may appear in the band
-outside complete. A zero reads as a measurement, and a shimmer claims that
-results are streaming in when `POST /api/v1/stitch` answers once. While a
-stale complete result is on screen (section 4), the band keeps its numbers,
-because the stale chip in the stage head already says which settings produced
-them.
+outside complete or failed-with-evidence (below). A zero reads as a
+measurement, and a shimmer claims that results are streaming in when
+`POST /api/v1/stitch` answers once. While a stale complete result is on
+screen (section 4), the band keeps its numbers, because the stale chip in the
+stage head already says which settings produced them.
+
+### 6.5 The diagnostics band on a failed run
+
+A failure that reached gate 6 or gate 7 carries `partial_diagnostics`
+(docs/backend-spec.md section 9.2): one entry per pair the request would have
+needed, each measured, rejected, or not yet attempted. When the current
+failure carries this field, the band swaps its lede to "The run stopped
+before finishing. Pairs measured before that are shown below." and the
+per-pair table renders one row per entry instead of the empty placeholder:
+
+| Entry status | Row shows |
+| --- | --- |
+| `passed` | the same four measurements a successful pair's row would, and an "accepted" verdict |
+| `failed` | whatever that pair's own rejection measured (never a fabricated 0 for a number never computed), a "rejected" verdict, and that pair's own message |
+| `not_processed` | `—` in every measurement column and a "not processed" verdict — gate 7 is fail-fast (docs/backend-spec.md section 3), so a pair after the one that failed was never run |
+
+The six KPI cells stay `—`: an aggregate over an incomplete run would silently
+average in the pairs that were never measured, which is worse than admitting
+nothing aggregate is available yet. A failure with no `partial_diagnostics`
+(gate 0-5, or an old response) renders the ordinary empty band. Because
+`result` is `null` on every failed run (docs/ui-spec.md section 4's state
+machine), a failure immediately after a successful run never shows that
+run's numbers alongside or underneath the new failure's evidence.
 
 ## 7. The failed state
 
@@ -439,11 +462,25 @@ Every failure names what was measured and what was required. No distorted image
 is ever shown in place of an error.
 
 The error block is a card centred in the viewport (section 3.1) and renders
-five things, in this order: the HTTP status and error code in mono as an
+six things, in this order: the HTTP status and error code in mono as an
 eyebrow, a heading naming the images involved when the code identifies a pair,
-the backend `message`, a row of context chips built from `detail.context`, and
-the remedy list from section 7.1. Each chip shows its key and value. The chip row is omitted
-when `context` is absent.
+the backend `message`, a measured-value-vs-threshold list for the codes that
+carry one (below), a row of context chips built from `detail.context`, and
+the remedy list from section 7.1. The measurement list and the chip row are
+each omitted when they have nothing to show.
+
+The measurement list is the primary, human-phrased fact: one row per
+measurable check the code carries (e.g. inliers, inlier ratio, reprojection
+error), each showing the exact value measured against the exact threshold
+used, ratios as a percentage and errors in px, and whether that row cleared
+its own bar. `DISCONNECTED_IMAGES` reads its rows from the preserved `cause`
+(docs/backend-spec.md section 9.3) rather than showing nothing. The context
+chip row still renders every scalar field for inspection, with its key
+humanized (underscores become spaces) rather than shown as a raw identifier
+that is the *only* description of what happened — the measurement list above
+it carries that job. A nested field (`cause`, `partial_diagnostics`) is never
+rendered as a chip, since a flat key/value row cannot represent one without
+turning it into `[object Object]`.
 
 The heading names frames one-based, with the file name from the current
 selection: `Frame {n} · {name}` for a code that names one image,
@@ -481,10 +518,32 @@ and nothing for the geometric failures that actually need advice.
 | `IMAGE_TOO_MANY_PIXELS` | owed | task 07c | the named frame is over the processing limit; downscale it before uploading |
 | `NO_DESCRIPTORS` | owed | task 07d | the named frame has too little texture; try ORB, or re-shoot with more detail in view |
 | `INSUFFICIENT_MATCHES` | owed | task 07e | the named pair barely shares any detail; raise the ratio test toward 0.85, or re-shoot with more overlap |
-| `INSUFFICIENT_INLIERS` | owed | task 07f | re-shoot the named frame with 30-50 percent overlap; raise the ratio test toward 0.80; try ORB on low-texture scenes |
-| `DEGENERATE_HOMOGRAPHY` | owed | task 07f | the named pair produced an unusable transform; lower the RANSAC tolerance and re-shoot with less parallax |
-| `DISCONNECTED_IMAGES` | owed | task 07g | the named frame shares no view with the others; remove it or add a bridging frame |
+| `INSUFFICIENT_INLIERS` | owed | task 07f | context-dependent (below): named per `failed_checks`, never a blanket ratio/RANSAC/detector line |
+| `EXCESSIVE_REPROJECTION_ERROR` | owed | this slice | the named pair aligns loosely across the whole frame; re-shoot holding the camera steadier |
+| `DEGENERATE_HOMOGRAPHY` | owed | task 07f | context-dependent (below): named per `reason`, never a blanket RANSAC line |
+| `DISCONNECTED_IMAGES` | owed | task 07g | leads with the preserved `cause`'s own remedy, then: remove the named frame or add a bridging frame |
 | `CANVAS_TOO_LARGE` | owed | task 07h | the frames did not line up into a sensible shape; check that they are one continuous pan and re-shoot the odd frame |
+
+**Context-dependent remedies.** Three rows above compute their remedy from
+`context` instead of returning one fixed list, because which specific
+condition failed changes what is actually worth trying — a single blanket
+line recommending the ratio test, RANSAC, or a detector switch for every
+instance of a code would often not address what was actually measured:
+
+- `INSUFFICIENT_INLIERS` reads `failed_checks` and includes a remedy for each
+  one present (`min_inliers`: re-shoot with more overlap; `min_inlier_ratio`:
+  check for too little true overlap or a repeating pattern producing false
+  matches). Both bars missing shows both remedies.
+- `DEGENERATE_HOMOGRAPHY` reads `reason` and gives a remedy suited to that
+  specific geometric failure (folding/over-scaling vs. under-spread points),
+  never the same "lower RANSAC" line for all four reasons.
+- `DISCONNECTED_IMAGES` reads its preserved `cause` (docs/backend-spec.md
+  section 9.3) and leads with that pair's own remedy before the generic
+  "remove or bridge" line, so the frame named is not just told it is
+  isolated without being told why.
+
+Each falls back to a short generic line when the context it needs is absent
+(an older response), never to an empty remedy list.
 
 The rows below are raised by the client itself, not the pipeline
 (docs/integration-spec.md section 7.2). None of them identify a frame, so
@@ -597,9 +656,12 @@ Per state, with the fixture that drives it:
 | A12 | the production build contains neither the state switcher nor the fixtures |
 | A13 | above 960px the control rail and the output panel have equal height in every state, and the rail's action footer sits at the rail's bottom |
 | A14 | `--text`, `--muted`, and `--faint` reach 4.5:1 on `--surface`, `--surface-2`, and `--surface-3`, and `--accent-ink` reaches 4.5:1 on `--accent` |
-| A15 | outside complete the diagnostics band renders its section 6.4 frame, and no digit appears in any KPI value, table body, or timing row |
+| A15 | outside complete, with no `partial_diagnostics` to show, the diagnostics band renders its section 6.4 frame and no digit appears in any KPI value, table body, or timing row |
 | A16 | fonts are served from the bundle, the built page requests no font CDN, and no v1 font family name remains in the frontend source |
 | A17 | the detector is a radio group named "Feature detector", operable with arrow keys, and disabled while working or preparing |
+| A18 | a failed run carrying `partial_diagnostics` (section 6.5) renders one per-pair row per entry with its own status, never a fabricated 0 for a `not_processed` pair, and the six KPI cells stay `—` |
+| A19 | the failed-state measurement list (section 7) shows the exact measured value against the exact threshold, ratios as a percentage and errors in px, for every code that carries one |
+| A20 | a failed run immediately after a successful one shows none of that prior run's numbers in the output panel or the diagnostics band |
 
 Evidence required on every pull request that touches this UI: Vitest green,
 screenshots of the states the change affects at 1440px, and the same states at

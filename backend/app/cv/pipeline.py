@@ -13,11 +13,16 @@ second frame to call "disconnected" from. From three images on, a pair that
 fails gate 6 or gate 7 means the far frame in that pair cannot be linked into
 the chain at all, so it is re-reported as ``DISCONNECTED_IMAGES`` naming that
 frame; this is a documented interpretation of spec section 3 gate 8; see the
-project report for why.
+project report for why. The pair's own code, message, and measured context
+are never discarded in that re-report -- they travel with the raised error as
+``context["cause"]`` (``core/errors.disconnected_images``), alongside a
+``partial_diagnostics`` list covering every pair the chain touched before
+stopping.
 """
 
 import time
 from dataclasses import dataclass
+from typing import Any
 
 import numpy as np
 
@@ -25,6 +30,20 @@ from app.core.errors import StitchPipelineError, disconnected_images
 from app.cv.features import DetectorName, FeatureSet
 from app.cv.homography import HomographyResult, estimate_homography
 from app.cv.matching import MatchResult, match_descriptors
+
+# Which stage a pair-level rejection code stopped in, so a partial-diagnostics
+# payload can say where the run stopped without the caller re-deriving it from
+# the code name.
+_STAGE_BY_CODE = {
+    "INSUFFICIENT_MATCHES": "matching",
+    "INSUFFICIENT_INLIERS": "homography",
+    "DEGENERATE_HOMOGRAPHY": "homography",
+    "EXCESSIVE_REPROJECTION_ERROR": "homography",
+}
+
+# Context keys a pair-level rejection may carry that are also worth surfacing
+# on that pair's own partial-diagnostics row, when present.
+_CARRIED_CONTEXT_KEYS = ("matches", "inlier_count", "inlier_ratio", "reprojection_error")
 
 
 @dataclass(frozen=True)
@@ -42,6 +61,58 @@ def reference_index_for(image_count: int) -> int:
     """The middle frame in upload order (spec section 7.2)."""
 
     return image_count // 2
+
+
+def _pair_diagnostic_passed(
+    pair_index: int,
+    pair: tuple[int, int],
+    match_result: MatchResult,
+    homography_result: HomographyResult,
+) -> dict[str, Any]:
+    return {
+        "pair": list(pair),
+        "pair_index": pair_index,
+        "status": "passed",
+        "ratio_passed_matches": match_result.ratio_passed_count,
+        "inlier_count": homography_result.inlier_count,
+        "inlier_ratio": homography_result.inlier_ratio,
+        "reprojection_error": homography_result.reprojection_error,
+    }
+
+
+def _pair_diagnostic_failed(
+    pair_index: int, pair: tuple[int, int], error: StitchPipelineError
+) -> dict[str, Any]:
+    diagnostic: dict[str, Any] = {
+        "pair": list(pair),
+        "pair_index": pair_index,
+        "status": "failed",
+        "failure": {"code": error.code, "message": error.message},
+    }
+    for key in _CARRIED_CONTEXT_KEYS:
+        if key in error.context:
+            diagnostic[key] = error.context[key]
+    return diagnostic
+
+
+def _pair_diagnostic_not_processed(pair_index: int, pair: tuple[int, int]) -> dict[str, Any]:
+    return {"pair": list(pair), "pair_index": pair_index, "status": "not_processed"}
+
+
+def pair_diagnostics_from_chain(chain: "ChainResult") -> list[dict[str, Any]]:
+    """Every pair as ``passed``, for a chain that cleared gates 6 and 7 in full.
+
+    Used by callers that reject *after* the chain is built (``CANVAS_TOO_LARGE``,
+    ``STITCH_TIMEOUT``) so their own error can still carry the same
+    per-pair evidence a mid-chain rejection would, rather than an empty list
+    that implies nothing was ever measured.
+    """
+
+    pairs = list(zip(chain.image_order, chain.image_order[1:], strict=False))
+    return [
+        _pair_diagnostic_passed(i, pairs[i], chain.match_results[i], chain.homography_results[i])
+        for i in range(len(pairs))
+    ]
 
 
 def _compose_transforms(
@@ -144,10 +215,30 @@ def build_chain(
                 pair_index=pair_index,
             )
             timings["homography"] += (time.perf_counter() - homography_start) * 1000.0
-        except StitchPipelineError:
+        except StitchPipelineError as exc:
+            # Every pair already processed keeps its real measurements, the
+            # pair that just failed keeps whatever its own rejection
+            # measured, and every pair after it is named as never attempted
+            # (fail-fast, spec section 3: the remaining pairs are not run) --
+            # none of the three statuses is faked from the others.
+            partial_diagnostics = [
+                _pair_diagnostic_passed(
+                    i, (image_order[i], image_order[i + 1]), match_results[i],
+                    homography_results[i],
+                )
+                for i in range(pair_index)
+            ]
+            partial_diagnostics.append(_pair_diagnostic_failed(pair_index, (left, right), exc))
+            partial_diagnostics.extend(
+                _pair_diagnostic_not_processed(i, (image_order[i], image_order[i + 1]))
+                for i in range(pair_index + 1, image_count - 1)
+            )
+            exc.context["partial_diagnostics"] = partial_diagnostics
+            exc.context["stopped_at_stage"] = _STAGE_BY_CODE.get(exc.code, "unknown")
+
             if image_count == 2:
                 raise
-            raise disconnected_images(right) from None
+            raise disconnected_images(right, cause=exc) from None
 
         match_results.append(match_result)
         homography_results.append(homography_result)

@@ -135,18 +135,21 @@ def no_descriptors(image_index: int, keypoints: int, detector: str) -> StitchPip
 
 
 def insufficient_matches(
-    pair: tuple[int, int], pair_index: int, matches: int, required: int
+    pair: tuple[int, int], pair_index: int, matches: int, min_matches: int
 ) -> StitchPipelineError:
     a, b = pair
     return StitchPipelineError(
         code="INSUFFICIENT_MATCHES",
         http_status=422,
-        message=f"Images {a + 1} and {b + 1} share too few descriptor matches.",
+        message=(
+            f"Images {a + 1} and {b + 1} share too few descriptor matches: "
+            f"{matches} passed the ratio test, at least {min_matches} are required."
+        ),
         context={
             "pair": list(pair),
             "pair_index": pair_index,
             "matches": matches,
-            "required": required,
+            "min_matches": min_matches,
         },
     )
 
@@ -154,43 +157,142 @@ def insufficient_matches(
 def insufficient_inliers(
     pair: tuple[int, int],
     pair_index: int,
-    inliers: int,
-    required: int,
+    inlier_count: int,
+    min_inliers: int,
     inlier_ratio: float,
+    min_inlier_ratio: float,
+    failed_checks: list[str],
 ) -> StitchPipelineError:
+    """Gate 7's inlier-agreement check, spec section 3/7.3.
+
+    ``failed_checks`` names every one of ``min_inliers``/``min_inlier_ratio``
+    that this pair failed -- both are evaluated together (spec section 7.3),
+    so a pair that clears neither must say so, not report only the first
+    condition checked and hide the second.
+    """
+
     a, b = pair
+    reasons = []
+    if "min_inliers" in failed_checks:
+        reasons.append(f"only {inlier_count} inlier(s) (at least {min_inliers} required)")
+    if "min_inlier_ratio" in failed_checks:
+        reasons.append(
+            f"an inlier ratio of {inlier_ratio:.2f} "
+            f"(at least {min_inlier_ratio:.2f} required)"
+        )
+    message = (
+        f"Images {a + 1} and {b + 1} do not have enough geometric agreement: "
+        + " and ".join(reasons)
+        + "."
+    )
     return StitchPipelineError(
         code="INSUFFICIENT_INLIERS",
         http_status=422,
-        message=f"Images {a + 1} and {b + 1} do not have enough geometric agreement.",
+        message=message,
         context={
             "pair": list(pair),
             "pair_index": pair_index,
-            "inliers": inliers,
-            "required": required,
+            "inlier_count": inlier_count,
+            "min_inliers": min_inliers,
+            "inlier_ratio": inlier_ratio,
+            "min_inlier_ratio": min_inlier_ratio,
+            "failed_checks": failed_checks,
+        },
+    )
+
+
+def excessive_reprojection_error(
+    pair: tuple[int, int],
+    pair_index: int,
+    reprojection_error: float,
+    max_reprojection_error: float,
+    inlier_count: int,
+    inlier_ratio: float,
+) -> StitchPipelineError:
+    """Gate 7's fit-tightness check, distinct from :func:`insufficient_inliers`.
+
+    A pair can clear the inlier count and ratio bars while still fitting
+    loosely everywhere (spec section 12.3's non-overlapping fixture is a
+    different failure from this one): that is a different, separately
+    actionable measurement, so it gets its own code rather than reusing
+    ``INSUFFICIENT_INLIERS`` for a condition that has nothing to do with how
+    many inliers were found.
+    """
+
+    a, b = pair
+    return StitchPipelineError(
+        code="EXCESSIVE_REPROJECTION_ERROR",
+        http_status=422,
+        message=(
+            f"Images {a + 1} and {b + 1} aligned with {inlier_count} inliers, but the fit is "
+            f"loose: a median reprojection error of {reprojection_error:.2f}px exceeds the "
+            f"{max_reprojection_error:.2f}px limit."
+        ),
+        context={
+            "pair": list(pair),
+            "pair_index": pair_index,
+            "reprojection_error": reprojection_error,
+            "max_reprojection_error": max_reprojection_error,
+            "inlier_count": inlier_count,
             "inlier_ratio": inlier_ratio,
         },
     )
 
 
 def degenerate_homography(
-    pair: tuple[int, int], pair_index: int, reason: str
+    pair: tuple[int, int],
+    pair_index: int,
+    reason: str,
+    inlier_count: int | None = None,
+    inlier_ratio: float | None = None,
 ) -> StitchPipelineError:
+    """``inlier_count``/``inlier_ratio`` are attached only when they were actually
+
+    computed before the degeneracy was detected (spec section 3 gate 7 runs
+    the inlier check first): reporting a measurement that was never taken
+    would overclaim what the pipeline observed.
+    """
+
     a, b = pair
+    context: dict[str, Any] = {"pair": list(pair), "pair_index": pair_index, "reason": reason}
+    if inlier_count is not None:
+        context["inlier_count"] = inlier_count
+    if inlier_ratio is not None:
+        context["inlier_ratio"] = inlier_ratio
     return StitchPipelineError(
         code="DEGENERATE_HOMOGRAPHY",
         http_status=422,
-        message=f"The transform between {a + 1} and {b + 1} collapses the image.",
-        context={"pair": list(pair), "pair_index": pair_index, "reason": reason},
+        message=f"The transform between {a + 1} and {b + 1} collapses the image ({reason}).",
+        context=context,
     )
 
 
-def disconnected_images(image_index: int) -> StitchPipelineError:
+def disconnected_images(image_index: int, cause: StitchPipelineError) -> StitchPipelineError:
+    """Gate 8: the far frame of a rejected pair cannot be linked into the chain.
+
+    ``cause`` is the pair's own gate 6/7 rejection (spec section 3): its code,
+    message, and measured context are preserved under ``context["cause"]``
+    rather than discarded, so "shares no view with the others" is never
+    reported as if it were an established fact when the real, measured
+    finding was a matching or geometry failure for a specific pair
+    (``cv/pipeline.py``'s documented interpretation of gate 8).
+    """
+
+    context: dict[str, Any] = {
+        "image": image_index,
+        "cause": {"code": cause.code, "message": cause.message, "context": cause.context},
+    }
+    if "partial_diagnostics" in cause.context:
+        context["partial_diagnostics"] = cause.context["partial_diagnostics"]
+    if "stopped_at_stage" in cause.context:
+        context["stopped_at_stage"] = cause.context["stopped_at_stage"]
     return StitchPipelineError(
         code="DISCONNECTED_IMAGES",
         http_status=422,
-        message=f"Image {image_index + 1} shares no view with the others.",
-        context={"image": image_index},
+        message=(
+            f"Image {image_index + 1} could not be linked to the others: {cause.message}"
+        ),
+        context=context,
     )
 
 

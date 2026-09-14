@@ -115,5 +115,5 @@ def test_pair_below_ratio_passed_floor_raises_insufficient_matches() -> None:
         "pair": [2, 3],
         "pair_index": 1,
         "matches": excinfo.value.context["matches"],
-        "required": 10_000,
+        "min_matches": 10_000,
     }

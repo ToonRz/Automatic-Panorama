@@ -149,7 +149,38 @@ def test_non_overlapping_pair_raises_insufficient_inliers_through_the_full_route
     response = client.post("/api/v1/stitch", files=_upload_files([pair.frame_a, pair.frame_b]))
 
     assert response.status_code == 422
-    assert response.json()["detail"]["code"] == "INSUFFICIENT_INLIERS"
+    detail = response.json()["detail"]
+    assert detail["code"] == "INSUFFICIENT_INLIERS"
+    assert "failed_checks" in detail["context"]
+    assert len(detail["context"]["partial_diagnostics"]) == 1
+    assert detail["context"]["partial_diagnostics"][0]["status"] == "failed"
+
+
+def test_disconnected_third_frame_through_the_full_route_names_the_real_cause() -> None:
+    chain = three_frame_chain(seed=1)
+    unrelated = non_overlapping_pair(seed=1).frame_a
+    unrelated_resized = unrelated[: chain.frames[2].shape[0], : chain.frames[2].shape[1]]
+
+    response = client.post(
+        "/api/v1/stitch",
+        files=_upload_files([chain.frames[0], chain.frames[1], unrelated_resized]),
+    )
+
+    assert response.status_code == 422
+    detail = response.json()["detail"]
+    assert detail["code"] == "DISCONNECTED_IMAGES"
+    assert detail["context"]["image"] == 2
+    cause = detail["context"]["cause"]
+    assert cause["code"] in {
+        "INSUFFICIENT_INLIERS",
+        "DEGENERATE_HOMOGRAPHY",
+        "INSUFFICIENT_MATCHES",
+    }
+    assert cause["context"]["pair"] == [1, 2]
+    partial = detail["context"]["partial_diagnostics"]
+    assert len(partial) == 2
+    assert partial[0]["status"] == "passed"
+    assert partial[1]["status"] == "failed"
 
 
 def test_unexpected_exception_produces_a_500_envelope_never_a_stack_trace(
@@ -200,6 +231,41 @@ def test_stitch_timeout_when_the_injected_clock_reports_an_overrun(settings: Set
     assert outcome_or_error.code == "STITCH_TIMEOUT"
     assert outcome_or_error.http_status == 504
     assert outcome_or_error.context["limit_seconds"] == settings.stitch_timeout_seconds
+    # The pipeline ran to completion before the deadline check fired, so the
+    # evidence for every pair is real, not fabricated after the fact.
+    partial = outcome_or_error.context["partial_diagnostics"]
+    assert len(partial) == 2
+    assert all(pair["status"] == "passed" for pair in partial)
+    assert outcome_or_error.context["stopped_at_stage"] == "timeout"
+
+
+def test_canvas_too_large_carries_partial_diagnostics_for_every_completed_pair(
+    settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A canvas rejection happens after every pair cleared gates 6 and 7.
+
+    That per-pair evidence must travel with the rejection rather than be
+    dropped just because the failure itself is not about any one pair.
+    """
+    from app.core.errors import StitchPipelineError, canvas_too_large
+
+    chain = three_frame_chain(seed=5, size=(640, 480))
+    payloads = [cv2.imencode(".png", frame)[1].tobytes() for frame in chain.frames]
+    options = StitchSettings(detector="SIFT", ratio_threshold=0.75, ransac_reproj_threshold=5.0)
+
+    def fake_warp(*args: object, **kwargs: object) -> None:
+        raise canvas_too_large(pixels=100_000_000, limit=8_000_000, width=10_000, height=10_000)
+
+    monkeypatch.setattr("app.services.stitcher.warp_to_common_canvas", fake_warp)
+
+    with pytest.raises(StitchPipelineError) as excinfo:
+        stitch(payloads, options, settings)
+
+    assert excinfo.value.code == "CANVAS_TOO_LARGE"
+    partial = excinfo.value.context["partial_diagnostics"]
+    assert len(partial) == 2
+    assert all(pair["status"] == "passed" for pair in partial)
+    assert excinfo.value.context["stopped_at_stage"] == "warp"
 
 
 def test_three_frame_chain_lands_within_five_percent_of_the_modelled_canvas(

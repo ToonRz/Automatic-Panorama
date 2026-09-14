@@ -12,7 +12,11 @@ from dataclasses import dataclass
 import cv2
 import numpy as np
 
-from app.core.errors import degenerate_homography, insufficient_inliers
+from app.core.errors import (
+    degenerate_homography,
+    excessive_reprojection_error,
+    insufficient_inliers,
+)
 
 # Below this many correspondences cv2.findHomography cannot even attempt a
 # fit; gate 6's floor (>= 8 by range) already guarantees this in practice, so
@@ -146,12 +150,24 @@ def estimate_homography(
     ratio_passed_count = len(source_points)
     inlier_ratio = inlier_count / ratio_passed_count if ratio_passed_count else 0.0
 
-    if inlier_count < min_inliers or inlier_ratio < min_inlier_ratio:
-        raise insufficient_inliers(pair, pair_index, inlier_count, min_inliers, inlier_ratio)
+    # Both bars are independent measurements of the same fit (a raw count and
+    # a count normalized by how many candidates existed to begin with), so
+    # both are checked and both failures are reported when both miss --
+    # stopping at the first would hide a second true finding from the caller.
+    failed_checks = []
+    if inlier_count < min_inliers:
+        failed_checks.append("min_inliers")
+    if inlier_ratio < min_inlier_ratio:
+        failed_checks.append("min_inlier_ratio")
+    if failed_checks:
+        raise insufficient_inliers(
+            pair, pair_index, inlier_count, min_inliers, inlier_ratio, min_inlier_ratio,
+            failed_checks,
+        )
 
     reason = classify_degeneracy(matrix, image_size)
     if reason is not None:
-        raise degenerate_homography(pair, pair_index, reason)
+        raise degenerate_homography(pair, pair_index, reason, inlier_count, inlier_ratio)
 
     matrix_inverse = np.linalg.inv(matrix)
     errors = _symmetric_transfer_errors(
@@ -162,8 +178,14 @@ def estimate_homography(
     )
     reprojection_error = float(np.median(errors))
 
+    # A loose-everywhere fit is a different, separately actionable finding
+    # from too few/weak inliers -- the count and ratio bars above already
+    # passed, so this is never folded into INSUFFICIENT_INLIERS.
     if reprojection_error > max_reprojection_error:
-        raise insufficient_inliers(pair, pair_index, inlier_count, min_inliers, inlier_ratio)
+        raise excessive_reprojection_error(
+            pair, pair_index, reprojection_error, max_reprojection_error,
+            inlier_count, inlier_ratio,
+        )
 
     return HomographyResult(
         matrix=matrix,

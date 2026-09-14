@@ -18,11 +18,46 @@ export interface StitchOptions {
   ransacReprojThreshold: number;
 }
 
+/**
+ * One pair's status inside `context.partial_diagnostics` (docs/backend-spec.md
+ * section 9.2). `"passed"` carries the same four measurements the success
+ * response's per-pair arrays would; `"failed"` carries whatever that pair's
+ * own rejection measured plus `failure`; `"not_processed"` carries only
+ * `pair`/`pair_index`/`status` -- gate 7 is fail-fast, so a pair after the
+ * one that failed is never run and must never be given a fabricated number.
+ */
+export interface PairDiagnostic {
+  pair: [number, number];
+  pair_index: number;
+  status: "passed" | "failed" | "not_processed";
+  ratio_passed_matches?: number;
+  matches?: number;
+  inlier_count?: number;
+  inlier_ratio?: number;
+  reprojection_error?: number;
+  failure?: { code: string; message: string };
+}
+
+/** `DISCONNECTED_IMAGES`'s preserved gate 6/7 rejection (docs/backend-spec.md section 9.3). */
+export interface ErrorCause {
+  code: string;
+  message: string;
+  context?: Record<string, unknown>;
+}
+
 export interface ApiErrorDetail {
   code: string;
   message: string;
-  /** docs/backend-spec.md section 9: indices are zero-based, e.g. `pair: [1, 2]`. */
-  context?: Record<string, string | number | number[]>;
+  /**
+   * docs/backend-spec.md section 9: indices are zero-based, e.g. `pair: [1, 2]`.
+   * Widened to `unknown` values (section 9.2/9.3): `partial_diagnostics` is an
+   * array of objects and `cause` is a nested object, neither of which a flat
+   * scalar map can represent. Every reader must guard its own shape rather
+   * than assume a field is present or well-formed -- an old response, a
+   * response with some fields missing, or a code the client has never seen
+   * must still render without throwing.
+   */
+  context?: Record<string, unknown>;
 }
 
 export interface StitchCorrespondence {

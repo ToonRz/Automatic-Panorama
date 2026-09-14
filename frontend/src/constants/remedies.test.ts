@@ -26,6 +26,7 @@ describe("remedyForCode", () => {
       "NO_DESCRIPTORS",
       "INSUFFICIENT_MATCHES",
       "INSUFFICIENT_INLIERS",
+      "EXCESSIVE_REPROJECTION_ERROR",
       "DEGENERATE_HOMOGRAPHY",
       "DISCONNECTED_IMAGES",
       "CANVAS_TOO_LARGE",
@@ -51,6 +52,82 @@ describe("remedyForCode", () => {
         { ...FALLBACK_CONFIG, max_upload_files: 5 },
       ),
     ).toEqual(["Remove frames until 5 or fewer remain."]);
+  });
+
+  it("suggests re-shooting for more overlap only when the count bar missed", () => {
+    const remedy = remedyForCode({
+      code: "INSUFFICIENT_INLIERS",
+      message: "x",
+      context: { failed_checks: ["min_inliers"] },
+    });
+    expect(remedy.some((line) => /more overlap/i.test(line))).toBe(true);
+    expect(remedy.some((line) => /repeating pattern/i.test(line))).toBe(false);
+  });
+
+  it("suggests checking for false matches only when the ratio bar missed", () => {
+    const remedy = remedyForCode({
+      code: "INSUFFICIENT_INLIERS",
+      message: "x",
+      context: { failed_checks: ["min_inlier_ratio"] },
+    });
+    expect(remedy.some((line) => /repeating pattern/i.test(line))).toBe(true);
+    expect(remedy.some((line) => /more overlap \(30-50%\)/i.test(line))).toBe(false);
+  });
+
+  it("gives both remedies when both inlier bars missed", () => {
+    const remedy = remedyForCode({
+      code: "INSUFFICIENT_INLIERS",
+      message: "x",
+      context: { failed_checks: ["min_inliers", "min_inlier_ratio"] },
+    });
+    expect(remedy).toHaveLength(2);
+  });
+
+  it("never tells every INSUFFICIENT_INLIERS case to change the ratio test, RANSAC, or detector", () => {
+    const remedy = remedyForCode({
+      code: "INSUFFICIENT_INLIERS",
+      message: "x",
+      context: { failed_checks: ["min_inliers", "min_inlier_ratio"] },
+    });
+    const text = remedy.join(" ");
+    expect(text).not.toMatch(/ratio test/i);
+    expect(text).not.toMatch(/RANSAC/i);
+    expect(text).not.toMatch(/\bORB\b/i);
+  });
+
+  it("falls back to a generic inlier remedy when failed_checks is absent (an old response)", () => {
+    const remedy = remedyForCode({ code: "INSUFFICIENT_INLIERS", message: "x" });
+    expect(remedy.length).toBeGreaterThan(0);
+  });
+
+  it("tailors the degenerate-homography remedy to the reported reason", () => {
+    const rotationRemedy = remedyForCode({
+      code: "DEGENERATE_HOMOGRAPHY",
+      message: "x",
+      context: { reason: "non_convex_quad" },
+    });
+    expect(rotationRemedy.join(" ")).toMatch(/rotation|zoom/i);
+
+    const spreadRemedy = remedyForCode({
+      code: "DEGENERATE_HOMOGRAPHY",
+      message: "x",
+      context: { reason: "singular" },
+    });
+    expect(spreadRemedy.join(" ")).toMatch(/spread/i);
+    expect(rotationRemedy).not.toEqual(spreadRemedy);
+  });
+
+  it("leads a disconnected-frame remedy with its preserved cause's own remedy", () => {
+    const remedy = remedyForCode({
+      code: "DISCONNECTED_IMAGES",
+      message: "x",
+      context: {
+        image: 2,
+        cause: { code: "INSUFFICIENT_INLIERS", message: "y", context: { failed_checks: ["min_inliers"] } },
+      },
+    });
+    expect(remedy[0]).toMatch(/more overlap/i);
+    expect(remedy.at(-1)).toMatch(/bridging frame/i);
   });
 });
 

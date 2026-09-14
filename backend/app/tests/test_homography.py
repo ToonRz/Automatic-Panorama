@@ -129,8 +129,107 @@ def test_non_overlapping_pair_raises_insufficient_inliers_and_returns_no_matrix(
         )
 
     assert excinfo.value.code == "INSUFFICIENT_INLIERS"
-    assert "inliers" in excinfo.value.context
+    assert "inlier_count" in excinfo.value.context
     assert "inlier_ratio" in excinfo.value.context
+    assert excinfo.value.context["failed_checks"]
+
+
+def test_low_inlier_count_reports_only_that_failed_check() -> None:
+    # Very few correspondences but a perfect, noiseless fit: the ratio
+    # (4/4 = 1.0) clears any realistic bar, so only the count should fail.
+    source = np.float32([[0, 0], [100, 0], [100, 100], [0, 100]])
+    destination = source + np.array([5.0, 5.0], dtype=np.float32)
+
+    with pytest.raises(StitchPipelineError) as excinfo:
+        estimate_homography(
+            source,
+            destination,
+            image_size=(200, 200),
+            ransac_reproj_threshold=5.0,
+            min_inliers=12,
+            min_inlier_ratio=0.25,
+            max_reprojection_error=3.0,
+            pair=(0, 1),
+            pair_index=0,
+        )
+
+    assert excinfo.value.code == "INSUFFICIENT_INLIERS"
+    assert excinfo.value.context["failed_checks"] == ["min_inliers"]
+    assert excinfo.value.context["inlier_count"] == 4
+    assert excinfo.value.context["inlier_ratio"] == pytest.approx(1.0)
+
+
+def test_low_inlier_ratio_reports_only_that_failed_check() -> None:
+    pair = non_overlapping_pair(seed=1)
+    src, dst = _match_points(pair.frame_a, pair.frame_b, "SIFT")
+
+    with pytest.raises(StitchPipelineError) as excinfo:
+        estimate_homography(
+            src,
+            dst,
+            image_size=(pair.frame_a.shape[1], pair.frame_a.shape[0]),
+            ransac_reproj_threshold=5.0,
+            min_inliers=4,  # low enough that only the ratio bar can miss
+            min_inlier_ratio=0.25,
+            max_reprojection_error=3.0,
+            pair=(0, 1),
+            pair_index=0,
+        )
+
+    assert excinfo.value.code == "INSUFFICIENT_INLIERS"
+    assert excinfo.value.context["failed_checks"] == ["min_inlier_ratio"]
+    assert excinfo.value.context["inlier_count"] >= 4
+
+
+def test_both_inlier_bars_missed_reports_both_failed_checks() -> None:
+    pair = non_overlapping_pair(seed=1)
+    src, dst = _match_points(pair.frame_a, pair.frame_b, "SIFT")
+
+    with pytest.raises(StitchPipelineError) as excinfo:
+        estimate_homography(
+            src,
+            dst,
+            image_size=(pair.frame_a.shape[1], pair.frame_a.shape[0]),
+            ransac_reproj_threshold=5.0,
+            min_inliers=20,  # this pair clears 12 but not 20, so both bars miss
+            min_inlier_ratio=0.25,
+            max_reprojection_error=3.0,
+            pair=(0, 1),
+            pair_index=0,
+        )
+
+    assert excinfo.value.code == "INSUFFICIENT_INLIERS"
+    assert set(excinfo.value.context["failed_checks"]) == {"min_inliers", "min_inlier_ratio"}
+    assert "only" in excinfo.value.message and "ratio" in excinfo.value.message
+
+
+def test_loose_fit_with_healthy_inliers_raises_excessive_reprojection_error() -> None:
+    # A count and ratio that comfortably clear gate 7's inlier bars, but with
+    # enough per-point noise that the median fit is loose everywhere -- this
+    # must land on its own code, never be folded into INSUFFICIENT_INLIERS.
+    rng = np.random.default_rng(3)
+    source = rng.uniform(0, 500, size=(40, 2)).astype(np.float32)
+    noise = rng.uniform(-4.0, 4.0, size=(40, 2)).astype(np.float32)
+    destination = source + np.array([15.0, -8.0], dtype=np.float32) + noise
+
+    with pytest.raises(StitchPipelineError) as excinfo:
+        estimate_homography(
+            source,
+            destination,
+            image_size=(600, 600),
+            ransac_reproj_threshold=10.0,
+            min_inliers=12,
+            min_inlier_ratio=0.25,
+            max_reprojection_error=1.0,
+            pair=(0, 1),
+            pair_index=0,
+        )
+
+    assert excinfo.value.code == "EXCESSIVE_REPROJECTION_ERROR"
+    assert excinfo.value.context["inlier_count"] >= 12
+    assert excinfo.value.context["inlier_ratio"] >= 0.25
+    assert excinfo.value.context["reprojection_error"] > 1.0
+    assert excinfo.value.context["max_reprojection_error"] == 1.0
 
 
 def test_too_few_correspondences_raises_degenerate_homography_singular() -> None:

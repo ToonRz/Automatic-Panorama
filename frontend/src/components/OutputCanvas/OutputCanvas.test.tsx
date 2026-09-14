@@ -65,14 +65,14 @@ describe("OutputCanvas", () => {
     expect(screen.getByText(/waking up/i)).toBeInTheDocument();
   });
 
-  it("renders the failed card in code -> heading -> message -> chips -> remedies order (A7)", () => {
+  it("renders the failed card in code -> heading -> message -> measurements -> chips -> remedies order (A7)", () => {
     render(<OutputCanvas {...baseProps} state="failed" error={insufficientInliersError} />);
     const card = screen.getByRole("alert");
     expect(card).toHaveClass("failcard");
     const children = Array.from(card.children).map((el) => el.tagName);
-    expect(children).toEqual(["SPAN", "H3", "P", "DIV", "UL"]);
+    expect(children).toEqual(["SPAN", "H3", "P", "UL", "DIV", "UL"]);
     expect(screen.getByText(/422 · INSUFFICIENT_INLIERS/)).toBeInTheDocument();
-    expect(screen.getByText(/re-shoot the named frame/i)).toBeInTheDocument();
+    expect(screen.getByText(/re-shoot with more overlap/i)).toBeInTheDocument();
     expect(screen.getByText("Rejected").closest(".chip")).toHaveClass("fail");
   });
 

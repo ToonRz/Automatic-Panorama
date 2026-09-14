@@ -138,7 +138,7 @@ export default function App() {
           />
         </div>
 
-        <Diagnostics result={run.result} files={run.files} />
+        <Diagnostics result={run.result} error={run.error} files={run.files} />
       </main>
       </div>
     </>

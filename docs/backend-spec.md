@@ -91,7 +91,7 @@ or exits with a named code. Cheap gates run before anything large is decoded.
 | gate 4 | services | decode, pixel ceiling, downscale to budget | `DECODE_FAILED`, `IMAGE_TOO_MANY_PIXELS` |
 | gate 5 | cv/features | descriptors exist per image | `NO_DESCRIPTORS` |
 | gate 6 | cv/matching | ratio-passed matches per pair | `INSUFFICIENT_MATCHES` |
-| gate 7 | cv/homography | inliers, inlier ratio, reprojection error, non-degenerate H | `INSUFFICIENT_INLIERS`, `DEGENERATE_HOMOGRAPHY` |
+| gate 7 | cv/homography | inliers, inlier ratio, reprojection error, non-degenerate H | `INSUFFICIENT_INLIERS`, `EXCESSIVE_REPROJECTION_ERROR`, `DEGENERATE_HOMOGRAPHY` |
 | gate 8 | cv/pipeline, cv/warping | every image reachable, canvas within budget | `DISCONNECTED_IMAGES`, `CANVAS_TOO_LARGE` |
 | gate 9 | cv/blending | blend, crop, encode | none |
 
@@ -455,20 +455,95 @@ interface counts frames the way a person does.
 | `DECODE_FAILED` | 422 | 4 | `image` | File n could not be read as an image. |
 | `IMAGE_TOO_MANY_PIXELS` | 422 | 4 | `image`, `pixels`, `limit` | File n is above the 50 MP processing limit. |
 | `NO_DESCRIPTORS` | 422 | 5 | `image`, `keypoints`, `detector` | Image n has too little texture for this detector. |
-| `INSUFFICIENT_MATCHES` | 422 | 6 | `pair`, `pair_index`, `matches`, `required` | Images a and b share too few descriptor matches. |
-| `INSUFFICIENT_INLIERS` | 422 | 7 | `pair`, `pair_index`, `inliers`, `required`, `inlier_ratio` | Images a and b do not have enough geometric agreement. |
-| `DEGENERATE_HOMOGRAPHY` | 422 | 7 | `pair`, `pair_index`, `reason` | The transform between a and b collapses the image. |
-| `DISCONNECTED_IMAGES` | 422 | 8 | `image` | Image n shares no view with the others. |
-| `CANVAS_TOO_LARGE` | 422 | 8 | `pixels`, `limit`, `width`, `height` | The combined canvas exceeds the 8 MP output limit. |
-| `STITCH_TIMEOUT` | 504 | 4-9 | `elapsed_seconds`, `limit_seconds` | Stitching took longer than the service allows. |
+| `INSUFFICIENT_MATCHES` | 422 | 6 | `pair`, `pair_index`, `matches`, `min_matches` | Images a and b share too few descriptor matches: measured vs `min_matches`. |
+| `INSUFFICIENT_INLIERS` | 422 | 7 | `pair`, `pair_index`, `inlier_count`, `min_inliers`, `inlier_ratio`, `min_inlier_ratio`, `failed_checks`, `partial_diagnostics`, `stopped_at_stage` | Images a and b do not have enough geometric agreement: names every one of `min_inliers`/`min_inlier_ratio` that missed. |
+| `EXCESSIVE_REPROJECTION_ERROR` | 422 | 7 | `pair`, `pair_index`, `reprojection_error`, `max_reprojection_error`, `inlier_count`, `inlier_ratio`, `partial_diagnostics`, `stopped_at_stage` | Images a and b aligned with enough inliers, but the median fit exceeds the reprojection-error ceiling. |
+| `DEGENERATE_HOMOGRAPHY` | 422 | 7 | `pair`, `pair_index`, `reason`, `inlier_count`?, `inlier_ratio`?, `partial_diagnostics`, `stopped_at_stage` | The transform between a and b collapses the image (`reason`). |
+| `DISCONNECTED_IMAGES` | 422 | 8 | `image`, `cause`, `partial_diagnostics`, `stopped_at_stage` | Image n could not be linked to the others: names the real gate 6/7 rejection underneath. |
+| `CANVAS_TOO_LARGE` | 422 | 8 | `pixels`, `limit`, `width`, `height`, `partial_diagnostics`, `stopped_at_stage` | The combined canvas exceeds the 8 MP output limit. |
+| `STITCH_TIMEOUT` | 504 | 4-9 | `elapsed_seconds`, `limit_seconds`, `partial_diagnostics`?, `stopped_at_stage`? | Stitching took longer than the service allows. |
 | unexpected | 500 | any | none | An unexpected error occurred. |
 
 `DEGENERATE_HOMOGRAPHY` `reason` is one of `non_finite`, `singular`,
-`non_convex_quad`, `excessive_scale`.
+`non_convex_quad`, `excessive_scale`. `inlier_count`/`inlier_ratio` are present
+only when gate 7 had already computed them before the degeneracy was found
+(they run after the inlier check; a `non_finite`/`singular` matrix can be
+caught before that, so those two reasons never carry them) -- a value never
+measured is never reported.
 
 Every code in this table has remedy text in `docs/ui-spec.md` section 7.1. A
 code added to the pipeline without an entry in both places falls through to
 generic remedy text, which is a defect, not a fallback.
+
+### 9.1 Multiple gate 7 conditions, reported together
+
+A pair can miss `min_inliers`, `min_inlier_ratio`, or both at once; these are
+independent measurements of the same fit (one a raw count, one normalized by
+how many candidates existed), so both are checked every time and
+`INSUFFICIENT_INLIERS`'s `failed_checks` names every one that missed rather
+than stopping at the first. A pair that clears both bars but fits loosely
+everywhere is a separate, later-checked condition and gets its own code,
+`EXCESSIVE_REPROJECTION_ERROR`, rather than being folded into
+`INSUFFICIENT_INLIERS` for a reason that has nothing to do with inlier count.
+
+### 9.2 `partial_diagnostics`: what was measured before the run stopped
+
+Any rejection raised from inside the pairwise chain (`INSUFFICIENT_MATCHES`,
+`INSUFFICIENT_INLIERS`, `EXCESSIVE_REPROJECTION_ERROR`, `DEGENERATE_HOMOGRAPHY`,
+`DISCONNECTED_IMAGES`), plus `CANVAS_TOO_LARGE` and `STITCH_TIMEOUT`, carries a
+`partial_diagnostics` array: one entry per pair the request would have needed,
+each with a `status` of `"passed"`, `"failed"`, or `"not_processed"`.
+
+```json
+[
+  { "pair": [0, 1], "pair_index": 0, "status": "passed",
+    "ratio_passed_matches": 146, "inlier_count": 101,
+    "inlier_ratio": 0.69, "reprojection_error": 1.42 },
+  { "pair": [1, 2], "pair_index": 1, "status": "failed",
+    "inlier_count": 9, "inlier_ratio": 0.09,
+    "failure": { "code": "INSUFFICIENT_INLIERS", "message": "..." } },
+  { "pair": [2, 3], "pair_index": 2, "status": "not_processed" }
+]
+```
+
+A `"passed"` entry carries the same four measurements the success response's
+per-pair arrays would. A `"failed"` entry carries whatever that pair's own
+rejection measured (never a synthetic 0 for a number that was never
+computed) plus `failure.code`/`failure.message`. A `"not_processed"` entry
+carries only `pair`/`pair_index`/`status`: gate 7's rejection is fail-fast
+(spec section 3), and the pairs after the one that failed are never run, so
+they are named as untried rather than given fabricated numbers.
+
+`stopped_at_stage` names the stage the run was in when it stopped:
+`"matching"`, `"homography"`, `"warp"` (a `CANVAS_TOO_LARGE` after every pair
+already cleared gates 6-7), or `"timeout"` (every stage finished; only the
+wall-clock budget was missed).
+
+### 9.3 `DISCONNECTED_IMAGES`'s `cause`
+
+For three images and up, a pair that fails gate 6 or gate 7 is re-reported as
+`DISCONNECTED_IMAGES` naming the far frame (section 3 gate 8, `cv/pipeline.py`'s
+documented interpretation). The pair's own measured rejection is preserved
+underneath rather than discarded:
+
+```json
+{
+  "image": 2,
+  "cause": {
+    "code": "INSUFFICIENT_INLIERS",
+    "message": "Images 2 and 3 do not have enough geometric agreement: ...",
+    "context": { "pair": [1, 2], "pair_index": 1, "inlier_count": 9, "...": "..." }
+  },
+  "partial_diagnostics": [ "..." ],
+  "stopped_at_stage": "homography"
+}
+```
+
+The top-level `message` names the real cause too (`"Image 3 could not be
+linked to the others: <cause.message>"`), never the bare "shares no view"
+claim on its own -- gate 8's interpretation is a re-framing of a measured
+alignment failure, not a separate finding that a client should present as
+fact.
 
 ## 10. Settings
 

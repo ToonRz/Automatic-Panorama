@@ -2,15 +2,37 @@
   "detail": {
     "code": "INSUFFICIENT_INLIERS",
     "context": {
+      "failed_checks": [
+        "min_inliers",
+        "min_inlier_ratio"
+      ],
+      "inlier_count": 9,
       "inlier_ratio": 0.093,
-      "inliers": 9,
+      "min_inlier_ratio": 0.25,
+      "min_inliers": 12,
       "pair": [
         0,
         1
       ],
       "pair_index": 0,
-      "required": 12
+      "partial_diagnostics": [
+        {
+          "failure": {
+            "code": "INSUFFICIENT_INLIERS",
+            "message": "Images 1 and 2 do not have enough geometric agreement: only 9 inlier(s) (at least 12 required) and an inlier ratio of 0.09 (at least 0.25 required)."
+          },
+          "inlier_count": 9,
+          "inlier_ratio": 0.093,
+          "pair": [
+            0,
+            1
+          ],
+          "pair_index": 0,
+          "status": "failed"
+        }
+      ],
+      "stopped_at_stage": "homography"
     },
-    "message": "Images 1 and 2 do not have enough geometric agreement."
+    "message": "Images 1 and 2 do not have enough geometric agreement: only 9 inlier(s) (at least 12 required) and an inlier ratio of 0.09 (at least 0.25 required)."
   }
 }

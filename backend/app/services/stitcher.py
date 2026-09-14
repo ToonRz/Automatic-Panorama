@@ -16,7 +16,13 @@ import cv2
 import numpy as np
 
 from app.core.config import Settings
-from app.core.errors import decode_failed, image_too_many_pixels, service_busy, stitch_timeout
+from app.core.errors import (
+    StitchPipelineError,
+    decode_failed,
+    image_too_many_pixels,
+    service_busy,
+    stitch_timeout,
+)
 from app.cv.blending import (
     blend_with_exposure_compensation,
     crop_to_valid_region,
@@ -24,7 +30,7 @@ from app.cv.blending import (
     sample_correspondences_for_pair,
 )
 from app.cv.features import FeatureSet, extract_features
-from app.cv.pipeline import ChainResult, build_chain
+from app.cv.pipeline import ChainResult, build_chain, pair_diagnostics_from_chain
 from app.cv.warping import warp_to_common_canvas
 from app.schemas.stitch import StitchSettings
 
@@ -227,9 +233,18 @@ def stitch(
     )
 
     with _StageTimer(stage_timings_ms, "warp"):
-        warp_result = warp_to_common_canvas(
-            images, list(chain.transforms_to_reference), settings.max_output_pixels
-        )
+        try:
+            warp_result = warp_to_common_canvas(
+                images, list(chain.transforms_to_reference), settings.max_output_pixels
+            )
+        except StitchPipelineError as exc:
+            # Every pair already cleared gates 6 and 7 by this point (the
+            # chain above would have raised otherwise), so this rejection is
+            # about the composed canvas, not any one pair's geometry -- the
+            # per-pair evidence is still worth attaching alongside that.
+            exc.context["partial_diagnostics"] = pair_diagnostics_from_chain(chain)
+            exc.context["stopped_at_stage"] = "warp"
+            raise
 
     with _StageTimer(stage_timings_ms, "blend"):
         blended = blend_with_exposure_compensation(
@@ -275,7 +290,13 @@ def stitch(
 
     elapsed_seconds = clock() - request_start
     if elapsed_seconds > settings.stitch_timeout_seconds:
-        raise stitch_timeout(elapsed_seconds, settings.stitch_timeout_seconds)
+        # The pipeline itself ran to completion (every stage above returned);
+        # only the wall-clock budget was missed. The evidence gathered along
+        # the way is still real and worth keeping rather than discarding.
+        error = stitch_timeout(elapsed_seconds, settings.stitch_timeout_seconds)
+        error.context["partial_diagnostics"] = pair_diagnostics_from_chain(chain)
+        error.context["stopped_at_stage"] = "timeout"
+        raise error
 
     return StitchOutcome(
         png_bytes=png_bytes,

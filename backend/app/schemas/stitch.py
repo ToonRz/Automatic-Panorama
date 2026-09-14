@@ -1,6 +1,6 @@
 """Public API schemas for the scaffold and implemented pipeline."""
 
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -42,8 +42,15 @@ class StitchSettings(BaseModel):
 
 
 class ErrorDetail(BaseModel):
-    """Stable shape for actionable API failures."""
+    """Stable shape for actionable API failures.
+
+    ``context`` widened from a flat scalar map to ``Any`` values (spec section
+    9's "context carries the measurement that failed"): a pair rejection's
+    ``partial_diagnostics`` is a list of per-pair objects and
+    ``DISCONNECTED_IMAGES``' ``cause`` is a nested object, neither of which a
+    flat scalar map can represent.
+    """
 
     code: str
     message: str
-    context: dict[str, str | int | float | list[int]] | None = None
+    context: dict[str, Any] | None = None

@@ -47,17 +47,24 @@ export const REMEDY_BY_CODE: Readonly<Record<string, readonly string[]>> = {
     "The named pair barely shares any detail.",
     "Raise the ratio test toward 0.85, or re-shoot with more overlap.",
   ],
-  INSUFFICIENT_INLIERS: [
-    "Re-shoot the named frame with 30-50 percent overlap.",
-    "Raise the ratio test toward 0.80 to keep more candidate matches.",
-    "Try ORB on low-texture scenes.",
+  // INSUFFICIENT_INLIERS, EXCESSIVE_REPROJECTION_ERROR, DEGENERATE_HOMOGRAPHY,
+  // and DISCONNECTED_IMAGES are handled by the dynamic functions below: which
+  // specific condition failed changes what is actually worth trying, so a
+  // single blanket list for each code would recommend the same fix (raise the
+  // ratio test, lower RANSAC, try ORB) whether or not it addresses what was
+  // actually measured. These four entries are the fallback used only when the
+  // context needed to be specific is missing (an old response, say).
+  INSUFFICIENT_INLIERS: ["Re-shoot the named pair with more overlap between the two frames."],
+  EXCESSIVE_REPROJECTION_ERROR: [
+    "The named pair aligns loosely across the whole frame.",
+    "Re-shoot holding the camera steadier, with less rotation between frames.",
   ],
   DEGENERATE_HOMOGRAPHY: [
     "The named pair produced an unusable transform.",
-    "Lower the RANSAC tolerance and re-shoot with less parallax.",
+    "Re-shoot with more overlap spread across the whole frame, not just one area.",
   ],
   DISCONNECTED_IMAGES: [
-    "The named frame shares no view with the others.",
+    "The named frame could not be linked to its neighbour.",
     "Remove it or add a bridging frame.",
   ],
   CANVAS_TOO_LARGE: [
@@ -102,12 +109,110 @@ export const HEADING_BY_CODE: Readonly<Record<string, string>> = {
   NO_DESCRIPTORS: "has too little texture",
   INSUFFICIENT_MATCHES: "share too few matches",
   INSUFFICIENT_INLIERS: "do not agree",
+  EXCESSIVE_REPROJECTION_ERROR: "aligned, but only loosely",
   DEGENERATE_HOMOGRAPHY: "produced an unusable transform",
   DISCONNECTED_IMAGES: "shares no view with the others",
   CANVAS_TOO_LARGE: "The combined canvas is too large",
 };
 
 export const GENERIC_HEADING = "Could not stitch these frames";
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === "string");
+}
+
+function asRecord(value: unknown): Record<string, unknown> | undefined {
+  return value !== null && typeof value === "object" ? (value as Record<string, unknown>) : undefined;
+}
+
+/**
+ * `failed_checks` names every one of `min_inliers`/`min_inlier_ratio` this
+ * pair missed (docs/backend-spec.md section 9.1): each is a different
+ * underlying problem (too few points found in common vs. the points found
+ * disagreeing with each other), so each gets its own remedy rather than one
+ * blanket line that only fits one of the two.
+ */
+function insufficientInliersRemedies(context: Record<string, unknown> | undefined): string[] {
+  const failedChecks = context ? context.failed_checks : undefined;
+  const checks = isStringArray(failedChecks) ? failedChecks : [];
+  const remedies: string[] = [];
+  if (checks.includes("min_inliers")) {
+    remedies.push("Too few points agreed on one geometry — re-shoot with more overlap (30-50%).");
+  }
+  if (checks.includes("min_inlier_ratio")) {
+    remedies.push(
+      "Most candidate matches disagreed with each other. This usually means the frames " +
+        "share little true overlap, or contain a repeating pattern (tiles, foliage, a grid) " +
+        "that produces confident but wrong matches.",
+    );
+  }
+  if (remedies.length === 0) {
+    remedies.push(...REMEDY_BY_CODE.INSUFFICIENT_INLIERS);
+  }
+  return remedies;
+}
+
+const DEGENERATE_REASON_REMEDIES: Readonly<Record<string, readonly string[]>> = {
+  non_convex_quad: [
+    "The estimated transform folds the frame onto itself — usually too much camera " +
+      "rotation or zoom between shots.",
+    "Re-shoot with less rotation or zoom change between these two frames.",
+  ],
+  excessive_scale: [
+    "The estimated transform scales the frame implausibly — usually a mismatched pair or " +
+      "a huge difference in distance to the subject.",
+    "Check these are adjacent frames of the same pan, shot from about the same distance.",
+  ],
+  singular: [
+    "The matched points did not spread out enough to pin down a stable transform (e.g. " +
+      "clustered in one corner, or nearly in a line).",
+    "Re-shoot so the overlap includes texture spread across the whole frame.",
+  ],
+  non_finite: [
+    "The estimate produced numbers with no geometric meaning, which usually means the " +
+      "matched points were too few or too tightly clustered to constrain a transform.",
+    "Re-shoot so the overlap includes texture spread across the whole frame.",
+  ],
+};
+
+function degenerateHomographyRemedies(context: Record<string, unknown> | undefined): string[] {
+  const reason = context?.reason;
+  if (typeof reason === "string" && reason in DEGENERATE_REASON_REMEDIES) {
+    return [...DEGENERATE_REASON_REMEDIES[reason]];
+  }
+  return [...REMEDY_BY_CODE.DEGENERATE_HOMOGRAPHY];
+}
+
+/**
+ * The frame this names could not be linked into the chain because one
+ * specific pair failed gate 6 or gate 7 (docs/backend-spec.md section 9.3);
+ * leading with that pair's own remedy is more useful than the generic
+ * "remove it or bridge it" line alone.
+ */
+function disconnectedImagesRemedies(context: Record<string, unknown> | undefined): string[] {
+  const cause = asRecord(context?.cause);
+  const causeCode = cause?.code;
+  const bridging = ["Remove this frame, or add a bridging frame that overlaps its neighbour."];
+  if (typeof causeCode !== "string") return [...REMEDY_BY_CODE.DISCONNECTED_IMAGES];
+
+  const causeContext = asRecord(cause?.context);
+  if (causeCode === "INSUFFICIENT_INLIERS") {
+    return [...insufficientInliersRemedies(causeContext), ...bridging];
+  }
+  if (causeCode === "DEGENERATE_HOMOGRAPHY") {
+    return [...degenerateHomographyRemedies(causeContext), ...bridging];
+  }
+  return [...(REMEDY_BY_CODE[causeCode] ?? []), ...bridging];
+}
+
+/** Codes whose remedy depends on which specific condition the context names, not just the code. */
+const DYNAMIC_REMEDY_BY_CODE: Readonly<
+  Record<string, (context: Record<string, unknown> | undefined) => string[]>
+> = {
+  INSUFFICIENT_INLIERS: insufficientInliersRemedies,
+  DEGENERATE_HOMOGRAPHY: degenerateHomographyRemedies,
+  DISCONNECTED_IMAGES: disconnectedImagesRemedies,
+};
 
 export function remedyForCode(
   detail: ApiErrorDetail,
@@ -116,6 +221,8 @@ export function remedyForCode(
   if (detail.code === "TOO_MANY_IMAGES") {
     return [`Remove frames until ${config.max_upload_files} or fewer remain.`];
   }
+  const dynamic = DYNAMIC_REMEDY_BY_CODE[detail.code];
+  if (dynamic) return dynamic(detail.context);
   return REMEDY_BY_CODE[detail.code] ?? GENERIC_REMEDY;
 }
 
