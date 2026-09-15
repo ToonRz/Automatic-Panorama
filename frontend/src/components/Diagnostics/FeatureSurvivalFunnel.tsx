@@ -440,52 +440,54 @@ export function FeatureSurvivalFunnel({ diagnostics, files = EMPTY_FILES }: Feat
               </button>
             </div>
             {diagnostics ? (
-              <table className="funnel-table">
-                <thead>
-                  <tr>
-                    <th>Frame</th>
-                    <th className="r">Raw Keypoints</th>
-                    <th className="r">Ratio Pass</th>
-                    <th className="r">Inliers</th>
-                    <th className="r">Inlier Ratio</th>
-                    <th className="r">Reproj. Error</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {stats.frames.map((frame, idx) => {
-                    const passCount = diagnostics.ratio_passed_matches_per_pair[idx] ?? "-";
-                    const inlierCount = diagnostics.inliers_per_pair[idx] ?? "-";
-                    const inlierRatio = diagnostics.inlier_ratio_per_pair[idx]
-                      ? `${(diagnostics.inlier_ratio_per_pair[idx] * 100).toFixed(1)}%`
-                      : "-";
-                    const reproj = diagnostics.reprojection_error_per_pair[idx]
-                      ? `${diagnostics.reprojection_error_per_pair[idx].toFixed(2)} px`
-                      : "-";
+              <div className="tablewrap">
+                <table className="funnel-table">
+                  <thead>
+                    <tr>
+                      <th>Frame</th>
+                      <th className="r">Raw Keypoints</th>
+                      <th className="r">Ratio Pass</th>
+                      <th className="r">Inliers</th>
+                      <th className="r">Inlier Ratio</th>
+                      <th className="r">Reproj. Error</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stats.frames.map((frame, idx) => {
+                      const passCount = diagnostics.ratio_passed_matches_per_pair[idx] ?? "-";
+                      const inlierCount = diagnostics.inliers_per_pair[idx] ?? "-";
+                      const inlierRatio = diagnostics.inlier_ratio_per_pair[idx]
+                        ? `${(diagnostics.inlier_ratio_per_pair[idx] * 100).toFixed(1)}%`
+                        : "-";
+                      const reproj = diagnostics.reprojection_error_per_pair[idx]
+                        ? `${diagnostics.reprojection_error_per_pair[idx].toFixed(2)} px`
+                        : "-";
 
-                    return (
-                      <tr key={frame.index}>
-                        <td>
-                          <strong>{frame.fileName}</strong>
-                          {frame.isAnchor && <span className="funnel-tag-anchor">Anchor</span>}
-                        </td>
-                        <td className="r">{frame.count.toLocaleString()}</td>
-                        <td className="r">{passCount.toLocaleString()}</td>
-                        <td className="r">{inlierCount.toLocaleString()}</td>
-                        <td className="r">{inlierRatio}</td>
-                        <td className="r">{reproj}</td>
-                        <td>
-                          {frame.isAnchor ? (
-                            <span className="status-badge anchor">Anchor Frame</span>
-                          ) : (
-                            <span className="status-badge aligned">✓ Aligned</span>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                      return (
+                        <tr key={frame.index}>
+                          <td>
+                            <strong>{frame.fileName}</strong>
+                            {frame.isAnchor && <span className="funnel-tag-anchor">Anchor</span>}
+                          </td>
+                          <td className="r">{frame.count.toLocaleString()}</td>
+                          <td className="r">{passCount.toLocaleString()}</td>
+                          <td className="r">{inlierCount.toLocaleString()}</td>
+                          <td className="r">{inlierRatio}</td>
+                          <td className="r">{reproj}</td>
+                          <td>
+                            {frame.isAnchor ? (
+                              <span className="status-badge anchor">Anchor Frame</span>
+                            ) : (
+                              <span className="status-badge aligned">✓ Aligned</span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             ) : (
               <p style={{ padding: "20px", color: "var(--muted)" }}>No diagnostics data available.</p>
             )}
