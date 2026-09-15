@@ -213,10 +213,6 @@ export function IntroCover({ backendStatus, onDismiss }: IntroCoverProps) {
         </div>
       </main>
 
-      <div className={`signal-thread ${backendStatus === "online" ? "is-online" : backendStatus === "offline" ? "is-offline" : ""}`} aria-hidden="true">
-        <span className="signal-thread-line" />
-      </div>
-
       <footer className="intro-bottom">
         {backendStatus === "online" ? (
           <div className="server-status-pill is-online">

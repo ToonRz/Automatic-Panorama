@@ -39,44 +39,7 @@
   width: 100%;
   max-width: 100%;
   text-align: center;
-}
-
-/* Signal Thread: ties the headline to the connection panel below it,
-   so the wait state reads as one live composition instead of two
-   disconnected blocks separated by dead space. */
-.signal-thread {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: clamp(20px, 3vh, 32px);
-  flex-shrink: 0;
-}
-
-.signal-thread-line {
-  width: 1.5px;
-  height: 100%;
-  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.02), var(--run), rgba(255, 255, 255, 0.02));
-  animation: signalFlow 1.6s ease-in-out infinite;
-  transition: background 0.4s ease;
-}
-
-.signal-thread.is-online .signal-thread-line {
-  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.02), var(--pass), rgba(255, 255, 255, 0.02));
-}
-
-.signal-thread.is-offline .signal-thread-line {
-  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.02), var(--fail), rgba(255, 255, 255, 0.02));
-  animation: none;
-  opacity: 0.6;
-}
-
-@keyframes signalFlow {
-  0%, 100% { opacity: 0.35; transform: scaleY(0.7); }
-  50% { opacity: 1; transform: scaleY(1); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .signal-thread-line { animation: none; opacity: 0.6; }
+  transform: translateY(clamp(24px, 4vh, 48px));
 }
 
 .typewriter-stage {
@@ -91,7 +54,7 @@
 
 .tw-line {
   font-family: var(--sans);
-  font-size: clamp(2.4rem, 10.5vw, 8.5rem);
+  font-size: clamp(2.4rem, 8vw, 7rem);
   font-weight: 800;
   color: #ffffff;
   line-height: 0.98;
@@ -105,7 +68,7 @@
 
 @media (max-width: 600px) {
   .tw-line {
-    font-size: clamp(2.1rem, 10vw, 3.4rem);
+    font-size: clamp(2rem, 9vw, 3rem);
   }
 }
 
