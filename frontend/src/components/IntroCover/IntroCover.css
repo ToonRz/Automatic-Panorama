@@ -14,7 +14,8 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  padding: 0 clamp(16px, 4vw, 40px);
+  gap: clamp(20px, 4vh, 40px);
+  padding: 0 clamp(16px, 4vw, 40px) max(24px, env(safe-area-inset-bottom, 24px));
   will-change: transform;
   transition: transform 0.85s cubic-bezier(0.76, 0, 0.24, 1);
   overflow: hidden;
@@ -34,10 +35,48 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  flex: 1;
+  flex: 0 1 auto;
   width: 100%;
   max-width: 100%;
   text-align: center;
+}
+
+/* Signal Thread: ties the headline to the connection panel below it,
+   so the wait state reads as one live composition instead of two
+   disconnected blocks separated by dead space. */
+.signal-thread {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: clamp(20px, 3vh, 32px);
+  flex-shrink: 0;
+}
+
+.signal-thread-line {
+  width: 1.5px;
+  height: 100%;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.02), var(--run), rgba(255, 255, 255, 0.02));
+  animation: signalFlow 1.6s ease-in-out infinite;
+  transition: background 0.4s ease;
+}
+
+.signal-thread.is-online .signal-thread-line {
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.02), var(--pass), rgba(255, 255, 255, 0.02));
+}
+
+.signal-thread.is-offline .signal-thread-line {
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.02), var(--fail), rgba(255, 255, 255, 0.02));
+  animation: none;
+  opacity: 0.6;
+}
+
+@keyframes signalFlow {
+  0%, 100% { opacity: 0.35; transform: scaleY(0.7); }
+  50% { opacity: 1; transform: scaleY(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .signal-thread-line { animation: none; opacity: 0.6; }
 }
 
 .typewriter-stage {
@@ -84,19 +123,20 @@
   animation: introCaretBlink 0.75s step-end infinite;
 }
 
-/* Bottom Area: Server Status Pill & Entrance Gate */
+/* Bottom Area: Wait panel / status pill & entrance gate */
 .intro-bottom {
-  position: absolute;
-  bottom: max(20px, env(safe-area-inset-bottom, 20px));
-  left: 50%;
-  transform: translateX(-50%);
+  position: relative;
+  left: auto;
+  transform: none;
   width: calc(100% - 32px);
-  max-width: 680px;
+  max-width: 420px;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 14px;
   z-index: 10;
+  flex-shrink: 0;
 }
 
 /* Minimalist Connection Status Pill */
@@ -191,7 +231,7 @@
 
 /* Swipe Up / Enter Trigger */
 .swipe-gate-trigger {
-  display: flex;
+  display: none;
   flex-direction: column;
   align-items: center;
   gap: 8px;
@@ -212,6 +252,7 @@
 }
 
 .swipe-gate-trigger.is-ready {
+  display: flex;
   opacity: 1;
   transform: translateY(0);
   pointer-events: auto;

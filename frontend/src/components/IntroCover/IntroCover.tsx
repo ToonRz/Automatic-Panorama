@@ -116,6 +116,7 @@ export function IntroCover({ backendStatus, onDismiss }: IntroCoverProps) {
 
     return () => {
       cancelled = true;
+      isTypingRef.current = false;
     };
   }, []);
 
@@ -212,9 +213,11 @@ export function IntroCover({ backendStatus, onDismiss }: IntroCoverProps) {
         </div>
       </main>
 
-      {/* Bottom Area: Server Status Pill & Swipe Up Gate */}
+      <div className={`signal-thread ${backendStatus === "online" ? "is-online" : backendStatus === "offline" ? "is-offline" : ""}`} aria-hidden="true">
+        <span className="signal-thread-line" />
+      </div>
+
       <footer className="intro-bottom">
-        {/* Minimalist Connection Status Pill */}
         {backendStatus === "online" ? (
           <div className="server-status-pill is-online">
             <span className="status-beacon">
@@ -222,7 +225,7 @@ export function IntroCover({ backendStatus, onDismiss }: IntroCoverProps) {
               <span className="beacon-dot" />
             </span>
             <span>
-              <strong className="status-badge">SERVER LIVE</strong> · Ready
+              <strong className="status-badge">SERVER LIVE</strong> · Ready to stitch
             </span>
           </div>
         ) : backendStatus === "offline" ? (
@@ -235,13 +238,13 @@ export function IntroCover({ backendStatus, onDismiss }: IntroCoverProps) {
             </span>
           </div>
         ) : (
-          <div className="server-status-pill is-waking">
+          <div className="server-status-pill is-waking" role="status" aria-live="polite">
             <span className="status-beacon">
               <span className="beacon-ring" />
               <span className="beacon-dot" />
             </span>
             <span>
-              <strong className="status-badge">STARTING BACKEND</strong> · Cold start ~{countdown}s
+              <strong className="status-badge">WAKING SERVER</strong> · ~{countdown}s
             </span>
           </div>
         )}

@@ -114,7 +114,8 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    padding: 0 clamp(16px, 4vw, 40px);
+    gap: clamp(20px, 4vh, 40px);
+    padding: 0 clamp(16px, 4vw, 40px) max(24px, env(safe-area-inset-bottom, 24px));
     will-change: transform;
     transition: transform 0.85s var(--ease-curtain);
     overflow: hidden;
@@ -166,11 +167,39 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    flex: 1;
+    flex: 0 1 auto;
     width: 100%;
     max-width: 100%;
     text-align: center;
     user-select: none;
+  }
+
+  /* Signal Thread: ties the headline to the connection panel below it,
+     so the wait state reads as one live composition instead of two
+     disconnected blocks separated by dead space. */
+  .signal-thread {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: clamp(20px, 3vh, 32px);
+    flex-shrink: 0;
+  }
+  .signal-thread-line {
+    width: 1.5px;
+    height: 100%;
+    background: linear-gradient(to bottom, rgba(255,255,255,0.02), var(--run), rgba(255,255,255,0.02));
+    animation: signalFlow 1.6s ease-in-out infinite;
+    transition: background 0.4s ease;
+  }
+  .signal-thread.is-online .signal-thread-line {
+    background: linear-gradient(to bottom, rgba(255,255,255,0.02), var(--pass), rgba(255,255,255,0.02));
+  }
+  @keyframes signalFlow {
+    0%, 100% { opacity: 0.35; transform: scaleY(0.7); }
+    50% { opacity: 1; transform: scaleY(1); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .signal-thread-line { animation: none; opacity: 0.6; }
   }
 
   .typewriter-stage {
@@ -217,19 +246,24 @@
     animation: caretBlink 0.75s step-end infinite;
   }
 
-  /* Bottom Area: Server Status Pill & Swipe Up Prompt */
+  /* Bottom Area: Wait panel / status pill & swipe-up prompt */
   .intro-bottom {
-    position: absolute;
-    bottom: max(20px, env(safe-area-inset-bottom, 20px));
-    left: 50%;
-    transform: translateX(-50%);
+    position: relative;
+    left: auto;
+    transform: none;
     width: calc(100% - 32px);
-    max-width: 680px;
+    max-width: 420px;
+    margin: 0 auto;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 14px;
     z-index: 10;
+    flex-shrink: 0;
+  }
+
+  .server-status-pill[hidden] {
+    display: none !important;
   }
 
   /* Status Pill (Render Cold-Start & Live State) */
@@ -308,7 +342,7 @@
 
   /* Swipe Up / Enter Trigger Button */
   .swipe-gate-trigger {
-    display: flex;
+    display: none;
     flex-direction: column;
     align-items: center;
     gap: 8px;
@@ -325,6 +359,7 @@
   }
 
   .swipe-gate-trigger.ready {
+    display: flex;
     opacity: 1;
     transform: translateY(0);
     pointer-events: auto;
@@ -640,20 +675,22 @@
     </div>
   </main>
 
-  <!-- Bottom: Connection Pill & Swipe Up Gate -->
+  <div id="signalThread" class="signal-thread" aria-hidden="true">
+    <span class="signal-thread-line"></span>
+  </div>
+
+  <!-- Bottom: One-line connection status, then enter gate -->
   <footer class="intro-bottom">
-    <!-- Server Status Pill -->
-    <div id="statusPill" class="server-status-pill is-waking">
+    <div id="statusPill" class="server-status-pill is-waking" role="status" aria-live="polite">
       <span class="status-beacon">
         <span class="beacon-ring"></span>
         <span class="beacon-dot"></span>
       </span>
       <span id="statusLabelText">
-        <span class="status-badge">WAKING UP SERVER</span> · Render cold start <span id="wakingTimer">~32s</span>
+        <span class="status-badge">WAKING SERVER</span> · ~<span id="wakingTimer">28</span>s
       </span>
     </div>
 
-    <!-- Swipe Up / Enter Trigger (Revealed once Live) -->
     <div id="swipeTrigger" class="swipe-gate-trigger" onclick="unlockAndEnter('click')">
       <div class="swipe-chevron-wrap">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -845,18 +882,19 @@
   let wakingCountdown = 28;
   let timerInterval = null;
 
+  const signalThread = document.getElementById('signalThread');
   const statusPill = document.getElementById('statusPill');
   const statusLabelText = document.getElementById('statusLabelText');
   const swipeTrigger = document.getElementById('swipeTrigger');
-  const wakingTimerEl = document.getElementById('wakingTimer');
   const introOverlay = document.getElementById('introOverlay');
   const appViewport = document.getElementById('appViewport');
   const btnWaking = document.getElementById('btnStateWaking');
   const btnLive = document.getElementById('btnStateLive');
 
   function updateCountdownText() {
-    if (wakingTimerEl) {
-      wakingTimerEl.textContent = `~${wakingCountdown}s`;
+    const el = document.getElementById('wakingTimer');
+    if (el) {
+      el.textContent = wakingCountdown;
     }
   }
 
@@ -882,21 +920,23 @@
       btnLive.classList.remove('active');
 
       statusPill.className = 'server-status-pill is-waking';
-      statusLabelText.innerHTML = `<span class="status-badge">WAKING UP SERVER</span> · Render cold start <span id="wakingTimer">~28s</span>`;
+      statusLabelText.innerHTML = `<span class="status-badge">WAKING SERVER</span> · ~<span id="wakingTimer">${wakingCountdown}</span>s`;
       swipeTrigger.classList.remove('ready');
+      signalThread.classList.remove('is-online');
 
       startWakingTicker();
-      showToast("Simulating Render Cold Start (Waking up…)");
+      showToast("Waiting: waking the stitcher backend (~30s)");
     } else {
       clearInterval(timerInterval);
       btnWaking.classList.remove('active');
       btnLive.classList.add('active');
 
       statusPill.className = 'server-status-pill is-online';
-      statusLabelText.innerHTML = `<span class="status-badge">SERVER LIVE</span> · Connected to Render backend`;
+      statusLabelText.innerHTML = `<span class="status-badge">SERVER LIVE</span> · Ready to stitch`;
       swipeTrigger.classList.add('ready');
+      signalThread.classList.add('is-online');
 
-      showToast("Server Live! Swipe up, scroll or click to enter");
+      showToast("Backend is awake. Swipe up, scroll or click to enter");
     }
   }
 
@@ -908,7 +948,7 @@
 
   function unlockAndEnter(triggerMethod) {
     if (currentState !== 'online') {
-      showToast("Waiting for backend connection before entering…");
+      showToast("Still waking the stitcher backend — enter unlocks when it’s live");
       return;
     }
     if (isCurtainDismissed) return;
@@ -975,9 +1015,7 @@
     if (isCurtainDismissed) return;
     // Don't trigger if clicking inside demo control bar
     if (e.target.closest('.demo-bar')) return;
-    if (currentState === 'online') {
-      unlockAndEnter('click-cover');
-    }
+    unlockAndEnter('click-cover');
   });
 
   function replayTypewriter() {
