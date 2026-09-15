@@ -1,5 +1,6 @@
 import type { ApiErrorDetail, StitchResponse } from "../../types";
 import { getPartialDiagnostics } from "../../utils/partialDiagnostics";
+import { FeatureSurvivalFunnel } from "./FeatureSurvivalFunnel";
 import { PairTable } from "./PairTable";
 import { PartialPairTable } from "./PartialPairTable";
 import { StageChart } from "./StageChart";
@@ -42,6 +43,8 @@ export function Diagnostics({ result, error = null, files = [] }: DiagnosticsPro
       </div>
 
       <SummaryCards diagnostics={diagnostics} mimeType={result?.image.mime_type} />
+
+      <FeatureSurvivalFunnel diagnostics={diagnostics} files={files} />
 
       <div className="diag-row">
         {partialPairs ? (

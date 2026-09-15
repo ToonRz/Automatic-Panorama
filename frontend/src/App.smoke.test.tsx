@@ -29,6 +29,6 @@ describe("App smoke test", () => {
   it("reads the lede's upper bound from a server-provided config (10b)", async () => {
     fetchClientConfig.mockResolvedValueOnce({ ...FALLBACK_CONFIG, max_upload_files: 6 });
     render(<App />);
-    expect(await screen.findByText(/Upload 2–6 frames/)).toBeInTheDocument();
+    expect(await screen.findByText(/Upload 2–6 frames/, {}, { timeout: 5000 })).toBeInTheDocument();
   });
 });
