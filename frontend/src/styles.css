@@ -2134,37 +2134,274 @@ tr.failed td {
   color: #4338ca;
 }
 
-@media (max-width: 960px) {
-  .funnel-col-headers {
-    display: none;
-  }
-  .funnel-svg {
-    display: none;
-  }
-  .funnel-stage {
-    flex-direction: column;
-    align-items: stretch;
-    min-height: 0;
-    gap: 20px;
-  }
-  .funnel-col {
-    max-width: none;
-    width: 100%;
-  }
-  .funnel-col.col-left,
-  .funnel-col.col-right {
-    align-items: stretch;
-  }
-  .funnel-pill {
-    width: 100%;
-    min-width: 0;
-    box-sizing: border-box;
-  }
-  .funnel-pill-name {
-    max-width: none;
-    flex: 1;
-    min-width: 0;
-  }
+/* ---------------------------------------------------------------------
+   Mobile funnel — a distinct vertical layout rendered below 960px width
+   (see the `isCompact` viewport check in FeatureSurvivalFunnel.tsx),
+   not a squeezed copy of the desktop Sankey. Same three category hues as
+   .funnel-bar.col-green/col-blue/col-purple above.
+   --------------------------------------------------------------------- */
+.mtrapezoid,
+.mframes,
+.moutcomes {
+  max-width: 560px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.mtrapezoid {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  margin-top: 4px;
+}
+.mtrapezoid-stage {
+  width: 100%;
+  border-radius: 10px;
+  padding: 11px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 1px solid var(--border-strong);
+}
+.mtrapezoid-stage .lab {
+  min-width: 0;
+}
+.mtrapezoid-stage .name {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text);
+}
+.mtrapezoid-stage .sub {
+  display: block;
+  margin-top: 1px;
+  font-size: 11px;
+  color: var(--faint);
+}
+.mtrapezoid-stage .num {
+  flex: none;
+  font: 600 17px var(--mono);
+  letter-spacing: -0.02em;
+}
+.mtrapezoid-stage.s1 {
+  width: 100%;
+  background: color-mix(in srgb, #10b981 14%, var(--surface-2));
+  border-color: color-mix(in srgb, #10b981 35%, transparent);
+}
+.mtrapezoid-stage.s1 .num {
+  color: #10b981;
+}
+.mtrapezoid-stage.s2 {
+  width: 84%;
+  background: color-mix(in srgb, #0284c7 15%, var(--surface-2));
+  border-color: color-mix(in srgb, #0284c7 38%, transparent);
+}
+.mtrapezoid-stage.s2 .num {
+  color: #38bdf8;
+}
+.mtrapezoid-stage.s3 {
+  width: 66%;
+  background: color-mix(in srgb, #6366f1 18%, var(--surface-2));
+  border-color: color-mix(in srgb, #6366f1 42%, transparent);
+}
+.mtrapezoid-stage.s3 .num {
+  color: #a5a8ff;
+}
+
+.mtrapezoid-conn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 5px 0;
+}
+.mtrapezoid-conn .line {
+  width: 1px;
+  height: 10px;
+  background: var(--border-strong);
+}
+.mtrapezoid-conn .chip {
+  font: 500 10.5px var(--mono);
+  color: var(--faint);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px 9px;
+  white-space: nowrap;
+}
+.mtrapezoid-conn .chip b {
+  color: var(--muted);
+  font-weight: 600;
+}
+
+.mtrapezoid-survival {
+  max-width: 560px;
+  margin: 12px auto 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  background: var(--accent-soft);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+}
+.mtrapezoid-survival b {
+  font: 700 15px var(--mono);
+  color: var(--accent);
+}
+
+/* frame list */
+.mframes {
+  margin-top: 18px;
+  border-top: 1px solid var(--border);
+  padding-top: 14px;
+}
+.mframes-head {
+  width: 100%;
+  background: none;
+  border: 0;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: inherit;
+}
+.mframes-head .t {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.mframes-head .chev {
+  flex: none;
+  color: var(--faint);
+  transition: transform 0.18s ease;
+}
+.mframes.open .mframes-head .chev {
+  transform: rotate(180deg);
+}
+.mframes-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+  overflow: hidden;
+}
+.mframes:not(.open) .mframes-list {
+  display: none;
+}
+.mframe-row {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 9px 12px 10px;
+}
+.mframe-row .top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 7px;
+}
+.mframe-row .name {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font: 500 12.5px var(--mono);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.mframe-anchor {
+  flex: none;
+  font: 700 9.5px var(--mono);
+  color: #38bdf8;
+  background: color-mix(in srgb, #0284c7 16%, transparent);
+  border-radius: 4px;
+  padding: 1px 5px;
+  letter-spacing: 0.02em;
+}
+.mframe-row .count {
+  flex: none;
+  font: 600 13px var(--mono);
+}
+.mframe-track {
+  height: 5px;
+  border-radius: 3px;
+  background: var(--surface-3);
+  overflow: hidden;
+}
+.mframe-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: #10b981;
+}
+
+/* RANSAC outcome chips */
+.moutcomes {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 14px;
+}
+.mchip {
+  grid-column: span 2;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+.mchip.half {
+  grid-column: span 1;
+}
+.mchip .dot {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+}
+.mchip.pass .dot {
+  background: color-mix(in srgb, var(--pass) 18%, transparent);
+  color: var(--pass);
+}
+.mchip.anchor .dot {
+  background: color-mix(in srgb, #0284c7 20%, transparent);
+  color: #38bdf8;
+}
+.mchip.warn .dot {
+  background: color-mix(in srgb, var(--run) 20%, transparent);
+  color: var(--run);
+}
+.mchip .txt {
+  min-width: 0;
+  flex: 1;
+}
+.mchip .txt .l {
+  display: block;
+  font-size: 11px;
+  color: var(--faint);
+}
+.mchip .txt .v {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 600 13px var(--mono);
 }
 
 @media (max-width: 600px) {
@@ -2191,10 +2428,48 @@ tr.failed td {
     width: 100%;
     gap: 12px 18px;
   }
+
+  /* View as table becomes a bottom sheet instead of a centered dialog */
+  .funnel-modal-backdrop {
+    align-items: flex-end;
+  }
   .funnel-modal-content {
-    width: 94%;
-    max-height: 85vh;
-    padding: 18px 16px;
-    overflow-y: auto;
+    width: 100%;
+    max-width: none;
+    max-height: 82vh;
+    border-radius: 18px 18px 0 0;
+    padding: 14px 0 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .funnel-modal-content::before {
+    content: "";
+    display: block;
+    width: 36px;
+    height: 4px;
+    margin: 0 auto 10px;
+    border-radius: 3px;
+    background: var(--border-strong);
+  }
+  .funnel-modal-header {
+    flex: none;
+    padding: 0 18px 12px;
+  }
+  .funnel-modal-content .tablewrap {
+    overflow: auto;
+    padding-bottom: 14px;
+  }
+  .funnel-table th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+  .funnel-table th:first-child,
+  .funnel-table td:first-child {
+    position: sticky;
+    left: 0;
+    background: var(--surface);
+    box-shadow: 1px 0 0 var(--border);
   }
 }

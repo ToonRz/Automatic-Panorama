@@ -17,12 +17,41 @@ interface RibbonLink {
 
 const EMPTY_FILES: readonly { name: string }[] = [];
 
+/**
+ * Below this width the desktop Sankey (hover-driven, ribbons computed from
+ * a horizontal 3-column layout) gives way to the vertical trapezoid funnel
+ * — a distinct mobile layout, not a squeezed copy. Matches the 960px
+ * breakpoint used elsewhere for `.work`/`.viewport` in styles.css.
+ */
+const COMPACT_QUERY = "(max-width: 960px)";
+
+function useIsCompactViewport(): boolean {
+  const [isCompact, setIsCompact] = useState(() =>
+    typeof window !== "undefined" && typeof window.matchMedia === "function"
+      ? window.matchMedia(COMPACT_QUERY).matches
+      : false,
+  );
+
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
+    const mql = window.matchMedia(COMPACT_QUERY);
+    const handleChange = () => setIsCompact(mql.matches);
+    handleChange();
+    mql.addEventListener("change", handleChange);
+    return () => mql.removeEventListener("change", handleChange);
+  }, []);
+
+  return isCompact;
+}
+
 export function FeatureSurvivalFunnel({ diagnostics, files = EMPTY_FILES }: FeatureSurvivalFunnelProps) {
   const componentId = useId();
+  const isCompact = useIsCompactViewport();
   const [showTableModal, setShowTableModal] = useState(false);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const [hoveredLink, setHoveredLink] = useState<string | null>(null);
   const [tooltip, setTooltip] = useState<{ text: string; x: number; y: number } | null>(null);
+  const [frameListOpen, setFrameListOpen] = useState(true);
 
   const stageRef = useRef<HTMLDivElement>(null);
   const [ribbonPaths, setRibbonPaths] = useState<Array<{ id: string; d: string; color: string; label: string; fromId: string; toId: string }>>([]);
@@ -208,6 +237,12 @@ export function FeatureSurvivalFunnel({ diagnostics, files = EMPTY_FILES }: Feat
     setHoveredLink(null);
   };
 
+  const maxFrameKeypoints = Math.max(1, ...stats.frames.map((f) => f.count));
+  const discardedPct = stats.totalKeypoints > 0 ? (stats.totalDiscarded / stats.totalKeypoints) * 100 : 0;
+  const outlierPct = stats.totalRatioPassed > 0 ? (stats.totalOutliers / stats.totalRatioPassed) * 100 : 0;
+  const survivalPct = stats.totalKeypoints > 0 ? (stats.totalInliers / stats.totalKeypoints) * 100 : 0;
+  const anchorFrame = stats.frames.find((f) => f.isAnchor) ?? null;
+
   return (
     <div className="funnel-card" aria-label="Feature Survival Funnel">
       <div className="funnel-header">
@@ -222,7 +257,17 @@ export function FeatureSurvivalFunnel({ diagnostics, files = EMPTY_FILES }: Feat
             </span>
           </div>
           <div className="funnel-subtitle">
-            Left column counts keypoints extracted per frame; middle column counts match filtering; right column counts RANSAC consensus outcomes.
+            {isCompact ? (
+              diagnostics ? (
+                <>
+                  {stats.frames.length} frames → {stats.totalRatioPassed.toLocaleString()} matches → {stats.totalInliers.toLocaleString()} inliers survive RANSAC.
+                </>
+              ) : (
+                "Counts keypoints per frame, ratio-test matches, and RANSAC consensus outcomes."
+              )
+            ) : (
+              "Left column counts keypoints extracted per frame; middle column counts match filtering; right column counts RANSAC consensus outcomes."
+            )}
           </div>
         </div>
 
@@ -245,146 +290,260 @@ export function FeatureSurvivalFunnel({ diagnostics, files = EMPTY_FILES }: Feat
 
       {diagnostics ? (
         <>
-          {/* Column Titles */}
-          <div className="funnel-col-headers">
-            <div className="funnel-col-title">
-              <div className="funnel-bar col-green" />
-              Keypoints by frame <span className="funnel-unit">(points)</span>
-            </div>
-            <div className="funnel-col-title col-center">
-              <div className="funnel-bar col-blue" />
-              Matching filter outcome <span className="funnel-unit">(matches)</span>
-            </div>
-            <div className="funnel-col-title col-right">
-              <div className="funnel-bar col-purple" />
-              RANSAC alignment status <span className="funnel-unit">(consensus)</span>
-            </div>
-          </div>
-
-          {/* Flow Stage */}
-          <div className="funnel-stage" ref={stageRef}>
-            <svg className="funnel-svg" aria-hidden="true">
-              <defs>
-                <linearGradient id="funnel-grad-emerald-blue" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#10b981" stopOpacity="0.65" />
-                  <stop offset="100%" stopColor="#0284c7" stopOpacity="0.65" />
-                </linearGradient>
-                <linearGradient id="funnel-grad-blue-green" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#0284c7" stopOpacity="0.65" />
-                  <stop offset="100%" stopColor="#10b981" stopOpacity="0.65" />
-                </linearGradient>
-              </defs>
-
-              <g>
-                {ribbonPaths.map((ribbon) => {
-                  const isDimmed =
-                    (hoveredNode && !ribbon.fromId.includes(hoveredNode) && !ribbon.toId.includes(hoveredNode)) ||
-                    (hoveredLink && ribbon.id !== hoveredLink);
-                  const isHighlighted =
-                    (hoveredNode && (ribbon.fromId.includes(hoveredNode) || ribbon.toId.includes(hoveredNode))) ||
-                    (hoveredLink && ribbon.id === hoveredLink);
-
-                  return (
-                    <path
-                      key={ribbon.id}
-                      d={ribbon.d}
-                      fill={ribbon.color}
-                      className={`funnel-ribbon-path ${isDimmed ? "dimmed" : ""} ${isHighlighted ? "highlighted" : ""}`}
-                      onMouseEnter={(e) => {
-                        setHoveredLink(ribbon.id);
-                        handleMouseMove(e, ribbon.label);
-                      }}
-                      onMouseMove={(e) => handleMouseMove(e, ribbon.label)}
-                      onMouseLeave={handleMouseLeave}
-                    />
-                  );
-                })}
-              </g>
-            </svg>
-
-            {/* Col 1: Frames */}
-            <div className="funnel-col col-left">
-              {stats.frames.map((frame) => (
-                <div
-                  key={frame.index}
-                  id={`node-frame-${frame.index}`}
-                  className="funnel-pill"
-                  onMouseEnter={() => setHoveredNode(`node-frame-${frame.index}`)}
-                  onMouseLeave={handleMouseLeave}
-                >
-                  <span className="funnel-pill-name">
-                    {frame.fileName} {frame.isAnchor ? <b className="funnel-anchor-tag">(Anchor)</b> : null}
+          {isCompact ? (
+            <>
+              {/* Vertical trapezoid funnel — mobile-only layout, see docs/mockups */}
+              <div className="mtrapezoid">
+                <div className="mtrapezoid-stage s1">
+                  <div className="lab">
+                    <span className="name">Keypoints extracted</span>
+                    <span className="sub">
+                      {stats.frames.length} frames, {diagnostics.detector}
+                    </span>
+                  </div>
+                  <span className="num">{stats.totalKeypoints.toLocaleString()}</span>
+                </div>
+                <div className="mtrapezoid-conn">
+                  <span className="line" />
+                  <span className="chip">
+                    <b>−{stats.totalDiscarded.toLocaleString()}</b> discarded · {discardedPct.toFixed(1)}%
                   </span>
-                  <span className="funnel-pill-count">{frame.count.toLocaleString()}</span>
+                  <span className="line" />
                 </div>
-              ))}
-            </div>
+                <div className="mtrapezoid-stage s2">
+                  <div className="lab">
+                    <span className="name">Passed Lowe's ratio</span>
+                    <span className="sub">≤ 0.75 test</span>
+                  </div>
+                  <span className="num">{stats.totalRatioPassed.toLocaleString()}</span>
+                </div>
+                <div className="mtrapezoid-conn">
+                  <span className="line" />
+                  <span className="chip">
+                    <b>−{stats.totalOutliers.toLocaleString()}</b> outliers · {outlierPct.toFixed(1)}%
+                  </span>
+                  <span className="line" />
+                </div>
+                <div className="mtrapezoid-stage s3">
+                  <div className="lab">
+                    <span className="name">RANSAC inliers</span>
+                    <span className="sub">consensus set</span>
+                  </div>
+                  <span className="num">{stats.totalInliers.toLocaleString()}</span>
+                </div>
+              </div>
 
-            {/* Col 2: Filter Outcomes */}
-            <div className="funnel-col col-middle">
-              <div className="funnel-middle-node-wrap">
-                <span className="funnel-count-badge">{stats.totalRatioPassed.toLocaleString()}</span>
-                <div
-                  id="node-ratio-pass"
-                  className="funnel-pill"
-                  onMouseEnter={() => setHoveredNode("node-ratio-pass")}
-                  onMouseLeave={handleMouseLeave}
+              <div className="mtrapezoid-survival">
+                {stats.totalInliers.toLocaleString()} of {stats.totalKeypoints.toLocaleString()} keypoints survived ·{" "}
+                <b>{survivalPct.toFixed(1)}%</b>
+              </div>
+
+              <div className={`mframes ${frameListOpen ? "open" : ""}`}>
+                <button
+                  type="button"
+                  className="mframes-head"
+                  onClick={() => setFrameListOpen((open) => !open)}
+                  aria-expanded={frameListOpen}
                 >
-                  <span className="funnel-icon">↗</span>
-                  <span>Passed Lowe's Ratio (≤ 0.75)</span>
+                  <span className="t">Frames · {stats.frames.length}</span>
+                  <svg className="chev" width="12" height="8" viewBox="0 0 12 8" fill="none" aria-hidden="true">
+                    <path
+                      d="M1 1.5L6 6.5L11 1.5"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </button>
+                <div className="mframes-list">
+                  {stats.frames.map((frame) => (
+                    <div className="mframe-row" key={frame.index}>
+                      <div className="top">
+                        <span className="name">
+                          {frame.fileName} {frame.isAnchor ? <span className="mframe-anchor">ANCHOR</span> : null}
+                        </span>
+                        <span className="count">{frame.count.toLocaleString()}</span>
+                      </div>
+                      <div className="mframe-track">
+                        <div
+                          className="mframe-fill"
+                          style={{ width: `${Math.round((frame.count / maxFrameKeypoints) * 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
 
-              <div className="funnel-middle-node-wrap">
-                <span className="funnel-count-badge">{stats.totalDiscarded.toLocaleString()}</span>
-                <div
-                  id="node-discarded"
-                  className="funnel-pill"
-                  onMouseEnter={() => setHoveredNode("node-discarded")}
-                  onMouseLeave={handleMouseLeave}
-                >
-                  <span className="funnel-icon">↘</span>
-                  <span>Ambiguous / Discarded (&gt; 0.75)</span>
+              <div className="moutcomes">
+                <div className="mchip pass">
+                  <span className="dot">✓</span>
+                  <div className="txt">
+                    <span className="l">RANSAC inliers</span>
+                    <span className="v">{stats.totalInliers.toLocaleString()}</span>
+                  </div>
+                </div>
+                <div className="mchip half anchor">
+                  <span className="dot">⚓</span>
+                  <div className="txt">
+                    <span className="l">Anchor frame</span>
+                    <span className="v">{anchorFrame ? anchorFrame.fileName : "—"}</span>
+                  </div>
+                </div>
+                <div className="mchip half warn">
+                  <span className="dot">✕</span>
+                  <div className="txt">
+                    <span className="l">Outliers filtered</span>
+                    <span className="v">{stats.totalOutliers.toLocaleString()}</span>
+                  </div>
                 </div>
               </div>
-            </div>
-
-            {/* Col 3: RANSAC Outcome */}
-            <div className="funnel-col col-right">
-              <div
-                id="node-inliers"
-                className="funnel-pill"
-                onMouseEnter={() => setHoveredNode("node-inliers")}
-                onMouseLeave={handleMouseLeave}
-              >
-                <span className="funnel-status-circle green">✓</span>
-                <span>RANSAC Inliers</span>
-                <span className="funnel-pill-count">{stats.totalInliers.toLocaleString()}</span>
+            </>
+          ) : (
+            <>
+              {/* Column Titles */}
+              <div className="funnel-col-headers">
+                <div className="funnel-col-title">
+                  <div className="funnel-bar col-green" />
+                  Keypoints by frame <span className="funnel-unit">(points)</span>
+                </div>
+                <div className="funnel-col-title col-center">
+                  <div className="funnel-bar col-blue" />
+                  Matching filter outcome <span className="funnel-unit">(matches)</span>
+                </div>
+                <div className="funnel-col-title col-right">
+                  <div className="funnel-bar col-purple" />
+                  RANSAC alignment status <span className="funnel-unit">(consensus)</span>
+                </div>
               </div>
 
-              <div
-                id="node-anchor"
-                className="funnel-pill"
-                onMouseEnter={() => setHoveredNode("node-anchor")}
-                onMouseLeave={handleMouseLeave}
-              >
-                <span className="funnel-status-circle dark">⚓</span>
-                <span>Reference Anchor</span>
-                <span className="funnel-pill-count">1</span>
-              </div>
+              {/* Flow Stage */}
+              <div className="funnel-stage" ref={stageRef}>
+                <svg className="funnel-svg" aria-hidden="true">
+                  <defs>
+                    <linearGradient id="funnel-grad-emerald-blue" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#10b981" stopOpacity="0.65" />
+                      <stop offset="100%" stopColor="#0284c7" stopOpacity="0.65" />
+                    </linearGradient>
+                    <linearGradient id="funnel-grad-blue-green" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#0284c7" stopOpacity="0.65" />
+                      <stop offset="100%" stopColor="#10b981" stopOpacity="0.65" />
+                    </linearGradient>
+                  </defs>
 
-              <div
-                id="node-outliers"
-                className="funnel-pill"
-                onMouseEnter={() => setHoveredNode("node-outliers")}
-                onMouseLeave={handleMouseLeave}
-              >
-                <span className="funnel-status-circle orange">✕</span>
-                <span>Outliers Filtered</span>
-                <span className="funnel-pill-count">{stats.totalOutliers.toLocaleString()}</span>
+                  <g>
+                    {ribbonPaths.map((ribbon) => {
+                      const isDimmed =
+                        (hoveredNode && !ribbon.fromId.includes(hoveredNode) && !ribbon.toId.includes(hoveredNode)) ||
+                        (hoveredLink && ribbon.id !== hoveredLink);
+                      const isHighlighted =
+                        (hoveredNode && (ribbon.fromId.includes(hoveredNode) || ribbon.toId.includes(hoveredNode))) ||
+                        (hoveredLink && ribbon.id === hoveredLink);
+
+                      return (
+                        <path
+                          key={ribbon.id}
+                          d={ribbon.d}
+                          fill={ribbon.color}
+                          className={`funnel-ribbon-path ${isDimmed ? "dimmed" : ""} ${isHighlighted ? "highlighted" : ""}`}
+                          onMouseEnter={(e) => {
+                            setHoveredLink(ribbon.id);
+                            handleMouseMove(e, ribbon.label);
+                          }}
+                          onMouseMove={(e) => handleMouseMove(e, ribbon.label)}
+                          onMouseLeave={handleMouseLeave}
+                        />
+                      );
+                    })}
+                  </g>
+                </svg>
+
+                {/* Col 1: Frames */}
+                <div className="funnel-col col-left">
+                  {stats.frames.map((frame) => (
+                    <div
+                      key={frame.index}
+                      id={`node-frame-${frame.index}`}
+                      className="funnel-pill"
+                      onMouseEnter={() => setHoveredNode(`node-frame-${frame.index}`)}
+                      onMouseLeave={handleMouseLeave}
+                    >
+                      <span className="funnel-pill-name">
+                        {frame.fileName} {frame.isAnchor ? <b className="funnel-anchor-tag">(Anchor)</b> : null}
+                      </span>
+                      <span className="funnel-pill-count">{frame.count.toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Col 2: Filter Outcomes */}
+                <div className="funnel-col col-middle">
+                  <div className="funnel-middle-node-wrap">
+                    <span className="funnel-count-badge">{stats.totalRatioPassed.toLocaleString()}</span>
+                    <div
+                      id="node-ratio-pass"
+                      className="funnel-pill"
+                      onMouseEnter={() => setHoveredNode("node-ratio-pass")}
+                      onMouseLeave={handleMouseLeave}
+                    >
+                      <span className="funnel-icon">↗</span>
+                      <span>Passed Lowe's Ratio (≤ 0.75)</span>
+                    </div>
+                  </div>
+
+                  <div className="funnel-middle-node-wrap">
+                    <span className="funnel-count-badge">{stats.totalDiscarded.toLocaleString()}</span>
+                    <div
+                      id="node-discarded"
+                      className="funnel-pill"
+                      onMouseEnter={() => setHoveredNode("node-discarded")}
+                      onMouseLeave={handleMouseLeave}
+                    >
+                      <span className="funnel-icon">↘</span>
+                      <span>Ambiguous / Discarded (&gt; 0.75)</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Col 3: RANSAC Outcome */}
+                <div className="funnel-col col-right">
+                  <div
+                    id="node-inliers"
+                    className="funnel-pill"
+                    onMouseEnter={() => setHoveredNode("node-inliers")}
+                    onMouseLeave={handleMouseLeave}
+                  >
+                    <span className="funnel-status-circle green">✓</span>
+                    <span>RANSAC Inliers</span>
+                    <span className="funnel-pill-count">{stats.totalInliers.toLocaleString()}</span>
+                  </div>
+
+                  <div
+                    id="node-anchor"
+                    className="funnel-pill"
+                    onMouseEnter={() => setHoveredNode("node-anchor")}
+                    onMouseLeave={handleMouseLeave}
+                  >
+                    <span className="funnel-status-circle dark">⚓</span>
+                    <span>Reference Anchor</span>
+                    <span className="funnel-pill-count">1</span>
+                  </div>
+
+                  <div
+                    id="node-outliers"
+                    className="funnel-pill"
+                    onMouseEnter={() => setHoveredNode("node-outliers")}
+                    onMouseLeave={handleMouseLeave}
+                  >
+                    <span className="funnel-status-circle orange">✕</span>
+                    <span>Outliers Filtered</span>
+                    <span className="funnel-pill-count">{stats.totalOutliers.toLocaleString()}</span>
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
+            </>
+          )}
 
           {/* Bottom Diagnostic Metrics */}
           <div className="funnel-footer-metrics">
