@@ -7,6 +7,8 @@ import type { PreparedImage } from "../../utils/prepareImage";
 import { Dropzone } from "./Dropzone";
 import { FileList } from "./FileList";
 import { PipelineSettings } from "./PipelineSettings";
+import { ExampleGallery } from "../ExampleGallery/ExampleGallery";
+import "../ExampleGallery/ExampleGallery.css";
 
 export interface ControlRailProps {
   state: ScreenState;
@@ -157,6 +159,9 @@ export function ControlRail({
           highlightedIndices={highlightedIndices}
           onRemove={canClearOrRemove ? onFileRemoved : undefined}
         />
+        {showDropzone && (
+          <ExampleGallery onLoadSample={onFilesSelected} />
+        )}
       </div>
 
       <PanelHead index={2} title="Method" aside="Defaults from server" />
