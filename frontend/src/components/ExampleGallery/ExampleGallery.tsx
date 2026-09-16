@@ -45,17 +45,15 @@ const SAMPLE_DATASETS: SampleDataset[] = [
     category: "unsupported",
     description: "Random photos",
     tooltip: "Images must share overlapping visual features to match",
-    images: [],
-    disabled: true,
+    images: ["unrelated1.jpg", "unrelated2.jpg"],
   },
   {
-    id: "blank-sky",
+    id: "blank_sky",
     name: "Blank Sky/Texture",
     category: "unsupported",
     description: "Featureless areas",
     tooltip: "Requires distinct features for feature detection algorithms",
-    images: [],
-    disabled: true,
+    images: ["blank_sky1.jpg", "blank_sky2.jpg"],
   },
   {
     id: "repeating",
@@ -63,8 +61,7 @@ const SAMPLE_DATASETS: SampleDataset[] = [
     category: "unsupported",
     description: "Identical textures",
     tooltip: "Ambiguous matches cause alignment errors",
-    images: [],
-    disabled: true,
+    images: ["repeating1.jpg", "repeating2.jpg"],
   },
 ];
 
@@ -72,7 +69,7 @@ export function ExampleGallery({ onLoadSample }: ExampleGalleryProps) {
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
   const handleTrySample = async (dataset: SampleDataset) => {
-    if (dataset.disabled || loadingId) return;
+    if (loadingId) return;
 
     setLoadingId(dataset.id);
     try {
@@ -166,16 +163,28 @@ export function ExampleGallery({ onLoadSample }: ExampleGalleryProps) {
           {unsupportedSamples.map((dataset) => (
             <div
               key={dataset.id}
-              className="gallery-card disabled"
+              className="gallery-card"
             >
               <div className="gallery-card-content">
                 <div className="gallery-thumbnails">
-                  <div className="gallery-thumb-placeholder">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                      <rect x="3" y="3" width="18" height="18" rx="2" />
-                      <path d="M3 9h18M9 21V9" />
-                    </svg>
-                  </div>
+                  {dataset.images.length > 0 ? (
+                    dataset.images.map((img, idx) => (
+                      <div key={idx} className="gallery-thumb">
+                        <img
+                          src={`/sample_images/${dataset.id}/${img}`}
+                          alt=""
+                          loading="lazy"
+                        />
+                      </div>
+                    ))
+                  ) : (
+                    <div className="gallery-thumb-placeholder">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                        <rect x="3" y="3" width="18" height="18" rx="2" />
+                        <path d="M3 9h18M9 21V9" />
+                      </svg>
+                    </div>
+                  )}
                 </div>
                 <div className="gallery-info">
                   <strong>{dataset.name}</strong>
@@ -192,9 +201,10 @@ export function ExampleGallery({ onLoadSample }: ExampleGalleryProps) {
               <button
                 type="button"
                 className="btn-try-sample"
-                disabled
+                onClick={() => handleTrySample(dataset)}
+                disabled={loadingId === dataset.id}
               >
-                Not available
+                {loadingId === dataset.id ? "Loading…" : "Try this sample"}
               </button>
             </div>
           ))}
