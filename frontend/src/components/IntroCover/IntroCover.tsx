@@ -8,29 +8,16 @@ export interface IntroCoverProps {
 }
 
 const LINES = ["AUTOMATIC", "PANORAMA", "STITCHER"];
-const ESTIMATED_COLD_START_SECONDS = 28;
 
 export function IntroCover({ backendStatus, onDismiss }: IntroCoverProps) {
   const [isDismissed, setIsDismissed] = useState(false);
   const [isFullyClosed, setIsFullyClosed] = useState(false);
-  const [countdown, setCountdown] = useState(ESTIMATED_COLD_START_SECONDS);
 
   const lineRefs = useRef<(HTMLDivElement | null)[]>([]);
   const isTypingRef = useRef(false);
   const touchStartYRef = useRef<number | null>(null);
 
-  const isReadyToEnter = backendStatus === "online" || backendStatus === "offline";
-
-  // Simulate cold-start countdown while backend is waking or checking
-  useEffect(() => {
-    if (backendStatus !== "checking" && backendStatus !== "waking") return;
-
-    const interval = setInterval(() => {
-      setCountdown(prev => (prev > 1 ? prev - 1 : 1));
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [backendStatus]);
+  // Photo selection and preparation run locally; backend readiness must not gate entry.
 
   // Stepped typewriter animation (faithful to tokenme.limited algorithm)
   useEffect(() => {
@@ -122,11 +109,10 @@ export function IntroCover({ backendStatus, onDismiss }: IntroCoverProps) {
 
   const handleDismiss = useCallback(() => {
     if (isDismissed) return;
-    if (!isReadyToEnter) return;
 
     setIsDismissed(true);
     onDismiss?.();
-  }, [isDismissed, isReadyToEnter, onDismiss]);
+  }, [isDismissed, onDismiss]);
 
   // Touch handlers (Swipe Up for mobile)
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
@@ -149,7 +135,7 @@ export function IntroCover({ backendStatus, onDismiss }: IntroCoverProps) {
 
   // Global listeners for scroll wheel and keyboard entry
   useEffect(() => {
-    if (isDismissed || !isReadyToEnter) return;
+    if (isDismissed) return;
 
     function onWheel(e: WheelEvent) {
       if (e.deltaY > 15) {
@@ -171,7 +157,7 @@ export function IntroCover({ backendStatus, onDismiss }: IntroCoverProps) {
       window.removeEventListener("wheel", onWheel);
       window.removeEventListener("keydown", onKeyDown);
     };
-  }, [isDismissed, isReadyToEnter, handleDismiss]);
+  }, [isDismissed, handleDismiss]);
 
   // If transition finishes and is dismissed, remove from accessibility tree
   const handleTransitionEnd = useCallback((e: React.TransitionEvent<HTMLDivElement>) => {
@@ -192,7 +178,7 @@ export function IntroCover({ backendStatus, onDismiss }: IntroCoverProps) {
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
-      onClick={isReadyToEnter ? handleDismiss : undefined}
+      onClick={handleDismiss}
       onTransitionEnd={handleTransitionEnd}
     >
       {/* Center: Giant Typography Stage */}
@@ -240,7 +226,7 @@ export function IntroCover({ backendStatus, onDismiss }: IntroCoverProps) {
               <span className="beacon-dot" />
             </span>
             <span>
-              <strong className="status-badge">WAKING SERVER</strong> · ~{countdown}s
+              <strong className="status-badge">WAKING SERVER</strong> · Choose photos while we connect
             </span>
           </div>
         )}
@@ -248,12 +234,11 @@ export function IntroCover({ backendStatus, onDismiss }: IntroCoverProps) {
         {/* Swipe Up / Enter Trigger Button */}
         <button
           type="button"
-          className={`swipe-gate-trigger ${isReadyToEnter ? "is-ready" : ""}`}
+          className="swipe-gate-trigger is-ready"
           onClick={e => {
             e.stopPropagation();
             handleDismiss();
           }}
-          disabled={!isReadyToEnter}
           aria-label="Swipe up or click to enter application"
         >
           <div className="swipe-chevron-wrap" aria-hidden="true">

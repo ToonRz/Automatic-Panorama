@@ -1,5 +1,5 @@
 import { StrictMode } from "react";
-import { render, screen, fireEvent, act } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { IntroCover } from "./IntroCover";
@@ -12,12 +12,16 @@ describe("IntroCover", () => {
     expect(screen.getByText("STITCHER")).toBeInTheDocument();
   });
 
-  it("shows a waking status with countdown while the backend wakes", () => {
-    render(<IntroCover backendStatus="waking" />);
+  it.each(["checking", "waking"] as const)("allows entering immediately while %s", (status) => {
+    const onDismiss = vi.fn();
+    render(<IntroCover backendStatus={status} onDismiss={onDismiss} />);
     expect(screen.getByText(/WAKING SERVER/i)).toBeInTheDocument();
-    expect(screen.getByText(/~\d+s/)).toBeInTheDocument();
+    expect(screen.queryByText(/~\d+s/)).not.toBeInTheDocument();
+    expect(screen.getByText(/choose photos while/i)).toBeInTheDocument();
     const enterBtn = screen.getByRole("button", { name: /swipe up or click to enter/i });
-    expect(enterBtn).toBeDisabled();
+    expect(enterBtn).toBeEnabled();
+    fireEvent.click(enterBtn);
+    expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 
   it("displays server live and enables swipe up gate when online", async () => {
@@ -51,12 +55,12 @@ describe("IntroCover", () => {
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 
-  it("does not allow dismissing when waking", () => {
+  it("allows dismissing with the keyboard when waking", () => {
     const onDismiss = vi.fn();
     render(<IntroCover backendStatus="waking" onDismiss={onDismiss} />);
 
     fireEvent.keyDown(window, { code: "Space" });
-    expect(onDismiss).not.toHaveBeenCalled();
+    expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 
   it("keeps the typewriter animation loop alive through a StrictMode mount/cleanup/remount cycle", async () => {
