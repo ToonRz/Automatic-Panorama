@@ -11,7 +11,6 @@ interface SampleDataset {
   description: string;
   tooltip: string;
   images: string[];
-  disabled?: boolean;
 }
 
 const SAMPLE_DATASETS: SampleDataset[] = [
@@ -65,7 +64,11 @@ const SAMPLE_DATASETS: SampleDataset[] = [
   },
 ];
 
+type TabType = "supported" | "unsupported";
+
 export function ExampleGallery({ onLoadSample }: ExampleGalleryProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabType>("supported");
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
   const handleTrySample = async (dataset: SampleDataset) => {
@@ -90,56 +93,86 @@ export function ExampleGallery({ onLoadSample }: ExampleGalleryProps) {
     }
   };
 
-  const supportedSamples = SAMPLE_DATASETS.filter((d) => d.category === "supported");
-  const unsupportedSamples = SAMPLE_DATASETS.filter((d) => d.category === "unsupported");
+  const currentSamples = SAMPLE_DATASETS.filter((d) => d.category === activeTab);
 
   return (
     <div className="example-gallery">
-      <div className="gallery-section">
-        <div className="gallery-header">
-          <span className="gallery-badge gallery-badge-supported">✅ Recommended</span>
-          <h4>Supported Cases</h4>
+      <button
+        type="button"
+        className="gallery-toggle"
+        onClick={() => setIsExpanded(!isExpanded)}
+        aria-expanded={isExpanded}
+      >
+        <span className="gallery-toggle-text">💡 Sample Datasets & Examples</span>
+        <span className="gallery-toggle-hint">(Click to expand)</span>
+        <svg
+          className={`gallery-chevron ${isExpanded ? "is-expanded" : ""}`}
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
+          <path d="M6 9l6 6 6-6" />
+        </svg>
+      </button>
+
+      <div className={`gallery-content ${isExpanded ? "is-expanded" : ""}`}>
+        <div className="gallery-tabs">
+          <button
+            type="button"
+            className={`gallery-tab ${activeTab === "supported" ? "is-active" : ""}`}
+            onClick={() => setActiveTab("supported")}
+          >
+            ✅ Supported Cases
+          </button>
+          <button
+            type="button"
+            className={`gallery-tab ${activeTab === "unsupported" ? "is-active" : ""}`}
+            onClick={() => setActiveTab("unsupported")}
+          >
+            ❌ Common Pitfalls
+          </button>
         </div>
-        <div className="gallery-grid">
-          {supportedSamples.map((dataset) => (
-            <div
-              key={dataset.id}
-              className={`gallery-card ${dataset.disabled ? "disabled" : ""}`}
-            >
-              <div className="gallery-card-content">
-                <div className="gallery-thumbnails">
-                  {dataset.images.length > 0 ? (
-                    dataset.images.map((img, idx) => (
-                      <div key={idx} className="gallery-thumb">
-                        <img
-                          src={`/sample_images/${dataset.id}/${img}`}
-                          alt=""
-                          loading="lazy"
-                        />
+
+        <div className="gallery-scroll-area">
+          <div className="gallery-grid">
+            {currentSamples.map((dataset) => (
+              <div key={dataset.id} className="gallery-card">
+                <div className="gallery-card-content">
+                  <div className="gallery-thumbnails">
+                    {dataset.images.length > 0 ? (
+                      dataset.images.map((img, idx) => (
+                        <div key={idx} className="gallery-thumb">
+                          <img
+                            src={`/sample_images/${dataset.id}/${img}`}
+                            alt=""
+                            loading="lazy"
+                          />
+                        </div>
+                      ))
+                    ) : (
+                      <div className="gallery-thumb-placeholder">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                          <rect x="3" y="3" width="18" height="18" rx="2" />
+                          <path d="M3 9h18M9 21V9" />
+                        </svg>
                       </div>
-                    ))
-                  ) : (
-                    <div className="gallery-thumb-placeholder">
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                        <rect x="3" y="3" width="18" height="18" rx="2" />
-                        <path d="M3 9h18M9 21V9" />
+                    )}
+                  </div>
+                  <div className="gallery-info">
+                    <strong>{dataset.name}</strong>
+                    <small>{dataset.description}</small>
+                    <div className="gallery-tooltip" title={dataset.tooltip}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M12 16v-4M12 8h.01" />
                       </svg>
+                      <span>{dataset.tooltip}</span>
                     </div>
-                  )}
-                </div>
-                <div className="gallery-info">
-                  <strong>{dataset.name}</strong>
-                  <small>{dataset.description}</small>
-                  <div className="gallery-tooltip" title={dataset.tooltip}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <circle cx="12" cy="12" r="10" />
-                      <path d="M12 16v-4M12 8h.01" />
-                    </svg>
-                    <span>{dataset.tooltip}</span>
                   </div>
                 </div>
-              </div>
-              {!dataset.disabled && (
                 <button
                   type="button"
                   className="btn-try-sample"
@@ -148,66 +181,9 @@ export function ExampleGallery({ onLoadSample }: ExampleGalleryProps) {
                 >
                   {loadingId === dataset.id ? "Loading…" : "Try this sample"}
                 </button>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="gallery-section">
-        <div className="gallery-header">
-          <span className="gallery-badge gallery-badge-unsupported">❌ Common Pitfalls</span>
-          <h4>Unsupported Cases</h4>
-        </div>
-        <div className="gallery-grid">
-          {unsupportedSamples.map((dataset) => (
-            <div
-              key={dataset.id}
-              className="gallery-card"
-            >
-              <div className="gallery-card-content">
-                <div className="gallery-thumbnails">
-                  {dataset.images.length > 0 ? (
-                    dataset.images.map((img, idx) => (
-                      <div key={idx} className="gallery-thumb">
-                        <img
-                          src={`/sample_images/${dataset.id}/${img}`}
-                          alt=""
-                          loading="lazy"
-                        />
-                      </div>
-                    ))
-                  ) : (
-                    <div className="gallery-thumb-placeholder">
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                        <rect x="3" y="3" width="18" height="18" rx="2" />
-                        <path d="M3 9h18M9 21V9" />
-                      </svg>
-                    </div>
-                  )}
-                </div>
-                <div className="gallery-info">
-                  <strong>{dataset.name}</strong>
-                  <small>{dataset.description}</small>
-                  <div className="gallery-tooltip" title={dataset.tooltip}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <circle cx="12" cy="12" r="10" />
-                      <path d="M12 16v-4M12 8h.01" />
-                    </svg>
-                    <span>{dataset.tooltip}</span>
-                  </div>
-                </div>
               </div>
-              <button
-                type="button"
-                className="btn-try-sample"
-                onClick={() => handleTrySample(dataset)}
-                disabled={loadingId === dataset.id}
-              >
-                {loadingId === dataset.id ? "Loading…" : "Try this sample"}
-              </button>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </div>
