@@ -123,6 +123,7 @@ export default function App() {
             onSubmit={run.submit}
             onCancel={run.cancel}
             cancelledNote={run.cancelledNote}
+            onReset={run.reset}
           />
           <OutputCanvas
             state={run.state}
@@ -135,6 +136,7 @@ export default function App() {
             detector={run.detector}
             ratioThreshold={run.ratioThreshold}
             ransacThreshold={run.ransacThreshold}
+            onReset={run.reset}
           />
         </div>
 

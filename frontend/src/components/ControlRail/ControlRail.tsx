@@ -30,6 +30,7 @@ export interface ControlRailProps {
   onCancel: () => void;
   cancelledNote: string | null;
   hasPreflightErrors: boolean;
+  onReset?: () => void;
 }
 
 interface PrimaryButtonSpec {
@@ -93,10 +94,12 @@ export function ControlRail({
   onCancel,
   cancelledNote,
   hasPreflightErrors,
+  onReset,
 }: ControlRailProps) {
   const primary = primaryButtonSpec(state, detector, hasPreflightErrors, busySecondsLeft);
   const showDropzone =
     state === "empty" || state === "preparing" || state === "ready" || state === "failed";
+  const canClearOrRemove = state !== "working" && state !== "preparing";
   const settingsDisabled = state === "working" || state === "preparing";
   const highlightedIndices =
     state === "failed" ? framesNamedByError(error?.detail) : new Set<number>();
@@ -118,9 +121,21 @@ export function ControlRail({
         index={1}
         title="Source frames"
         aside={
-          <span className="mono">
-            <b>{files.length}</b> / {config.max_upload_files}
-          </span>
+          <div className="head-aside-group">
+            {files.length > 0 && canClearOrRemove && onReset && (
+              <button
+                type="button"
+                className="btn-clear-all"
+                onClick={onReset}
+                title="Clear all images"
+              >
+                Clear all
+              </button>
+            )}
+            <span className="mono">
+              <b>{files.length}</b> / {config.max_upload_files}
+            </span>
+          </div>
         }
       />
       <div className="section">
@@ -140,7 +155,7 @@ export function ControlRail({
           totalError={totalError}
           totalBytes={totalBytes}
           highlightedIndices={highlightedIndices}
-          onRemove={showDropzone ? onFileRemoved : undefined}
+          onRemove={canClearOrRemove ? onFileRemoved : undefined}
         />
       </div>
 
@@ -161,6 +176,15 @@ export function ControlRail({
         <button className={primary.ghost ? "cta ghost" : "cta"} type="submit" disabled={primary.disabled}>
           {primary.label}
         </button>
+        {state === "complete" && onReset && (
+          <button
+            type="button"
+            className="cancel"
+            onClick={onReset}
+          >
+            + Start new panorama
+          </button>
+        )}
         {state === "working" && (
           <button type="button" className="cancel" onClick={onCancel}>
             Cancel

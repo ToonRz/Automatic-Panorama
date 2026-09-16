@@ -150,5 +150,23 @@ describe("OutputCanvas", () => {
 
       clickSpy.mockRestore();
     });
+
+    it("renders the New panorama button and calls onReset on click", async () => {
+      const user = userEvent.setup();
+      const onReset = vi.fn();
+      render(
+        <OutputCanvas
+          {...baseProps}
+          state="complete"
+          result={successWithOverlayFixture}
+          onReset={onReset}
+        />,
+      );
+
+      const resetBtn = screen.getByRole("button", { name: /new panorama/i });
+      expect(resetBtn).toBeInTheDocument();
+      await user.click(resetBtn);
+      expect(onReset).toHaveBeenCalledTimes(1);
+    });
   });
 });

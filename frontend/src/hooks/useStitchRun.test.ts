@@ -427,4 +427,17 @@ describe("useStitchRun addFiles / removeFile", () => {
       "c.jpg",
     ]);
   });
+
+  it("resets all files, results, and returns to empty state", async () => {
+    const { result } = renderHook(() => useStitchRun(FALLBACK_CONFIG, prepare));
+    act(() => result.current.addFiles([fakeFile("a.jpg"), fakeFile("b.jpg")]));
+    await settle(result);
+    expect(result.current.state).toBe("ready");
+    expect(result.current.files).toHaveLength(2);
+
+    act(() => result.current.reset());
+    expect(result.current.state).toBe("empty");
+    expect(result.current.files).toHaveLength(0);
+    expect(result.current.result).toBeNull();
+  });
 });

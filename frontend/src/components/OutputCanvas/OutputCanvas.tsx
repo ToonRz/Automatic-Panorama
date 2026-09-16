@@ -21,6 +21,7 @@ export interface OutputCanvasProps {
   detector: Detector;
   ratioThreshold: number;
   ransacThreshold: number;
+  onReset?: () => void;
 }
 
 const TITLE_BY_STATE: Partial<Record<ScreenState, string>> = {
@@ -58,6 +59,7 @@ export function OutputCanvas({
   detector,
   ratioThreshold,
   ransacThreshold,
+  onReset,
 }: OutputCanvasProps) {
   const [overlayOn, setOverlayOn] = useState(true);
   const [workingStageIndex, setWorkingStageIndex] = useState(0);
@@ -184,6 +186,27 @@ export function OutputCanvas({
                 {result.image.width}×{result.image.height}
               </span>
             </button>
+            {onReset && (
+              <button
+                className="tool"
+                type="button"
+                onClick={onReset}
+                title="Start a new panorama"
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  aria-hidden="true"
+                >
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+                <span>New panorama</span>
+              </button>
+            )}
           </div>
         )}
       </PanelHead>
