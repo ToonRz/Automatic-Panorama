@@ -159,9 +159,6 @@ export function ControlRail({
           highlightedIndices={highlightedIndices}
           onRemove={canClearOrRemove ? onFileRemoved : undefined}
         />
-        {showDropzone && (
-          <ExampleGallery onLoadSample={onFilesSelected} />
-        )}
       </div>
 
       <PanelHead index={2} title="Method" aside="Defaults from server" />
@@ -204,6 +201,15 @@ export function ControlRail({
           </div>
         )}
       </div>
+
+      {showDropzone && (
+        <>
+          <PanelHead index={3} title="Example Gallery" aside="Sample datasets" />
+          <div className="section">
+            <ExampleGallery onLoadSample={onFilesSelected} />
+          </div>
+        </>
+      )}
     </form>
   );
 }
