@@ -1807,7 +1807,7 @@ tr.failed td {
 
 .funnel-col-headers {
   display: grid;
-  grid-template-columns: 260px 1fr 280px;
+  grid-template-columns: 280px 1fr 280px;
   margin-bottom: 12px;
   padding: 0 8px;
 }
@@ -1891,7 +1891,7 @@ tr.failed td {
 
 .funnel-col.col-left {
   align-items: flex-start;
-  max-width: 200px;
+  max-width: 280px;
 }
 
 .funnel-col.col-middle {
@@ -1928,7 +1928,15 @@ tr.failed td {
 }
 
 .funnel-pill-name {
-  max-width: 130px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.funnel-filename {
+  max-width: 160px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

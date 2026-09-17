@@ -470,7 +470,8 @@ export function FeatureSurvivalFunnel({ diagnostics, files = EMPTY_FILES }: Feat
                       onMouseLeave={handleMouseLeave}
                     >
                       <span className="funnel-pill-name">
-                        {frame.fileName} {frame.isAnchor ? <b className="funnel-anchor-tag">(Anchor)</b> : null}
+                        <span className="funnel-filename" title={frame.fileName}>{frame.fileName}</span>
+                        {frame.isAnchor ? <b className="funnel-anchor-tag">(Anchor)</b> : null}
                       </span>
                       <span className="funnel-pill-count">{frame.count.toLocaleString()}</span>
                     </div>
