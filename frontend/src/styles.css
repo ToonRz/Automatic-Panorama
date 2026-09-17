@@ -2114,7 +2114,9 @@ tr.failed td {
   line-height: 1;
 }
 
-.tablewrap {
+/* Scoped to the modal: the bare .tablewrap is shared with PairTable and
+   PartialPairTable, which already sit inside a bordered .panel. */
+.funnel-modal-content .tablewrap {
   overflow-y: auto;
   flex: 1;
   min-height: 0;
@@ -2122,21 +2124,21 @@ tr.failed td {
   border: 1px solid var(--border);
 }
 
-.tablewrap::-webkit-scrollbar {
+.funnel-modal-content .tablewrap::-webkit-scrollbar {
   width: 8px;
 }
 
-.tablewrap::-webkit-scrollbar-track {
+.funnel-modal-content .tablewrap::-webkit-scrollbar-track {
   background: var(--surface-2);
   border-radius: 4px;
 }
 
-.tablewrap::-webkit-scrollbar-thumb {
+.funnel-modal-content .tablewrap::-webkit-scrollbar-thumb {
   background: var(--border-strong);
   border-radius: 4px;
 }
 
-.tablewrap::-webkit-scrollbar-thumb:hover {
+.funnel-modal-content .tablewrap::-webkit-scrollbar-thumb:hover {
   background: var(--muted);
 }
 

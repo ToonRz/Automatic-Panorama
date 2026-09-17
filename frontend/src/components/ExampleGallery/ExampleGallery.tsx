@@ -70,24 +70,38 @@ export function ExampleGallery({ onLoadSample }: ExampleGalleryProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>("supported");
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   const handleTrySample = async (dataset: SampleDataset) => {
     if (loadingId) return;
 
     setLoadingId(dataset.id);
+    setLoadError(null);
     try {
       const files: File[] = [];
-      
+
       for (const imageName of dataset.images) {
-        const response = await fetch(`/sample_images/${dataset.id}/${imageName}`);
+        const path = `/sample_images/${dataset.id}/${imageName}`;
+        const response = await fetch(path);
+        // A missing asset resolves to the SPA's HTML fallback, so an unchecked
+        // blob() would hand the pipeline a text/html file named *.jpg and fail
+        // later with an unrelated decode error.
+        if (!response.ok) {
+          throw new Error(`${path} returned ${response.status}`);
+        }
         const blob = await response.blob();
-        const file = new File([blob], imageName, { type: blob.type });
-        files.push(file);
+        if (!blob.type.startsWith("image/")) {
+          throw new Error(`${path} is not an image (${blob.type || "unknown type"})`);
+        }
+        files.push(new File([blob], imageName, { type: blob.type }));
       }
-      
+
       onLoadSample(files);
     } catch (error) {
       console.error("Failed to load sample images:", error);
+      setLoadError(
+        `Could not load the "${dataset.name}" sample. Check your connection and try again.`,
+      );
     } finally {
       setLoadingId(null);
     }
@@ -185,6 +199,12 @@ export function ExampleGallery({ onLoadSample }: ExampleGalleryProps) {
             ))}
           </div>
         </div>
+
+        {loadError && (
+          <p className="gallery-error" role="alert">
+            {loadError}
+          </p>
+        )}
       </div>
     </div>
   );

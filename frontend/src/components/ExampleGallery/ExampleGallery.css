@@ -239,3 +239,14 @@
     grid-template-columns: 1fr;
   }
 }
+
+.gallery-error {
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  border-radius: var(--r-md);
+  border: 1px solid color-mix(in srgb, var(--fail) 30%, transparent);
+  background: color-mix(in srgb, var(--fail) 12%, transparent);
+  color: var(--fail);
+  font-size: 11.5px;
+  line-height: 1.4;
+}
