@@ -1728,9 +1728,9 @@ tr.failed td {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   border-bottom: 1px solid var(--border);
-  padding-bottom: 16px;
+  padding-bottom: 12px;
 }
 
 .funnel-title-group {
@@ -1807,8 +1807,8 @@ tr.failed td {
 
 .funnel-col-headers {
   display: grid;
-  grid-template-columns: 260px 1fr 280px;
-  margin-bottom: 18px;
+  grid-template-columns: 280px 1fr 280px;
+  margin-bottom: 12px;
   padding: 0 8px;
 }
 
@@ -1846,11 +1846,11 @@ tr.failed td {
 
 .funnel-stage {
   position: relative;
-  min-height: 340px;
+  max-height: 260px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 8px;
+  padding: 8px 8px;
 }
 
 .funnel-svg {
@@ -1864,14 +1864,14 @@ tr.failed td {
 }
 
 .funnel-ribbon-path {
-  fill-opacity: 0.65;
+  fill-opacity: 0.35;
   transition: fill-opacity 0.2s ease, filter 0.2s ease;
   cursor: pointer;
 }
 
 .funnel-ribbon-path:hover,
 .funnel-ribbon-path.highlighted {
-  fill-opacity: 0.95;
+  fill-opacity: 0.85;
   filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.15));
 }
 
@@ -1886,17 +1886,17 @@ tr.failed td {
   flex-direction: column;
   justify-content: space-around;
   height: 100%;
-  gap: 14px;
+  gap: 10px;
 }
 
 .funnel-col.col-left {
   align-items: flex-start;
-  max-width: 200px;
+  max-width: 280px;
 }
 
 .funnel-col.col-middle {
   align-items: center;
-  gap: 22px;
+  gap: 16px;
 }
 
 .funnel-col.col-right {
@@ -1928,7 +1928,15 @@ tr.failed td {
 }
 
 .funnel-pill-name {
-  max-width: 130px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.funnel-filename {
+  max-width: 160px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2074,8 +2082,12 @@ tr.failed td {
   padding: 22px 24px;
   width: 90%;
   max-width: 760px;
+  max-height: 70vh;
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15);
   border: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .funnel-modal-header {
@@ -2083,6 +2095,7 @@ tr.failed td {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 16px;
+  flex-shrink: 0;
 }
 
 .funnel-modal-header h4 {
@@ -2101,6 +2114,32 @@ tr.failed td {
   line-height: 1;
 }
 
+.tablewrap {
+  overflow-y: auto;
+  flex: 1;
+  min-height: 0;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.tablewrap::-webkit-scrollbar {
+  width: 8px;
+}
+
+.tablewrap::-webkit-scrollbar-track {
+  background: var(--surface-2);
+  border-radius: 4px;
+}
+
+.tablewrap::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 4px;
+}
+
+.tablewrap::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
 .funnel-table {
   width: 100%;
   border-collapse: collapse;
@@ -2114,11 +2153,21 @@ tr.failed td {
   color: var(--muted);
   border-bottom: 1px solid var(--border);
   text-align: left;
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
 .funnel-table th.r,
 .funnel-table td.r {
   text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-family: var(--mono);
+}
+
+.funnel-table th.c,
+.funnel-table td.c {
+  text-align: center;
 }
 
 .funnel-table td {
@@ -2140,18 +2189,24 @@ tr.failed td {
 .status-badge {
   font-size: 0.75rem;
   font-weight: 600;
-  padding: 2px 8px;
+  padding: 3px 10px;
   border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
 }
 
 .status-badge.aligned {
-  background: #dcfce7;
-  color: #15803d;
+  background: color-mix(in srgb, var(--pass) 15%, transparent);
+  color: var(--pass);
+  border: 1px solid color-mix(in srgb, var(--pass) 30%, transparent);
 }
 
 .status-badge.anchor {
-  background: #e0e7ff;
-  color: #4338ca;
+  background: color-mix(in srgb, var(--accent) 15%, transparent);
+  color: var(--accent);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
 }
 
 /* ---------------------------------------------------------------------
@@ -2490,6 +2545,57 @@ tr.failed td {
     position: sticky;
     left: 0;
     background: var(--surface);
-    box-shadow: 1px 0 0 var(--border);
+  }
+}
+
+@media (max-height: 700px) {
+  .funnel-card {
+    padding: 16px 20px;
+  }
+  .funnel-header {
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+  }
+  .funnel-col-headers {
+    margin-bottom: 8px;
+  }
+  .funnel-stage {
+    max-height: 200px;
+    padding: 6px 8px;
+  }
+  .funnel-col {
+    gap: 8px;
+  }
+  .funnel-col.col-middle {
+    gap: 12px;
+  }
+  .funnel-footer-metrics {
+    margin-top: 12px;
+    padding: 10px 14px;
+  }
+  .funnel-metrics-items {
+    gap: 8px 12px;
+  }
+  .funnel-metric {
+    font-size: 0.8rem;
+  }
+  .funnel-metric .m-val {
+    font-size: 0.85rem;
+  }
+}
+
+@media (max-height: 600px) {
+  .funnel-stage {
+    max-height: 160px;
+  }
+  .funnel-pill {
+    padding: 4px 10px;
+    font-size: 0.76rem;
+  }
+  .funnel-pill-count {
+    font-size: 0.72rem;
+  }
+  .funnel-count-badge {
+    font-size: 0.7rem;
   }
 }

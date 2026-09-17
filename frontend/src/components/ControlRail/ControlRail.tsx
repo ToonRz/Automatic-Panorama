@@ -7,6 +7,8 @@ import type { PreparedImage } from "../../utils/prepareImage";
 import { Dropzone } from "./Dropzone";
 import { FileList } from "./FileList";
 import { PipelineSettings } from "./PipelineSettings";
+import { ExampleGallery } from "../ExampleGallery/ExampleGallery";
+import "../ExampleGallery/ExampleGallery.css";
 
 export interface ControlRailProps {
   state: ScreenState;
@@ -199,6 +201,15 @@ export function ControlRail({
           </div>
         )}
       </div>
+
+      {showDropzone && (
+        <>
+          <PanelHead index={3} title="Example Gallery" aside="Sample datasets" />
+          <div className="section">
+            <ExampleGallery onLoadSample={onFilesSelected} />
+          </div>
+        </>
+      )}
     </form>
   );
 }

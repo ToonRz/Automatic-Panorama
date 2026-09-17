@@ -1,0 +1,241 @@
+.example-gallery {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+/* Toggle Button */
+.gallery-toggle {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 0;
+  background: var(--surface-2);
+  border-radius: var(--r-md);
+  cursor: pointer;
+  transition: background 150ms ease;
+}
+
+.gallery-toggle:hover {
+  background: var(--surface-3);
+}
+
+.gallery-toggle-text {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.gallery-toggle-hint {
+  font-size: 11.5px;
+  color: var(--faint);
+}
+
+.gallery-chevron {
+  flex: none;
+  transition: transform 200ms ease;
+  color: var(--muted);
+}
+
+.gallery-chevron.is-expanded {
+  transform: rotate(180deg);
+}
+
+/* Collapsible Content */
+.gallery-content {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 300ms ease-out, opacity 200ms ease;
+  opacity: 0;
+}
+
+.gallery-content.is-expanded {
+  max-height: 500px;
+  opacity: 1;
+  transition: max-height 400ms ease-in, opacity 200ms ease;
+}
+
+/* Tab Bar */
+.gallery-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  margin-top: 12px;
+  border-radius: var(--r-md);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+.gallery-tab {
+  flex: 1;
+  padding: 8px 12px;
+  border: 0;
+  background: transparent;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 150ms ease;
+}
+
+.gallery-tab:hover {
+  color: var(--text);
+}
+
+.gallery-tab.is-active {
+  background: var(--surface-3);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+
+/* Scrollable Area */
+.gallery-scroll-area {
+  max-height: 320px;
+  overflow-y: auto;
+  margin-top: 12px;
+  padding-right: 4px;
+}
+
+.gallery-scroll-area::-webkit-scrollbar {
+  width: 6px;
+}
+
+.gallery-scroll-area::-webkit-scrollbar-track {
+  background: var(--surface-2);
+  border-radius: 3px;
+}
+
+.gallery-scroll-area::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 3px;
+}
+
+.gallery-scroll-area::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
+}
+
+/* Gallery Grid */
+.gallery-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 10px;
+}
+
+.gallery-card {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  overflow: hidden;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.gallery-card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 4px 12px -4px color-mix(in srgb, var(--accent) 20%, transparent);
+}
+
+.gallery-card-content {
+  padding: 12px;
+}
+
+.gallery-thumbnails {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 10px;
+  min-height: 40px;
+}
+
+.gallery-thumb {
+  flex: 1;
+  height: 40px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+}
+
+.gallery-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.gallery-thumb-placeholder {
+  flex: 1;
+  height: 40px;
+  border-radius: 4px;
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  display: grid;
+  place-items: center;
+  color: var(--faint);
+}
+
+.gallery-info {
+  margin-bottom: 10px;
+}
+
+.gallery-info strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 2px;
+}
+
+.gallery-info small {
+  display: block;
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.gallery-tooltip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--faint);
+  line-height: 1.4;
+}
+
+.gallery-tooltip svg {
+  flex: none;
+  color: var(--accent);
+}
+
+.btn-try-sample {
+  width: 100%;
+  height: 32px;
+  border-radius: 0 0 var(--r-md) var(--r-md);
+  border: 0;
+  border-top: 1px solid var(--border);
+  background: var(--surface-3);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 150ms ease, color 150ms ease;
+}
+
+.btn-try-sample:hover:not(:disabled) {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.btn-try-sample:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  color: var(--faint);
+}
+
+@media (max-width: 600px) {
+  .gallery-grid {
+    grid-template-columns: 1fr;
+  }
+}
