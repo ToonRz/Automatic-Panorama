@@ -4,9 +4,8 @@ Generate synthetic sample images for unsupported panorama cases.
 Uses PIL/Pillow to create images that demonstrate common pitfalls.
 """
 
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw
 import os
-import sys
 
 def ensure_dir(path):
     """Ensure directory exists."""
@@ -124,7 +123,8 @@ def generate_repeating_pattern_images(output_dir):
     print(f"Generated: {output_dir}/repeating2.jpg")
 
 def main():
-    base_dir = '/Users/patdaa/PJ-tempo/Automatic-Panorama/frontend/public/sample_images'
+    repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    base_dir = os.path.join(repo_root, 'frontend', 'public', 'sample_images')
     
     print("Generating unsupported sample images...")
     
