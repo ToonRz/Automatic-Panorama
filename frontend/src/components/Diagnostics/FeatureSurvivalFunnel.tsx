@@ -609,7 +609,7 @@ export function FeatureSurvivalFunnel({ diagnostics, files = EMPTY_FILES }: Feat
                       <th className="r">Inliers</th>
                       <th className="r">Inlier Ratio</th>
                       <th className="r">Reproj. Error</th>
-                      <th>Status</th>
+                      <th className="c">Status</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -634,7 +634,7 @@ export function FeatureSurvivalFunnel({ diagnostics, files = EMPTY_FILES }: Feat
                           <td className="r">{inlierCount.toLocaleString()}</td>
                           <td className="r">{inlierRatio}</td>
                           <td className="r">{reproj}</td>
-                          <td>
+                          <td className="c">
                             {frame.isAnchor ? (
                               <span className="status-badge anchor">Anchor Frame</span>
                             ) : (
