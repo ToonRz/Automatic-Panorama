@@ -188,7 +188,7 @@ export function OutputCanvas({
             </button>
             {onReset && (
               <button
-                className="tool"
+                className="tool secondary-tool"
                 type="button"
                 onClick={onReset}
                 title="Start a new panorama"

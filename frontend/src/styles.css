@@ -1,8 +1,3 @@
-/* ============================================================================
-   TOKENS AND BASE — docs/ui-spec.md section 2
-   Self-hosted, latin-subset only. Licences: public/fonts/licenses/*-OFL.txt
-   ============================================================================ */
-
 @font-face {
   font-family: "Geist";
   font-style: normal;
@@ -24,10 +19,8 @@
 }
 
 :root {
-  /* docs/ui-spec.md section 2.1. Dark-committed; no light-theme tokens exist.
-     Colour rule is absolute: --pass/--run/--fail signal status only, never
-     decoration; --accent is the only interactive colour. */
   --bg: #0a0a0b;
+  --bg-2: #101827;
   --surface: #121214;
   --surface-2: #17171a;
   --surface-3: #1e1e22;
@@ -40,6 +33,7 @@
   --muted: #a1a1aa;
   --faint: #85858e;
   --accent: #8e8cff;
+  --accent-2: #7dd3fc;
   --accent-ink: #0b0b12;
   --accent-soft: rgba(142, 140, 255, 0.14);
   --pass: #3ddc97;
@@ -107,9 +101,6 @@ button {
   border: 0;
 }
 
-/* docs/ui-spec.md section 2.3: reduced motion stops every transition, not
-   only the three working-state cues (each also has its own scoped rule so
-   an infinite animation's current frame doesn't visibly "jump" first). */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -120,18 +111,17 @@ button {
   }
 }
 
-/* ============================================================================
-   SHELL — docs/ui-spec.md section 3 (top bar, page head, workspace frame,
-   shared panel primitive)
-   ============================================================================ */
-
 .shell {
   max-width: 1520px;
   margin: 0 auto;
   padding: 28px 32px 96px;
 }
 
-/* ---------------- Top bar ---------------- */
+.app-studio-wrapper {
+  position: relative;
+  min-height: 100vh;
+}
+
 
 .topbar {
   position: sticky;
@@ -196,9 +186,9 @@ button {
   gap: 8px;
   padding: 0 12px 0 10px;
   height: 30px;
-  border: 1px solid var(--border-strong);
+  border: 1px solid rgba(99, 102, 241, 0.12);
   border-radius: 999px;
-  background: var(--surface);
+  background: rgba(255, 255, 255, 0.55);
   font-family: var(--mono);
   font-size: 12.5px;
   color: var(--muted);
@@ -224,30 +214,29 @@ button {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--fail) 22%, transparent);
 }
 
-/* ---------------- Page head ---------------- */
 
 .pagehead {
   display: flex;
   align-items: end;
   justify-content: space-between;
   gap: 24px;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
+  padding: 16px 18px 0;
 }
 .pagehead h1 {
   margin: 0;
-  font-size: 26px;
-  line-height: 1.15;
-  font-weight: 600;
-  letter-spacing: -0.025em;
+  font-size: clamp(26px, 2vw, 36px);
+  line-height: 1.1;
+  font-weight: 700;
+  letter-spacing: -0.04em;
 }
 .pagehead p {
-  margin: 6px 0 0;
+  margin: 8px 0 0;
   color: var(--muted);
   font-size: 14px;
   max-width: 62ch;
 }
 
-/* ---------------- Workspace ---------------- */
 
 .work {
   display: grid;
@@ -256,13 +245,15 @@ button {
   align-items: stretch;
 }
 
-/* Shared panel primitive, used by the rail, the output stage, and diagnostics. */
 .panel {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--r-lg);
+  background: linear-gradient(180deg, rgba(18, 18, 20, 0.96), rgba(12, 12, 14, 0.96));
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 18px;
   min-width: 0;
   padding: clamp(18px, 2.2vw, 28px);
+  box-shadow:
+    0 12px 30px -18px rgba(0, 0, 0, 0.9),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 .panel-head {
   display: flex;
@@ -270,7 +261,7 @@ button {
   gap: 12px;
   padding: 14px 18px;
   min-height: 56px;
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid rgba(99, 102, 241, 0.08);
   margin: calc(-1 * clamp(18px, 2.2vw, 28px)) calc(-1 * clamp(18px, 2.2vw, 28px)) 20px;
 }
 .panel-head h2 {
@@ -337,9 +328,6 @@ button {
   flex-direction: column;
 }
 
-/* ---------------- dev-only state switcher ---------------- */
-/* docs/ui-spec.md section 3: a floating bar at the bottom of the viewport,
-   never part of a production build (section 10 / A12). */
 .mockbar {
   position: fixed;
   left: 50%;
@@ -386,7 +374,7 @@ button {
   box-shadow: inset 0 0 0 1px var(--border-strong);
 }
 
-/* ---------------- Responsive (docs/ui-spec.md section 3) ---------------- */
+
 
 @media (max-width: 1180px) {
   .crumb {
@@ -426,9 +414,7 @@ button {
   }
 }
 
-/* ============================================================================
-   RAIL — docs/ui-spec.md section 3.1 (control rail)
-   ============================================================================ */
+
 
 .panel.rail {
   padding: 0;
@@ -457,24 +443,28 @@ button {
   color: var(--muted);
 }
 
-/* dropzone */
+
 .drop {
   display: flex;
   align-items: center;
   gap: 14px;
-  border: 1px dashed var(--border-strong);
-  border-radius: var(--r-md);
-  background: var(--surface-2);
+  border: 1px dashed rgba(125, 211, 252, 0.38);
+  border-radius: 12px;
+  background: linear-gradient(180deg, rgba(125, 211, 252, 0.04), rgba(139, 92, 246, 0.08));
   padding: 14px;
   cursor: pointer;
   transition:
     border-color 150ms ease,
-    background 150ms ease;
+    background 150ms ease,
+    transform 120ms ease,
+    box-shadow 150ms ease;
 }
 .drop:hover,
 .drop.drag-active {
   border-color: var(--accent);
-  background: var(--accent-soft);
+  background: linear-gradient(180deg, rgba(142, 140, 255, 0.12), rgba(142, 140, 255, 0.04));
+  transform: translateY(-1px);
+  box-shadow: 0 12px 24px -18px rgba(142, 140, 255, 0.9);
 }
 .drop input {
   position: absolute;
@@ -530,7 +520,7 @@ button {
   margin: 4px 0 0;
 }
 
-/* file list */
+
 .files {
   list-style: none;
   margin: 10px 0 0;
@@ -543,10 +533,15 @@ button {
   grid-template-columns: 44px 1fr auto;
   align-items: center;
   gap: 12px;
-  padding: 7px 8px 7px 7px;
-  border-radius: var(--r-md);
-  background: var(--surface-2);
-  border: 1px solid var(--border);
+  padding: 8px 9px 8px 8px;
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.02), rgba(255, 255, 255, 0.01));
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  transition: border-color 150ms ease, transform 120ms ease;
+}
+.file:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+  transform: translateY(-1px);
 }
 .file.invalid {
   border-color: color-mix(in srgb, var(--fail) 45%, transparent);
@@ -637,29 +632,30 @@ button {
   color: var(--muted);
 }
 
-/* detector segmented control */
+
 .seg {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 4px;
   padding: 4px;
-  border-radius: var(--r-md);
-  background: var(--surface-2);
-  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
 }
 .seg-option {
   display: block;
-  border-radius: 7px;
-  padding: 8px 10px;
+  border-radius: 9px;
+  padding: 10px 10px;
   cursor: pointer;
+  transition: background 150ms ease, box-shadow 150ms ease;
 }
 .seg-option:has(input:focus-visible) {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 .seg-option:has(input:checked) {
-  background: var(--surface-3);
-  box-shadow: inset 0 0 0 1px var(--border-strong);
+  background: linear-gradient(180deg, rgba(142, 140, 255, 0.14), rgba(142, 140, 255, 0.06));
+  box-shadow: inset 0 0 0 1px rgba(142, 140, 255, 0.35);
 }
 .seg-option:has(input:disabled) {
   cursor: not-allowed;
@@ -680,7 +676,7 @@ button {
   color: var(--faint);
 }
 
-/* slider fields */
+
 .field {
   margin-top: 18px;
 }
@@ -768,7 +764,7 @@ input[type="range"]:disabled {
   opacity: 0.6;
 }
 
-/* action footer */
+
 .action {
   margin-top: auto;
   padding: 16px 18px 18px;
@@ -778,23 +774,25 @@ input[type="range"]:disabled {
 }
 .cta {
   width: 100%;
-  height: 44px;
-  border-radius: var(--r-md);
+  height: 46px;
+  border-radius: 12px;
   border: 0;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--accent);
+  background: linear-gradient(135deg, #a5a2ff 0%, #8e8cff 35%, #7a7cff 100%);
   color: var(--accent-ink);
-  font-weight: 600;
+  font-weight: 700;
   font-size: 14px;
+  letter-spacing: -0.01em;
   box-shadow:
-    0 1px 0 color-mix(in srgb, white 18%, transparent) inset,
-    0 6px 20px -8px var(--accent);
+    0 1px 0 rgba(255, 255, 255, 0.2) inset,
+    0 14px 26px -16px rgba(142, 140, 255, 0.9);
   transition:
     filter 150ms ease,
-    transform 50ms ease;
+    transform 120ms ease,
+    box-shadow 150ms ease;
 }
 .cta:hover:not(:disabled) {
   filter: brightness(1.08);
@@ -830,6 +828,38 @@ input[type="range"]:disabled {
   color: var(--text);
   border-color: var(--muted);
 }
+.secondary-action {
+  width: 100%;
+  height: 40px;
+  margin-top: 8px;
+  border: 1px solid rgba(91, 176, 193, 0.8);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(105, 196, 214, 0.9), rgba(122, 206, 192, 0.76));
+  color: #ecfffe;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  cursor: pointer;
+  box-shadow:
+    0 10px 24px -16px rgba(66, 159, 194, 0.9),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  transition:
+    transform 120ms ease,
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    background 150ms ease;
+}
+.secondary-action:hover {
+  transform: translateY(-1px);
+  border-color: rgba(80, 169, 203, 0.95);
+  box-shadow:
+    0 14px 28px -16px rgba(58, 164, 187, 0.9),
+    inset 0 1px 0 rgba(255, 255, 255, 0.42);
+  background: linear-gradient(180deg, rgba(120, 208, 218, 0.96), rgba(138, 216, 206, 0.82));
+}
+.secondary-action:active {
+  transform: translateY(0);
+}
 .action-meta {
   display: flex;
   justify-content: space-between;
@@ -845,16 +875,14 @@ input[type="range"]:disabled {
   }
 }
 
-/* ============================================================================
-   STAGE — docs/ui-spec.md section 3.1 (output stage)
-   ============================================================================ */
+
 
 .stage {
   display: flex;
   flex-direction: column;
 }
 
-/* head: chips + tools */
+
 .chips {
   display: flex;
   gap: 6px;
@@ -896,47 +924,74 @@ input[type="range"]:disabled {
 .tool {
   height: 32px;
   padding: 0 12px;
-  border-radius: 8px;
+  border-radius: 9px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  border: 1px solid var(--border-strong);
-  background: var(--surface);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
   color: var(--text);
+  transition:
+    transform 120ms ease,
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    background 150ms ease;
+}
+.tool:hover {
+  transform: translateY(-1px);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border-strong));
+  box-shadow: 0 10px 20px -16px rgba(142, 140, 255, 0.8);
 }
 .tool[aria-pressed="true"] {
   background: var(--accent-soft);
   border-color: color-mix(in srgb, var(--accent) 45%, transparent);
   color: var(--accent);
 }
+.secondary-tool {
+  background: linear-gradient(180deg, rgba(111, 203, 214, 0.86), rgba(137, 201, 196, 0.72));
+  border-color: rgba(84, 166, 182, 0.82);
+  color: #edfffe;
+  font-weight: 700;
+  box-shadow: 0 10px 20px -16px rgba(69, 149, 174, 0.9);
+}
+.secondary-tool:hover {
+  background: linear-gradient(180deg, rgba(130, 219, 228, 0.94), rgba(148, 210, 201, 0.8));
+  border-color: rgba(71, 154, 174, 0.9);
+  box-shadow: 0 14px 24px -16px rgba(62, 160, 185, 0.92);
+}
 .tool.primary {
-  background: var(--text);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(228, 228, 232, 0.92));
   color: var(--bg);
-  border-color: var(--text);
-  font-weight: 500;
+  border-color: rgba(255, 255, 255, 0.9);
+  font-weight: 600;
 }
 .tool .mono {
   font-size: 11.5px;
   opacity: 0.7;
 }
 
-/* viewport */
+
 .viewport {
   position: relative;
   flex: 1;
   min-height: 460px;
   margin: 14px;
-  border-radius: var(--r-md);
-  background-color: var(--matte);
-  background-image: radial-gradient(var(--dot) 1px, transparent 1px);
-  background-size: 18px 18px;
-  border: 1px solid var(--border);
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at top, rgba(142, 140, 255, 0.08), transparent 35%),
+    var(--matte);
+  background-image:
+    radial-gradient(var(--dot) 1px, transparent 1px),
+    radial-gradient(circle at top, rgba(142, 140, 255, 0.1), transparent 40%);
+  background-size: 18px 18px, 100% 100%;
+  border: 1px solid rgba(255, 255, 255, 0.06);
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 .plate {
   position: relative;
@@ -966,7 +1021,7 @@ input[type="range"]:disabled {
   right: 8px;
 }
 
-/* placeholder (empty / preparing / ready) */
+
 .placeholder {
   text-align: center;
   max-width: 440px;
@@ -1094,7 +1149,7 @@ input[type="range"]:disabled {
   font-size: 0.82rem;
 }
 
-/* failed card */
+
 .failcard {
   max-width: 520px;
   padding: 28px;
@@ -1175,7 +1230,7 @@ input[type="range"]:disabled {
   margin-top: 4px;
 }
 
-/* Cyber HUD inside .placeholder.working */
+
 .cyber-working-hud {
   display: flex;
   flex-direction: column;
@@ -1270,7 +1325,7 @@ input[type="range"]:disabled {
   margin-top: 6px;
 }
 
-/* stage ribbon - Concept B: Cyber-Conduit Node Flow */
+
 .ribbon {
   display: flex;
   align-items: center;
@@ -1332,7 +1387,7 @@ input[type="range"]:disabled {
   border-radius: 1px;
 }
 
-/* STATE: DONE */
+
 .conduit-step.is-done .node-circle {
   background: rgba(61, 220, 151, 0.15);
   border-color: var(--pass);
@@ -1347,7 +1402,7 @@ input[type="range"]:disabled {
   box-shadow: 0 0 6px rgba(61, 220, 151, 0.3);
 }
 
-/* STATE: ACTIVE */
+
 .conduit-step.is-active .node-circle {
   background: rgba(142, 140, 255, 0.2);
   border-color: var(--accent);
@@ -1392,7 +1447,7 @@ input[type="range"]:disabled {
   }
 }
 
-/* STATE: QUEUED */
+
 .conduit-step.is-queued {
   opacity: 0.55;
 }
@@ -1441,9 +1496,7 @@ input[type="range"]:disabled {
   }
 }
 
-/* ============================================================================
-   DIAGNOSTICS — docs/ui-spec.md section 3.1 (diagnostics band)
-   ============================================================================ */
+
 
 .diag {
   margin-top: 16px;
@@ -1468,7 +1521,7 @@ input[type="range"]:disabled {
   font-size: 13px;
 }
 
-/* KPI strip */
+
 .panel.kpis {
   padding: 0;
   display: grid;
@@ -1525,7 +1578,7 @@ input[type="range"]:disabled {
   margin: 0;
 }
 
-/* pair table */
+
 .tablewrap {
   overflow-x: auto;
 }
@@ -1635,7 +1688,7 @@ tr.failed td {
   padding: 34px 18px;
 }
 
-/* timing chart */
+
 .bars {
   padding: 10px 18px 16px;
   display: grid;
@@ -1713,7 +1766,7 @@ tr.failed td {
   }
 }
 
-/* Feature & Inlier Survival Funnel Sankey Flow */
+
 .funnel-card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -2114,8 +2167,7 @@ tr.failed td {
   line-height: 1;
 }
 
-/* Scoped to the modal: the bare .tablewrap is shared with PairTable and
-   PartialPairTable, which already sit inside a bordered .panel. */
+
 .funnel-modal-content .tablewrap {
   overflow-y: auto;
   flex: 1;
@@ -2211,12 +2263,7 @@ tr.failed td {
   border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
 }
 
-/* ---------------------------------------------------------------------
-   Mobile funnel — a distinct vertical layout rendered below 960px width
-   (see the `isCompact` viewport check in FeatureSurvivalFunnel.tsx),
-   not a squeezed copy of the desktop Sankey. Same three category hues as
-   .funnel-bar.col-green/col-blue/col-purple above.
-   --------------------------------------------------------------------- */
+
 .mtrapezoid,
 .mframes,
 .moutcomes {
@@ -2333,7 +2380,7 @@ tr.failed td {
   color: var(--accent);
 }
 
-/* frame list */
+
 .mframes {
   margin-top: 18px;
   border-top: 1px solid var(--border);
@@ -2421,7 +2468,7 @@ tr.failed td {
   background: #10b981;
 }
 
-/* RANSAC outcome chips */
+
 .moutcomes {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -2506,7 +2553,7 @@ tr.failed td {
     gap: 12px 18px;
   }
 
-  /* View as table becomes a bottom sheet instead of a centered dialog */
+  
   .funnel-modal-backdrop {
     align-items: flex-end;
   }

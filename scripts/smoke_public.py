@@ -1,23 +1,3 @@
-"""Smoke-check a deployed panorama-stitcher API end to end.
-
-docs/integration-spec.md section 10: run this against the public Render URL
-after a deploy, before recording it in docs/deployment-plan.md.
-
-    python scripts/smoke_public.py https://<render-service>.onrender.com
-
-Checks, in order, and exits non-zero on the first failure:
-
-1. GET /healthz responds 200.
-2. GET /api/v1/config responds 200 with the documented policy shape.
-3. POST /api/v1/stitch with a synthetic three-frame set responds 200, and the
-   diagnostics summary is printed for the pull request.
-
-The three frames are the same synthetic, licence-free set the test suite
-uses (backend/app/tests/fixtures.py `end_to_end_fixture`), not real photos —
-this script proves the deployed pipeline runs, it is not the manual pass
-with real phone photos that section 10 also calls for.
-"""
-
 from __future__ import annotations
 
 import sys
@@ -31,7 +11,7 @@ BACKEND_ROOT = Path(__file__).resolve().parents[1] / "backend"
 if str(BACKEND_ROOT) not in sys.path:
     sys.path.insert(0, str(BACKEND_ROOT))
 
-from app.tests.fixtures import end_to_end_fixture  # noqa: E402
+from app.tests.fixtures import end_to_end_fixture
 
 REQUEST_TIMEOUT_SECONDS = 90.0
 

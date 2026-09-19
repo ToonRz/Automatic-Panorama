@@ -181,7 +181,7 @@ export function ControlRail({
         {state === "complete" && onReset && (
           <button
             type="button"
-            className="cancel"
+            className="secondary-action"
             onClick={onReset}
           >
             + Start new panorama
