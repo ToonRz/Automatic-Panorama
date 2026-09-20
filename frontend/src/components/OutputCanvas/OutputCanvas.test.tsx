@@ -163,7 +163,9 @@ describe("OutputCanvas", () => {
         />,
       );
 
+      const downloadBtn = screen.getByRole("button", { name: /download png/i });
       const resetBtn = screen.getByRole("button", { name: /new panorama/i });
+      expect(downloadBtn.compareDocumentPosition(resetBtn) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
       expect(resetBtn).toBeInTheDocument();
       await user.click(resetBtn);
       expect(onReset).toHaveBeenCalledTimes(1);
