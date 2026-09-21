@@ -285,6 +285,46 @@ button {
   gap: 12px;
   min-width: 0;
 }
+.panel-head:has(.stage-head-content) {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.panel-head:has(.stage-head-content) .panel-head-title {
+  flex: none;
+}
+.stage-head-content {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  gap: 8px;
+  min-width: 0;
+}
+.stage-head-content .chips {
+  flex: 1;
+  align-self: center;
+}
+.stage-head-content .tools {
+  display: grid;
+  grid-template-columns: repeat(2, max-content);
+  gap: 4px;
+  align-items: center;
+}
+.stage-head-content .tools > .tool[aria-pressed] {
+  grid-column: 1;
+  grid-row: 1;
+}
+.stage-head-content .tools > .tool-stack {
+  display: contents;
+}
+.stage-head-content .tool-stack > .tool.primary {
+  grid-column: 1 / -1;
+  grid-row: 2;
+}
+.stage-head-content .tool-stack > .tool:not(.primary) {
+  grid-column: 2;
+  grid-row: 1;
+}
 .idx {
   flex: none;
   font-family: var(--mono);
@@ -889,9 +929,15 @@ input[type="range"]:disabled {
   color: var(--fail);
 }
 .tools {
-  margin-left: auto;
   display: flex;
-  gap: 8px;
+  align-items: flex-end;
+  gap: 4px;
+}
+.tool-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
 }
 .tool {
   height: 32px;
@@ -916,6 +962,15 @@ input[type="range"]:disabled {
   color: var(--bg);
   border-color: var(--text);
   font-weight: 500;
+}
+.tools .tool.primary {
+  order: 1;
+}
+.tools > .tool[aria-pressed] {
+  order: 2;
+}
+.tools .tool-stack > .tool:not(.primary) {
+  order: 3;
 }
 .tool .mono {
   font-size: 11.5px;
@@ -1425,16 +1480,45 @@ input[type="range"]:disabled {
   .panel-head:has(.tools) {
     flex-wrap: wrap;
   }
+  .panel-head:has(.stage-head-content) {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: 0;
+  }
+  .stage-head-content {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+  }
+  .stage-head-content .chips,
+  .stage-head-content .tools {
+    grid-column: 1;
+    grid-row: auto;
+  }
+  .stage-head-content .tools {
+    display: grid;
+    grid-template-columns: max-content max-content;
+    justify-content: start;
+    gap: 8px;
+  }
+  .stage-head-content .tools > .tool-stack {
+    display: contents;
+  }
   .tools {
     margin-left: 0;
     width: 100%;
   }
   .tools .tool {
-    flex: 1;
+    width: auto;
     justify-content: center;
     white-space: nowrap;
     font-size: 12.5px;
     padding: 0 8px;
+  }
+  .tools .tool.primary {
+    grid-column: 1 / -1;
+    width: 100%;
   }
   .tools .tool .dl-word {
     display: none;
