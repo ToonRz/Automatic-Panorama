@@ -139,51 +139,7 @@ export function OutputCanvas({
 
           {state === "complete" && result && (
             <div className="tools">
-              {hasOverlay && (
-                <button
-                  className="tool"
-                  type="button"
-                  aria-pressed={overlayOn}
-                  onClick={() => setOverlayOn((value) => !value)}
-                >
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    aria-hidden="true"
-                  >
-                    <path d="M12 3v18" strokeDasharray="3 3" />
-                    <circle cx="6" cy="8" r="2" />
-                    <circle cx="18" cy="15" r="2" />
-                  </svg>
-                  Seams &amp; inliers
-                </button>
-              )}
               <div className="tool-stack">
-                {onReset && (
-                  <button
-                    className="tool"
-                    type="button"
-                    onClick={onReset}
-                    title="Start a new panorama"
-                  >
-                    <svg
-                      width="14"
-                      height="14"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      aria-hidden="true"
-                    >
-                      <path d="M12 5v14M5 12h14" />
-                    </svg>
-                    <span>New panorama</span>
-                  </button>
-                )}
                 <button
                   className="tool primary"
                   type="button"
@@ -209,7 +165,51 @@ export function OutputCanvas({
                     {result.image.width}×{result.image.height}
                   </span>
                 </button>
+                {onReset && (
+                  <button
+                    className="tool"
+                    type="button"
+                    onClick={onReset}
+                    title="Start a new panorama"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      aria-hidden="true"
+                    >
+                      <path d="M12 5v14M5 12h14" />
+                    </svg>
+                    <span>New panorama</span>
+                  </button>
+                )}
               </div>
+              {hasOverlay && (
+                <button
+                  className="tool"
+                  type="button"
+                  aria-pressed={overlayOn}
+                  onClick={() => setOverlayOn((value) => !value)}
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    aria-hidden="true"
+                  >
+                    <path d="M12 3v18" strokeDasharray="3 3" />
+                    <circle cx="6" cy="8" r="2" />
+                    <circle cx="18" cy="15" r="2" />
+                  </svg>
+                  Seams &amp; inliers
+                </button>
+              )}
             </div>
           )}
         </div>

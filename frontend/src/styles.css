@@ -935,6 +935,7 @@ input[type="range"]:disabled {
   display: flex;
   align-items: flex-end;
   gap: 4px;
+  margin-left: auto;
 }
 .tool-stack {
   display: flex;
