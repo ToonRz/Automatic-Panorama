@@ -325,6 +325,9 @@ button {
   grid-column: 2;
   grid-row: 1;
 }
+.stage-head-content .tools:not(:has([aria-pressed])) .tool-stack > .tool:not(.primary) {
+  grid-column: 1;
+}
 .idx {
   flex: none;
   font-family: var(--mono);
@@ -962,15 +965,6 @@ input[type="range"]:disabled {
   color: var(--bg);
   border-color: var(--text);
   font-weight: 500;
-}
-.tools .tool.primary {
-  order: 1;
-}
-.tools > .tool[aria-pressed] {
-  order: 2;
-}
-.tools .tool-stack > .tool:not(.primary) {
-  order: 3;
 }
 .tool .mono {
   font-size: 11.5px;
