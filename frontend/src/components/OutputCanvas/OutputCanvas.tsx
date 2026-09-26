@@ -94,121 +94,125 @@ export function OutputCanvas({
   return (
     <section className="panel stage" aria-label="Output" aria-live="polite">
       <PanelHead index={3} title={TITLE_BY_STATE[state] ?? "Panorama"}>
-        <div className="chips">
-          {state === "empty" && <span className="chip">Waiting for frames</span>}
-          {state === "preparing" && (
-            <span className="chip run">
-              <i aria-hidden="true" />
-              Preparing
-            </span>
-          )}
-          {state === "ready" && <span className="chip">Ready · {files.length} frames</span>}
-          {state === "working" && (
-            <span className="chip run">
-              <i aria-hidden="true" />
-              Running
-            </span>
-          )}
-          {state === "complete" && result && (
-            <>
-              <span className="chip pass">
+        <div className="stage-head-content">
+          <div className="chips">
+            {state === "empty" && <span className="chip">Waiting for frames</span>}
+            {state === "preparing" && (
+              <span className="chip run">
                 <i aria-hidden="true" />
-                Complete
+                Preparing
               </span>
-              <span className="chip">{result.diagnostics.detector}</span>
-              <span className="chip">{result.diagnostics.image_count} frames</span>
-              <span className="chip">
-                order {result.diagnostics.image_order.map((index) => index + 1).join(" → ")}
-              </span>
-              {isStale && (
-                <span className="chip run">
-                  <i aria-hidden="true" />
-                  Produced with previous settings
-                </span>
-              )}
-            </>
-          )}
-          {state === "failed" && (
-            <span className="chip fail">
-              <i aria-hidden="true" />
-              Rejected
-            </span>
-          )}
-        </div>
-
-        {state === "complete" && result && (
-          <div className="tools">
-            {hasOverlay && (
-              <button
-                className="tool"
-                type="button"
-                aria-pressed={overlayOn}
-                onClick={() => setOverlayOn((value) => !value)}
-              >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  aria-hidden="true"
-                >
-                  <path d="M12 3v18" strokeDasharray="3 3" />
-                  <circle cx="6" cy="8" r="2" />
-                  <circle cx="18" cy="15" r="2" />
-                </svg>
-                Seams &amp; inliers
-              </button>
             )}
-            <button
-              className="tool primary"
-              type="button"
-              onClick={handleDownload}
-              aria-label={`Download PNG ${result.image.width}×${result.image.height}`}
-            >
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                aria-hidden="true"
-              >
-                <path d="M12 4v12m0 0-4-4m4 4 4-4M4 20h16" />
-              </svg>
-              <span className="dl-word" aria-hidden="true">
-                Download
-              </span>{" "}
-              <span aria-hidden="true">PNG</span>{" "}
-              <span className="mono" aria-hidden="true">
-                {result.image.width}×{result.image.height}
+            {state === "ready" && <span className="chip">Ready · {files.length} frames</span>}
+            {state === "working" && (
+              <span className="chip run">
+                <i aria-hidden="true" />
+                Running
               </span>
-            </button>
-            {onReset && (
-              <button
-                className="tool"
-                type="button"
-                onClick={onReset}
-                title="Start a new panorama"
-              >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  aria-hidden="true"
-                >
-                  <path d="M12 5v14M5 12h14" />
-                </svg>
-                <span>New panorama</span>
-              </button>
+            )}
+            {state === "complete" && result && (
+              <>
+                <span className="chip pass">
+                  <i aria-hidden="true" />
+                  Complete
+                </span>
+                <span className="chip">{result.diagnostics.detector}</span>
+                <span className="chip">{result.diagnostics.image_count} frames</span>
+                <span className="chip">
+                  order {result.diagnostics.image_order.map((index) => index + 1).join(" → ")}
+                </span>
+                {isStale && (
+                  <span className="chip run">
+                    <i aria-hidden="true" />
+                    Produced with previous settings
+                  </span>
+                )}
+              </>
+            )}
+            {state === "failed" && (
+              <span className="chip fail">
+                <i aria-hidden="true" />
+                Rejected
+              </span>
             )}
           </div>
-        )}
+
+          {state === "complete" && result && (
+            <div className="tools">
+              <div className="tool-stack">
+                <button
+                  className="tool primary"
+                  type="button"
+                  onClick={handleDownload}
+                  aria-label={`Download PNG ${result.image.width}×${result.image.height}`}
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    aria-hidden="true"
+                  >
+                    <path d="M12 4v12m0 0-4-4m4 4 4-4M4 20h16" />
+                  </svg>
+                  <span className="dl-word" aria-hidden="true">
+                    Download
+                  </span>{" "}
+                  <span aria-hidden="true">PNG</span>{" "}
+                  <span className="mono" aria-hidden="true">
+                    {result.image.width}×{result.image.height}
+                  </span>
+                </button>
+                {onReset && (
+                  <button
+                    className="tool"
+                    type="button"
+                    onClick={onReset}
+                    title="Start a new panorama"
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      aria-hidden="true"
+                    >
+                      <path d="M12 5v14M5 12h14" />
+                    </svg>
+                    <span>New panorama</span>
+                  </button>
+                )}
+              </div>
+              {hasOverlay && (
+                <button
+                  className="tool"
+                  type="button"
+                  aria-pressed={overlayOn}
+                  onClick={() => setOverlayOn((value) => !value)}
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    aria-hidden="true"
+                  >
+                    <path d="M12 3v18" strokeDasharray="3 3" />
+                    <circle cx="6" cy="8" r="2" />
+                    <circle cx="18" cy="15" r="2" />
+                  </svg>
+                  Seams &amp; inliers
+                </button>
+              )}
+            </div>
+          )}
+        </div>
       </PanelHead>
 
       <div className="viewport">
