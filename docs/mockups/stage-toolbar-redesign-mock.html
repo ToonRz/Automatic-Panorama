@@ -1,0 +1,954 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Stage Toolbar Redesign</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================================
+   TOKENS — copied from frontend/src/styles.css :root (dark-committed)
+   ============================================================================ */
+:root {
+  --bg: #0a0a0b;
+  --surface: #121214;
+  --surface-2: #17171a;
+  --surface-3: #1e1e22;
+  --matte: #0d0d0f;
+  --dot: rgba(255, 255, 255, 0.05);
+  --border: rgba(255, 255, 255, 0.07);
+  --border-strong: rgba(255, 255, 255, 0.13);
+  --text: #f4f4f5;
+  --muted: #a1a1aa;
+  --faint: #85858e;
+  --accent: #8e8cff;
+  --accent-ink: #0b0b12;
+  --accent-soft: rgba(142, 140, 255, 0.14);
+  --pass: #3ddc97;
+  --run: #f5b83d;
+  --fail: #ff6b6b;
+  --sans: "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --r-lg: 14px;
+  --r-md: 10px;
+  --r-sm: 7px;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+button { font: inherit; }
+.mono { font-family: var(--mono); }
+
+/* ============================================================================
+   MOCK PAGE CHROME (not part of the component)
+   ============================================================================ */
+.page { max-width: 1120px; margin: 0 auto; padding: 40px 16px 96px; }
+.eyebrow {
+  margin: 0 0 8px;
+  font: 11px var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.eyebrow b { color: var(--run); font-weight: 500; }
+.page h1 { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; margin: 0 0 8px; }
+.lede { color: var(--muted); max-width: 70ch; margin: 0 0 28px; }
+.changes {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: 10px;
+  margin: 0 0 48px;
+  padding: 0;
+  list-style: none;
+}
+.changes li {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: 12px 14px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.changes li b { display: block; color: var(--text); font-weight: 500; font-size: 13px; margin-bottom: 3px; }
+
+section.block { margin: 0 0 56px; }
+.sec-title {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 6px;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.sec-title .n { font: 12px var(--mono); color: var(--faint); }
+.rec {
+  font: 500 11px var(--mono);
+  color: var(--accent);
+  background: var(--accent-soft);
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  border-radius: 6px;
+  padding: 2px 8px;
+}
+.sec-note { margin: 0 0 16px; color: var(--muted); font-size: 13px; max-width: 78ch; }
+.state-label {
+  font: 11px var(--mono);
+  color: var(--faint);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: 0 0 10px;
+}
+.state-label span { color: var(--accent); }
+.note { margin: 10px 0 0; font-size: 12px; color: var(--faint); max-width: 78ch; }
+.states { display: grid; gap: 28px; }
+
+/* width switcher for the full-stage frames */
+.seg {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  margin: 0 0 14px;
+  border-radius: 9px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+}
+.seg button {
+  height: 26px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  cursor: pointer;
+}
+.seg button .mono { color: var(--faint); font-size: 11px; margin-left: 4px; }
+.seg button[aria-pressed="true"] { background: var(--surface-3); color: var(--text); }
+.frame { width: min(100%, var(--stage-w, 1040px)); transition: width 240ms ease; }
+.frame.scroll { overflow-x: auto; padding: 10px 10px 4px 0; }
+
+.issues, .impl { margin: 16px 0 0; padding: 0; list-style: none; display: grid; gap: 8px; max-width: 820px; }
+.issues li {
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.issues li b { color: var(--text); font-weight: 500; }
+.pin-n {
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  border-radius: 50%;
+  background: var(--run);
+  color: #16120a;
+  font: 600 10.5px var(--mono);
+  display: grid;
+  place-items: center;
+}
+
+table.impl-table { width: 100%; max-width: 900px; border-collapse: collapse; font-size: 13px; }
+.impl-table th, .impl-table td { text-align: left; vertical-align: top; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+.impl-table th { font: 11px var(--mono); color: var(--faint); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 400; }
+.impl-table td:first-child { font: 12px var(--mono); color: var(--text); white-space: nowrap; }
+.impl-table td { color: var(--muted); }
+.impl-table code { font: 12px var(--mono); color: var(--text); background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+.table-wrap { overflow-x: auto; }
+
+/* ============================================================================
+   STAGE — mirrors .panel.stage / .panel-head / .chip / .tool in styles.css
+   ============================================================================ */
+.stage {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  container-type: inline-size;
+}
+.stage.head-only .stage-head { border-bottom: 0; }
+.stage-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  padding: 12px 18px;
+  min-height: 56px;
+  border-bottom: 1px solid var(--border);
+}
+.title { display: flex; align-items: center; gap: 12px; margin-right: 2px; }
+.idx {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  font: 11px var(--mono);
+  color: var(--faint);
+}
+.title h3 { margin: 0; font-size: 14px; font-weight: 600; letter-spacing: -0.005em; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: 6px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  font: 11.5px var(--mono);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.chip i { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.chip.pass { color: var(--pass); }
+.chip.run { color: var(--run); }
+
+.tool {
+  position: relative;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  white-space: nowrap;
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+  transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+.tool:hover { background: var(--surface-2); }
+.tool:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.tool svg { flex: none; }
+.tool[aria-pressed="true"] {
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  color: var(--accent);
+}
+.tool.primary {
+  background: var(--text);
+  color: var(--bg);
+  border-color: var(--text);
+  font-weight: 500;
+}
+.tool.primary:hover { background: #ffffff; }
+.tool .mono { font-size: 11.5px; opacity: 0.7; }
+
+/* ---------------- BEFORE: current 2-row grid (styles.css ~307–330) ---------------- */
+.old .stage-head { flex-wrap: nowrap; padding: 14px 18px; }
+.old .chips { flex: 1; }
+.old .tools {
+  display: grid;
+  grid-template-columns: repeat(2, max-content);
+  gap: 4px;
+  margin-left: auto;
+}
+.old .tools .t-toggle { grid-column: 1; grid-row: 1; }
+.old .tools .t-new { grid-column: 2; grid-row: 1; }
+.old .tools .primary { grid-column: 1 / -1; grid-row: 2; }
+.pin {
+  position: absolute;
+  top: -9px;
+  right: -9px;
+  z-index: 3;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--run);
+  color: #16120a;
+  font: 600 10.5px var(--mono);
+  display: grid;
+  place-items: center;
+  box-shadow: 0 0 0 3px var(--surface);
+  pointer-events: none;
+}
+.old .tools { position: relative; }
+.old .tools > .pin { top: auto; bottom: -9px; right: auto; left: -9px; }
+
+/* ---------------- AFTER: one toolbar row ---------------- */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+.tool-sep { width: 1px; height: 20px; background: var(--border-strong); margin: 0 4px; }
+
+/* toggle reads as a switch in both states */
+.tool.toggle { padding: 0 10px 0 12px; }
+.switch {
+  position: relative;
+  width: 22px;
+  height: 12px;
+  border-radius: 99px;
+  background: var(--surface-3);
+  border: 1px solid var(--border-strong);
+  transition: background 150ms ease, border-color 150ms ease;
+}
+.switch::after {
+  content: "";
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--faint);
+  transition: transform 150ms ease, background 150ms ease;
+}
+.tool.toggle[aria-pressed="true"] .switch {
+  background: color-mix(in srgb, var(--accent) 30%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+}
+.tool.toggle[aria-pressed="true"] .switch::after { transform: translateX(10px); background: var(--accent); }
+
+/* reset demoted to a quiet icon button; the rail keeps the labelled version */
+.tool.icon {
+  width: 32px;
+  padding: 0;
+  justify-content: center;
+  background: transparent;
+  border-color: transparent;
+  color: var(--muted);
+}
+.tool.icon:hover { background: var(--surface-2); border-color: var(--border); color: var(--text); }
+.tool[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  top: calc(100% + 8px);
+  right: -4px;
+  transform: translateY(-2px);
+  z-index: 5;
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: var(--surface-3);
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+  font: 12px var(--sans);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+.tool[data-tip]:hover::after,
+.tool[data-tip]:focus-visible::after { opacity: 1; transform: none; }
+
+/* confirm popover (optional state) */
+.anchor { position: relative; display: inline-flex; }
+.pop {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: -14px;
+  z-index: 6;
+  width: 292px;
+  padding: 14px;
+  border-radius: var(--r-md);
+  background: var(--surface-3);
+  border: 1px solid var(--border-strong);
+  box-shadow: 0 18px 40px -12px rgba(0, 0, 0, 0.7);
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.pop::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  right: 24px;
+  width: 10px;
+  height: 10px;
+  background: var(--surface-3);
+  border-left: 1px solid var(--border-strong);
+  border-top: 1px solid var(--border-strong);
+  transform: rotate(45deg);
+}
+.pop p { margin: 0 0 12px; }
+.pop b { display: block; color: var(--text); font-weight: 500; font-size: 13px; margin-bottom: 2px; }
+.pop-actions { display: flex; justify-content: flex-end; gap: 6px; }
+.pop .tool { height: 28px; font-size: 12.5px; padding: 0 10px; }
+.tool.danger {
+  background: color-mix(in srgb, var(--fail) 14%, transparent);
+  border-color: color-mix(in srgb, var(--fail) 45%, transparent);
+  color: var(--fail);
+}
+
+/* narrow stage: toggle on its own row, then download (fills) + reset, same order as wide */
+@container (max-width: 560px) {
+  .stage-head { padding: 12px 14px; }
+  .toolbar {
+    width: 100%;
+    margin-left: 0;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+  }
+  .toolbar .toggle { grid-column: 1 / -1; justify-self: start; }
+  .toolbar .tool-sep { display: none; }
+  .toolbar .primary { grid-column: 1; justify-content: center; }
+  .toolbar .icon { grid-column: 2; }
+  .toolbar:not(:has(.toggle)) { display: flex; }
+  .toolbar:not(:has(.toggle)) .primary { flex: 1; }
+}
+
+/* ---------------- viewport + plate ---------------- */
+.viewport {
+  position: relative;
+  margin: 14px;
+  min-height: 360px;
+  border-radius: var(--r-md);
+  background-color: var(--matte);
+  background-image: radial-gradient(var(--dot) 1px, transparent 1px);
+  background-size: 18px 18px;
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.plate { position: relative; width: calc(100% - 48px); }
+.plate svg { display: block; width: 100%; height: auto; }
+.plate .pano-svg { border-radius: 4px; box-shadow: 0 20px 60px -20px rgba(0, 0, 0, 0.55); }
+.plate .ov-svg { position: absolute; inset: 0; height: 100%; }
+.plate[data-overlay="off"] .ov-svg { display: none; }
+.corner { position: absolute; bottom: 8px; right: 8px; font: 11px var(--mono); color: var(--faint); }
+@container (max-width: 560px) {
+  .viewport { min-height: 200px; margin: 10px; }
+  .plate { width: calc(100% - 20px); }
+  .corner { font-size: 9.5px; bottom: 5px; right: 6px; }
+}
+
+/* ---------------- OPTION B: view switch on the image ---------------- */
+.viewport.has-switch { padding: 52px 0 24px; }
+.view-switch {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 2;
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--surface-3) 88%, transparent);
+  border: 1px solid var(--border-strong);
+  backdrop-filter: blur(6px);
+}
+.view-switch button {
+  height: 26px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+.view-switch button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); }
+.view-switch button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .frame, .switch, .switch::after, .tool, .tool::after { transition: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- Shared drawings: a stylised stand-in for the stitched boat set, and its overlay.
+     Coordinates are in the output's own pixel space (1875 × 660), like Overlay.tsx. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="g-sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#557aa6"/>
+      <stop offset="0.5" stop-color="#9db4cd"/>
+      <stop offset="1" stop-color="#dfe5ea"/>
+    </linearGradient>
+    <linearGradient id="g-water" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#b3bdc5"/>
+      <stop offset="1" stop-color="#36424c"/>
+    </linearGradient>
+    <filter id="f-soft" x="-30%" y="-80%" width="160%" height="260%"><feGaussianBlur stdDeviation="16"/></filter>
+    <clipPath id="c-water"><rect x="0" y="402" width="1875" height="258"/></clipPath>
+  </defs>
+  <symbol id="pano" viewBox="0 0 1875 660">
+    <rect width="1875" height="402" fill="url(#g-sky)"/>
+    <g fill="#ffffff" filter="url(#f-soft)" opacity="0.85">
+      <ellipse cx="160" cy="120" rx="170" ry="38"/>
+      <ellipse cx="520" cy="80" rx="220" ry="30"/>
+      <ellipse cx="760" cy="200" rx="160" ry="34"/>
+      <ellipse cx="1080" cy="110" rx="240" ry="40"/>
+      <ellipse cx="1420" cy="190" rx="200" ry="30"/>
+      <ellipse cx="1700" cy="90" rx="190" ry="34"/>
+      <ellipse cx="1300" cy="300" rx="260" ry="26"/>
+      <ellipse cx="380" cy="290" rx="220" ry="22"/>
+    </g>
+    <rect y="402" width="1875" height="258" fill="url(#g-water)"/>
+    <g id="skyline">
+      <!-- left city block -->
+      <path fill="#4a484c" d="M0 402V332h46v-14h64v22h54v-30h72v38h58v-18h92v26h84v-12h58v22h52V402z"/>
+      <path fill="#a09282" d="M10 402v-54h150v54zM214 402v-40h120v40zM400 402v-46h110v46z"/>
+      <!-- ship -->
+      <g stroke="#2a221e" stroke-linecap="round">
+        <path d="M232 188v206M300 166v228M366 198v196" stroke-width="5"/>
+        <path d="M206 226h52M268 212h64M338 236h56M214 270h40M276 262h50M344 280h44M220 312h28M284 306h34" stroke-width="4"/>
+        <path d="M232 188L178 392M300 166L232 188M300 166L366 198M366 198L446 392M300 166L430 392" stroke-width="1.5" opacity="0.7"/>
+      </g>
+      <path fill="#382b24" d="M172 386h276l-26 30H198z"/>
+      <!-- fortress wall, trees, spire -->
+      <path fill="#5c4f45" d="M600 402v-28h120v-8h160v8h240v-6h130v34z"/>
+      <g fill="#3c4a3a">
+        <circle cx="640" cy="370" r="16"/><circle cx="680" cy="364" r="20"/><circle cx="740" cy="368" r="14"/>
+        <circle cx="990" cy="366" r="18"/><circle cx="1040" cy="362" r="22"/><circle cx="1096" cy="368" r="15"/>
+        <circle cx="1170" cy="370" r="17"/>
+      </g>
+      <rect x="884" y="318" width="32" height="84" fill="#6e5b48"/>
+      <path fill="#c9a45a" d="M890 318h20l-10-128z"/>
+      <path stroke="#c9a45a" stroke-width="2" d="M900 190v-26"/>
+      <!-- right bank -->
+      <path fill="#57524d" d="M1250 402v-8h250v8z"/>
+      <path fill="#6b6259" d="M1500 402v-30h70v-10h110v18h90v-12h105v34z"/>
+      <path fill="#b8ad9d" d="M1520 402v-22h120v22zM1700 402v-18h140v18z"/>
+    </g>
+    <g clip-path="url(#c-water)" opacity="0.32">
+      <use href="#skyline" transform="translate(0 804) scale(1 -1)"/>
+    </g>
+    <g fill="#eef2f5" opacity="0.8">
+      <ellipse cx="420" cy="560" rx="54" ry="5"/>
+      <ellipse cx="980" cy="540" rx="42" ry="6"/>
+      <ellipse cx="1210" cy="470" rx="26" ry="3"/>
+      <ellipse cx="1360" cy="604" rx="74" ry="8"/>
+      <ellipse cx="1660" cy="520" rx="32" ry="4"/>
+      <ellipse cx="760" cy="620" rx="60" ry="6"/>
+    </g>
+    <g stroke="#dfe6ec" stroke-width="2" opacity="0.22">
+      <path d="M60 450h180M700 470h140M1420 455h210M300 510h120M1100 520h160"/>
+    </g>
+  </symbol>
+  <symbol id="ov" viewBox="0 0 1875 660">
+    <line x1="1068" y1="0" x2="1072" y2="660" stroke="#3ddc97" stroke-width="2.5" stroke-dasharray="14 12" opacity="0.85"/>
+    <line x1="1384" y1="0" x2="1388" y2="660" stroke="#3ddc97" stroke-width="2.5" stroke-dasharray="14 12" opacity="0.85"/>
+    <g id="ov-samples"></g>
+    <g fill="#3ddc97" font-family="Geist Mono, ui-monospace, monospace" font-size="22" letter-spacing="2">
+      <text x="1082" y="40">SEAM 01 · 461 inliers</text>
+      <text x="1398" y="72">SEAM 02 · 342 inliers</text>
+    </g>
+  </symbol>
+</svg>
+
+<main class="page">
+  <header>
+    <p class="eyebrow">Mockup · stage head tools · <b>not implemented</b></p>
+    <h1>Stage toolbar redesign</h1>
+    <p class="lede">
+      The <b>Seams &amp; inliers</b>, <b>New panorama</b> and <b>Download PNG</b> controls in the output stage head.
+      Today they sit in a 2 × 2 grid that doubles the head's height and puts the one action people came for at the
+      bottom of the block. This mock puts all three on one row: the view toggle, then Download, then a quiet reset at the far edge.
+    </p>
+    <ul class="changes">
+      <li><b>One row, 56px head</b>Toggle │ download, reset. When the stage is too narrow, the toolbar moves below the chips as one unit and never splits.</li>
+      <li><b>Download comes first after the divider</b>The main action sits right after the view toggle. The + reset is at the far edge, small and quiet, so it doesn't compete with Download.</li>
+      <li><b>The toggle looks like a switch</b>A small track shows on or off in both states. When it is on, the button keeps the spec's accent-soft fill.</li>
+      <li><b>Reset becomes an icon</b>New panorama is the third reset on screen. The rail already has "Clear all" and "+ Start new panorama", so here it is a quiet 32px icon with a tooltip.</li>
+    </ul>
+  </header>
+
+  <!-- ======================================================================
+       01 BEFORE
+       ====================================================================== -->
+  <section class="block">
+    <h2 class="sec-title"><span class="n">01</span> Before — current build</h2>
+    <p class="sec-note">Recreated from <code class="mono">OutputCanvas.tsx</code> and the <code class="mono">.stage-head-content .tools</code> grid rules, at a 1040px stage.</p>
+    <div class="frame scroll" style="--stage-w: 1050px">
+      <div class="stage head-only old" style="min-width: 1040px">
+        <div class="stage-head">
+          <div class="title"><span class="idx">3</span><h3>Panorama</h3></div>
+          <div class="chips">
+            <span class="chip pass"><i></i>Complete</span>
+            <span class="chip">SIFT</span>
+            <span class="chip">3 frames</span>
+            <span class="chip">order 1 → 2 → 3</span>
+          </div>
+          <div class="tools">
+            <span class="pin">1</span>
+            <button class="tool t-toggle" type="button" aria-pressed="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v18" stroke-dasharray="3 3"/><circle cx="6" cy="8" r="2"/><circle cx="18" cy="15" r="2"/></svg>
+              Seams &amp; inliers<span class="pin">3</span>
+            </button>
+            <button class="tool t-new" type="button">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+              New panorama<span class="pin">4</span>
+            </button>
+            <button class="tool primary" type="button">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 4v12m0 0-4-4m4 4 4-4M4 20h16"/></svg>
+              Download PNG <span class="mono">1875×660</span><span class="pin">2</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <ol class="issues">
+      <li><span class="pin-n">1</span><span><b>Two rows of tools, one row of chips.</b> The head grows to about 96px, and the title and chips float in the middle of it.</span></li>
+      <li><span class="pin-n">2</span><span><b>The main action comes last and sits lowest.</b> Download is below a view toggle, at the bottom-left of the block.</span></li>
+      <li><span class="pin-n">3</span><span><b>When off, the toggle looks like a normal button.</b> It looks the same as New panorama, so nothing tells you it is a switch.</span></li>
+      <li><span class="pin-n">4</span><span><b>A one-click reset has the same weight as Download.</b> New panorama clears the frames and the result, is outlined like a peer of the main action, and repeats two resets that are already in the rail.</span></li>
+    </ol>
+  </section>
+
+  <!-- ======================================================================
+       02 AFTER · OPTION A
+       ====================================================================== -->
+  <section class="block">
+    <h2 class="sec-title"><span class="n">02</span> After — Option A · one toolbar row <span class="rec">Recommended</span></h2>
+    <p class="sec-note">
+      The controls stay in the stage head, which is where docs/ui-spec.md §3.1 puts them, so only the layout and styling change.
+      Try the toggle, hover the + for its tooltip, and switch the stage width to see how the toolbar wraps.
+    </p>
+    <div class="seg" role="group" aria-label="Stage width" data-target="frame-a">
+      <button type="button" data-w="1040px" aria-pressed="true">Wide<span class="mono">1040</span></button>
+      <button type="button" data-w="820px" aria-pressed="false">Laptop<span class="mono">820</span></button>
+      <button type="button" data-w="375px" aria-pressed="false">Phone<span class="mono">375</span></button>
+    </div>
+    <div class="frame" id="frame-a" style="--stage-w: 1040px">
+      <section class="stage" aria-label="Output">
+        <div class="stage-head">
+          <div class="title"><span class="idx">3</span><h3>Panorama</h3></div>
+          <div class="chips">
+            <span class="chip pass"><i></i>Complete</span>
+            <span class="chip">SIFT</span>
+            <span class="chip">3 frames</span>
+            <span class="chip">order 1 → 2 → 3</span>
+          </div>
+          <div class="toolbar" role="toolbar" aria-label="Panorama tools">
+            <button class="tool toggle" type="button" aria-pressed="true" data-toggle-overlay>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v18" stroke-dasharray="3 3"/><circle cx="6" cy="8" r="2"/><circle cx="18" cy="15" r="2"/></svg>
+              Seams &amp; inliers
+              <span class="switch" aria-hidden="true"></span>
+            </button>
+            <span class="tool-sep" aria-hidden="true"></span>
+            <button class="tool primary" type="button" aria-label="Download PNG 1875×660">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 4v12m0 0-4-4m4 4 4-4M4 20h16"/></svg>
+              <span aria-hidden="true">Download PNG</span>
+              <span class="mono" aria-hidden="true">1875×660</span>
+            </button>
+            <button class="tool icon" type="button" aria-label="New panorama" data-tip="New panorama · clears frames">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="viewport">
+          <div class="plate" data-overlay="on">
+            <svg class="pano-svg" viewBox="0 0 1875 660" role="img" aria-label="Stitched panorama of 3 frames, 1875 by 660 pixels"><use href="#pano"/></svg>
+            <svg class="ov-svg" viewBox="0 0 1875 660" aria-hidden="true"><use href="#ov"/></svg>
+            <span class="corner">1875 × 660 · 1.24 MP · PNG</span>
+          </div>
+        </div>
+      </section>
+    </div>
+    <p class="note">
+      Reading order: <span class="mono">view toggle │ primary, reset</span>. The divider separates the button that changes
+      what you see from the buttons that act on this result. The + sits in the corner, but as a borderless icon it stays much quieter than Download (state e below adds an optional confirm). The button's accessible names ("Seams &amp; inliers",
+      "New panorama", "Download PNG 1875×660") do not change.
+    </p>
+  </section>
+
+  <!-- ======================================================================
+       03 STATES
+       ====================================================================== -->
+  <section class="block">
+    <h2 class="sec-title"><span class="n">03</span> States — Option A</h2>
+    <p class="sec-note">Only the stage head is shown. The viewport works as in section 02.</p>
+    <div class="states">
+
+      <div>
+        <p class="state-label"><span>a</span> · overlay off</p>
+        <div class="frame" style="--stage-w: 1040px">
+          <div class="stage head-only">
+            <div class="stage-head">
+              <div class="title"><span class="idx">3</span><h3>Panorama</h3></div>
+              <div class="chips">
+                <span class="chip pass"><i></i>Complete</span><span class="chip">SIFT</span><span class="chip">3 frames</span><span class="chip">order 1 → 2 → 3</span>
+              </div>
+              <div class="toolbar" role="toolbar" aria-label="Panorama tools">
+                <button class="tool toggle" type="button" aria-pressed="false" data-toggle-overlay>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v18" stroke-dasharray="3 3"/><circle cx="6" cy="8" r="2"/><circle cx="18" cy="15" r="2"/></svg>
+                  Seams &amp; inliers<span class="switch" aria-hidden="true"></span>
+                </button>
+                <span class="tool-sep" aria-hidden="true"></span>
+                <button class="tool primary" type="button" aria-label="Download PNG 1875×660"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 4v12m0 0-4-4m4 4 4-4M4 20h16"/></svg><span aria-hidden="true">Download PNG</span><span class="mono" aria-hidden="true">1875×660</span></button>
+                <button class="tool icon" type="button" aria-label="New panorama" data-tip="New panorama · clears frames"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="note">When off, the toggle is outlined with a grey knob, so it no longer looks like the reset button.</p>
+      </div>
+
+      <div>
+        <p class="state-label"><span>b</span> · stale result — the toolbar wraps as one unit</p>
+        <div class="frame" style="--stage-w: 1040px">
+          <div class="stage head-only">
+            <div class="stage-head">
+              <div class="title"><span class="idx">3</span><h3>Panorama</h3></div>
+              <div class="chips">
+                <span class="chip pass"><i></i>Complete</span><span class="chip">SIFT</span><span class="chip">3 frames</span><span class="chip">order 1 → 2 → 3</span>
+                <span class="chip run"><i></i>Produced with previous settings</span>
+              </div>
+              <div class="toolbar" role="toolbar" aria-label="Panorama tools">
+                <button class="tool toggle" type="button" aria-pressed="true" data-toggle-overlay>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v18" stroke-dasharray="3 3"/><circle cx="6" cy="8" r="2"/><circle cx="18" cy="15" r="2"/></svg>
+                  Seams &amp; inliers<span class="switch" aria-hidden="true"></span>
+                </button>
+                <span class="tool-sep" aria-hidden="true"></span>
+                <button class="tool primary" type="button" aria-label="Download PNG 1875×660"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 4v12m0 0-4-4m4 4 4-4M4 20h16"/></svg><span aria-hidden="true">Download PNG</span><span class="mono" aria-hidden="true">1875×660</span></button>
+                <button class="tool icon" type="button" aria-label="New panorama" data-tip="New panorama · clears frames"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="note">Plain <span class="mono">flex-wrap</span> with <span class="mono">margin-left: auto</span> on the toolbar. The chips stay on the title row, and the toolbar moves to the next row, right-aligned, instead of splitting into a grid.</p>
+      </div>
+
+      <div>
+        <p class="state-label"><span>c</span> · no overlay fields in the response</p>
+        <div class="frame" style="--stage-w: 1040px">
+          <div class="stage head-only">
+            <div class="stage-head">
+              <div class="title"><span class="idx">3</span><h3>Panorama</h3></div>
+              <div class="chips">
+                <span class="chip pass"><i></i>Complete</span><span class="chip">ORB</span><span class="chip">2 frames</span><span class="chip">order 1 → 2</span>
+              </div>
+              <div class="toolbar" role="toolbar" aria-label="Panorama tools">
+                <button class="tool primary" type="button" aria-label="Download PNG 1448×588"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 4v12m0 0-4-4m4 4 4-4M4 20h16"/></svg><span aria-hidden="true">Download PNG</span><span class="mono" aria-hidden="true">1448×588</span></button>
+                <button class="tool icon" type="button" aria-label="New panorama" data-tip="New panorama · clears frames"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="note">Spec A5: the toggle and its divider are removed, not disabled.</p>
+      </div>
+
+      <div>
+        <p class="state-label"><span>d</span> · phone (stage ≤ 560px)</p>
+        <div class="frame" style="--stage-w: 375px">
+          <div class="stage head-only">
+            <div class="stage-head">
+              <div class="title"><span class="idx">3</span><h3>Panorama</h3></div>
+              <div class="chips">
+                <span class="chip pass"><i></i>Complete</span><span class="chip">SIFT</span><span class="chip">3 frames</span><span class="chip">order 1 → 2 → 3</span>
+              </div>
+              <div class="toolbar" role="toolbar" aria-label="Panorama tools">
+                <button class="tool toggle" type="button" aria-pressed="true" data-toggle-overlay>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v18" stroke-dasharray="3 3"/><circle cx="6" cy="8" r="2"/><circle cx="18" cy="15" r="2"/></svg>
+                  Seams &amp; inliers<span class="switch" aria-hidden="true"></span>
+                </button>
+                <span class="tool-sep" aria-hidden="true"></span>
+                <button class="tool primary" type="button" aria-label="Download PNG 1875×660"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 4v12m0 0-4-4m4 4 4-4M4 20h16"/></svg><span aria-hidden="true">Download PNG</span><span class="mono" aria-hidden="true">1875×660</span></button>
+                <button class="tool icon" type="button" aria-label="New panorama" data-tip="New panorama · clears frames"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="note">
+          This is a container query on the stage, not a viewport media query, so the layout depends on the stage's own width.
+          The toggle gets the first row. The second row is Download, which fills the row, then +, in the same order as the wide layout. Download keeps the word "Download" because the row has room for it.
+        </p>
+      </div>
+
+      <div style="padding-bottom: 150px">
+        <p class="state-label"><span>e</span> · optional — confirm before discarding a result that wasn't downloaded</p>
+        <div class="frame" style="--stage-w: 1040px">
+          <div class="stage head-only">
+            <div class="stage-head">
+              <div class="title"><span class="idx">3</span><h3>Panorama</h3></div>
+              <div class="chips">
+                <span class="chip pass"><i></i>Complete</span><span class="chip">SIFT</span><span class="chip">3 frames</span><span class="chip">order 1 → 2 → 3</span>
+              </div>
+              <div class="toolbar" role="toolbar" aria-label="Panorama tools">
+                <button class="tool toggle" type="button" aria-pressed="true" data-toggle-overlay>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v18" stroke-dasharray="3 3"/><circle cx="6" cy="8" r="2"/><circle cx="18" cy="15" r="2"/></svg>
+                  Seams &amp; inliers<span class="switch" aria-hidden="true"></span>
+                </button>
+                <span class="tool-sep" aria-hidden="true"></span>
+                <button class="tool primary" type="button" aria-label="Download PNG 1875×660"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 4v12m0 0-4-4m4 4 4-4M4 20h16"/></svg><span aria-hidden="true">Download PNG</span><span class="mono" aria-hidden="true">1875×660</span></button>
+                <span class="anchor">
+                  <button class="tool icon" type="button" aria-label="New panorama" aria-expanded="true" style="background: var(--surface-2); border-color: var(--border); color: var(--text)"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+                  <div class="pop" role="dialog" aria-label="Start a new panorama?">
+                    <p><b>Start a new panorama?</b>This clears the 3 frames and this result. It hasn't been downloaded yet.</p>
+                    <div class="pop-actions">
+                      <button class="tool" type="button">Keep</button>
+                      <button class="tool danger" type="button">Clear and start over</button>
+                    </div>
+                  </div>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <p class="note">
+          This is a separate change and can be skipped. It appears only when the current result hasn't been downloaded. After a download, + resets right away.
+          <span class="mono">useStitchRun.reset()</span> throws away the result, and nothing can bring it back.
+        </p>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ======================================================================
+       04 OPTION B
+       ====================================================================== -->
+  <section class="block">
+    <h2 class="sec-title"><span class="n">04</span> Alternative — Option B · the view switch moves onto the image</h2>
+    <p class="sec-note">
+      The overlay control becomes a segmented <em>Image / Seams &amp; inliers</em> switch in the viewport's top-left corner,
+      next to the thing it changes. The head keeps only actions, so it fits on one row down to about 820px.
+      This needs a change to spec §3.1, which moved the toggle <em>out</em> of the plate on purpose (see the comment on <span class="mono">ResultPlate</span>).
+    </p>
+    <div class="seg" role="group" aria-label="Stage width" data-target="frame-b">
+      <button type="button" data-w="1040px" aria-pressed="true">Wide<span class="mono">1040</span></button>
+      <button type="button" data-w="820px" aria-pressed="false">Laptop<span class="mono">820</span></button>
+      <button type="button" data-w="375px" aria-pressed="false">Phone<span class="mono">375</span></button>
+    </div>
+    <div class="frame" id="frame-b" style="--stage-w: 1040px">
+      <section class="stage" aria-label="Output (option B)">
+        <div class="stage-head">
+          <div class="title"><span class="idx">3</span><h3>Panorama</h3></div>
+          <div class="chips">
+            <span class="chip pass"><i></i>Complete</span><span class="chip">SIFT</span><span class="chip">3 frames</span><span class="chip">order 1 → 2 → 3</span>
+          </div>
+          <div class="toolbar" role="toolbar" aria-label="Panorama tools">
+            <button class="tool primary" type="button" aria-label="Download PNG 1875×660"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 4v12m0 0-4-4m4 4 4-4M4 20h16"/></svg><span aria-hidden="true">Download PNG</span><span class="mono" aria-hidden="true">1875×660</span></button>
+            <button class="tool icon" type="button" aria-label="New panorama" data-tip="New panorama · clears frames"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></button>
+          </div>
+        </div>
+        <div class="viewport has-switch">
+          <div class="view-switch" role="group" aria-label="Panorama view">
+            <button type="button" data-view="off" aria-pressed="false">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 16 5-5 4 4 3-3 6 6"/></svg>
+              Image
+            </button>
+            <button type="button" data-view="on" aria-pressed="true">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v18" stroke-dasharray="3 3"/><circle cx="6" cy="8" r="2"/><circle cx="18" cy="15" r="2"/></svg>
+              Seams &amp; inliers
+            </button>
+          </div>
+          <div class="plate" data-overlay="on">
+            <svg class="pano-svg" viewBox="0 0 1875 660" role="img" aria-label="Stitched panorama of 3 frames, 1875 by 660 pixels"><use href="#pano"/></svg>
+            <svg class="ov-svg" viewBox="0 0 1875 660" aria-hidden="true"><use href="#ov"/></svg>
+            <span class="corner">1875 × 660 · 1.24 MP · PNG</span>
+          </div>
+        </div>
+      </section>
+    </div>
+    <p class="note">
+      Pros: the head is the shortest possible, and both states are labelled. Cons: this reverses a decision the spec already made,
+      and the switch needs its own strip of about 44px above the plate so it doesn't cover the image, which is height the plate needs on a phone.
+    </p>
+  </section>
+
+  <!-- ======================================================================
+       05 IMPLEMENTATION NOTES
+       ====================================================================== -->
+  <section class="block">
+    <h2 class="sec-title"><span class="n">05</span> What would change (Option A) — not done yet</h2>
+    <div class="table-wrap">
+      <table class="impl-table">
+        <thead><tr><th>File</th><th>Change</th></tr></thead>
+        <tbody>
+          <tr>
+            <td>OutputCanvas.tsx</td>
+            <td>Replace the <code>.tools</code> grid and the <code>.tool-stack</code> wrapper with a single <code>role="toolbar"</code> row: toggle (with a <code>.switch</code> span), divider, New panorama as an icon button with <code>aria-label</code>, then Download. The button names stay the same, so the existing <code>getByRole</code> queries still work.</td>
+          </tr>
+          <tr>
+            <td>styles.css</td>
+            <td>Delete the grid placement rules under <code>.stage-head-content .tools</code> and their 600px overrides. Add <code>.toolbar</code>, <code>.tool-sep</code>, <code>.tool.icon</code> and <code>.switch</code>. Give <code>.stage</code> <code>container-type: inline-size</code> and move the narrow-stage rules into <code>@container (max-width: 560px)</code>.</td>
+          </tr>
+          <tr>
+            <td>docs/ui-spec.md</td>
+            <td>Section 3.1 tools row and the 600px breakpoint row: document the order (toggle │ download, reset), the switch affordance and the icon-only reset, and remove "the download label drops the word Download".</td>
+          </tr>
+          <tr>
+            <td>OutputCanvas.test.tsx</td>
+            <td>Add tests for: toolbar order is Seams &amp; inliers → Download → New panorama; the toggle still sets <code>aria-pressed</code>; New panorama keeps its accessible name while showing only an icon.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<script>
+  // Sample correspondences for the overlay (illustration only, like Overlay.tsx).
+  (function drawSamples() {
+    const ns = "http://www.w3.org/2000/svg";
+    const g = document.getElementById("ov-samples");
+    const pts = [
+      [398, 380], [470, 428], [560, 372], [622, 396], [700, 360], [712, 470], [760, 398],
+      [830, 372], [880, 352], [905, 383], [960, 340], [1002, 378], [1040, 398],
+      [1110, 386], [1180, 392], [1232, 372], [1250, 440], [1292, 402], [1332, 360], [1368, 388],
+    ];
+    for (const [x, y] of pts) {
+      const line = document.createElementNS(ns, "line");
+      Object.entries({ x1: x, y1: y, x2: x + 4, y2: y + 3, stroke: "#f4f4f5", "stroke-width": 1.6, opacity: 0.35 })
+        .forEach(([k, v]) => line.setAttribute(k, v));
+      g.appendChild(line);
+      for (const [cx, cy] of [[x, y], [x + 4, y + 3]]) {
+        const c = document.createElementNS(ns, "circle");
+        Object.entries({ cx, cy, r: 9, fill: "none", stroke: "#ff6b6b", "stroke-width": 2, opacity: 0.75 })
+          .forEach(([k, v]) => c.setAttribute(k, v));
+        g.appendChild(c);
+      }
+    }
+  })();
+
+  // Option A: the toggle flips aria-pressed and the overlay in its own stage.
+  document.querySelectorAll("[data-toggle-overlay]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const on = btn.getAttribute("aria-pressed") !== "true";
+      btn.setAttribute("aria-pressed", String(on));
+      const plate = btn.closest(".stage").querySelector(".plate");
+      if (plate) plate.dataset.overlay = on ? "on" : "off";
+    });
+  });
+
+  // Option B: segmented view switch on the viewport.
+  document.querySelectorAll(".view-switch").forEach((group) => {
+    const plate = group.closest(".viewport").querySelector(".plate");
+    group.querySelectorAll("button").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        group.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b === btn)));
+        plate.dataset.overlay = btn.dataset.view;
+      });
+    });
+  });
+
+  // Stage width switchers.
+  document.querySelectorAll(".seg[data-target]").forEach((seg) => {
+    const frame = document.getElementById(seg.dataset.target);
+    seg.querySelectorAll("button").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        seg.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b === btn)));
+        frame.style.setProperty("--stage-w", btn.dataset.w);
+      });
+    });
+  });
+</script>
+</body>
+</html>

@@ -285,48 +285,20 @@ button {
   gap: 12px;
   min-width: 0;
 }
+/* Stage head: the title, the chips and the tools wrap as items of the head
+   itself, so a narrow stage moves the whole toolbar to its own row instead
+   of splitting it. 12px block padding keeps a one-row head at 56px with the
+   32px tools. */
 .panel-head:has(.stage-head-content) {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  padding-block: 12px;
 }
 .panel-head:has(.stage-head-content) .panel-head-title {
   flex: none;
 }
 .stage-head-content {
-  display: flex;
-  align-items: center;
-  flex: 1;
-  gap: 8px;
-  min-width: 0;
-}
-.stage-head-content .chips {
-  flex: 1;
-  align-self: center;
-}
-.stage-head-content .tools {
-  display: grid;
-  grid-template-columns: repeat(2, max-content);
-  gap: 4px;
-  align-items: center;
-}
-.stage-head-content .tools > .tool[aria-pressed] {
-  grid-column: 1;
-  grid-row: 1;
-}
-.stage-head-content .tools > .tool-stack {
   display: contents;
-}
-.stage-head-content .tool-stack > .tool.primary {
-  grid-column: 1 / -1;
-  grid-row: 2;
-}
-.stage-head-content .tool-stack > .tool:not(.primary) {
-  grid-column: 2;
-  grid-row: 1;
-}
-.stage-head-content .tools:not(:has([aria-pressed])) .tool-stack > .tool:not(.primary) {
-  grid-column: 1;
 }
 .idx {
   flex: none;
@@ -895,6 +867,9 @@ input[type="range"]:disabled {
 .stage {
   display: flex;
   flex-direction: column;
+  /* The narrow tools layout follows the stage's own width, not the window's:
+     a two-column workspace can leave the stage narrow on a wide screen. */
+  container: stage / inline-size;
 }
 
 /* head: chips + tools */
@@ -931,19 +906,21 @@ input[type="range"]:disabled {
 .chip.fail {
   color: var(--fail);
 }
+/* tools: one row — overlay toggle │ Download, reset */
 .tools {
   display: flex;
-  align-items: flex-end;
-  gap: 4px;
+  align-items: center;
+  gap: 6px;
   margin-left: auto;
 }
-.tool-stack {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
+.tool-sep {
+  width: 1px;
+  height: 20px;
+  margin: 0 4px;
+  background: var(--border-strong);
 }
 .tool {
+  position: relative;
   height: 32px;
   padding: 0 12px;
   border-radius: 8px;
@@ -952,9 +929,17 @@ input[type="range"]:disabled {
   align-items: center;
   gap: 8px;
   font-size: 13px;
+  white-space: nowrap;
   border: 1px solid var(--border-strong);
   background: var(--surface);
   color: var(--text);
+  transition:
+    background 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
+}
+.tool:hover {
+  background: var(--surface-2);
 }
 .tool[aria-pressed="true"] {
   background: var(--accent-soft);
@@ -970,6 +955,112 @@ input[type="range"]:disabled {
 .tool .mono {
   font-size: 11.5px;
   opacity: 0.7;
+}
+
+/* The overlay toggle carries a small switch so it reads as on/off in both
+   states, not only when pressed. */
+.tool.toggle {
+  padding: 0 10px 0 12px;
+}
+.tool .switch {
+  position: relative;
+  width: 22px;
+  height: 12px;
+  border-radius: 99px;
+  background: var(--surface-3);
+  border: 1px solid var(--border-strong);
+  transition:
+    background 150ms ease,
+    border-color 150ms ease;
+}
+.tool .switch::after {
+  content: "";
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--faint);
+  transition:
+    transform 150ms ease,
+    background 150ms ease;
+}
+.tool[aria-pressed="true"] .switch {
+  background: color-mix(in srgb, var(--accent) 30%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 60%, transparent);
+}
+.tool[aria-pressed="true"] .switch::after {
+  transform: translateX(10px);
+  background: var(--accent);
+}
+
+/* Icon-only tool (the reset): borderless and muted so it never competes with
+   Download; `data-tip` shows its label on hover and keyboard focus. */
+.tool.icon {
+  width: 32px;
+  padding: 0;
+  justify-content: center;
+  background: transparent;
+  border-color: transparent;
+  color: var(--muted);
+}
+.tool.icon:hover {
+  background: var(--surface-2);
+  border-color: var(--border);
+  color: var(--text);
+}
+.tool[data-tip]::after {
+  content: attr(data-tip);
+  position: absolute;
+  top: calc(100% + 8px);
+  right: -4px;
+  z-index: 5;
+  padding: 5px 8px;
+  border-radius: 6px;
+  background: var(--surface-3);
+  border: 1px solid var(--border-strong);
+  color: var(--text);
+  font: 12px var(--sans);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-2px);
+  transition:
+    opacity 120ms ease,
+    transform 120ms ease;
+}
+.tool[data-tip]:hover::after,
+.tool[data-tip]:focus-visible::after {
+  opacity: 1;
+  transform: none;
+}
+
+/* Narrow stage: the toggle takes the first row; Download fills the second
+   and the reset keeps its place after it, the same order as the wide row.
+   440px is about where the one-row toolbar stops fitting. */
+@container stage (max-width: 440px) {
+  .tools {
+    width: 100%;
+    margin-left: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+  }
+  .tools .tool.toggle {
+    grid-column: 1 / -1;
+    justify-self: start;
+  }
+  .tools .tool-sep {
+    display: none;
+  }
+  .tools .tool.primary {
+    grid-column: 1;
+    justify-content: center;
+  }
+  .tools .tool.icon {
+    grid-column: 2;
+  }
 }
 
 /* viewport */
@@ -1471,52 +1562,6 @@ input[type="range"]:disabled {
   }
   .plate {
     width: calc(100% - 20px);
-  }
-  .panel-head:has(.tools) {
-    flex-wrap: wrap;
-  }
-  .panel-head:has(.stage-head-content) {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    align-items: start;
-    gap: 0;
-  }
-  .stage-head-content {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 8px;
-  }
-  .stage-head-content .chips,
-  .stage-head-content .tools {
-    grid-column: 1;
-    grid-row: auto;
-  }
-  .stage-head-content .tools {
-    display: grid;
-    grid-template-columns: max-content max-content;
-    justify-content: start;
-    gap: 8px;
-  }
-  .stage-head-content .tools > .tool-stack {
-    display: contents;
-  }
-  .tools {
-    margin-left: 0;
-    width: 100%;
-  }
-  .tools .tool {
-    width: auto;
-    justify-content: center;
-    white-space: nowrap;
-    font-size: 12.5px;
-    padding: 0 8px;
-  }
-  .tools .tool.primary {
-    grid-column: 1 / -1;
-    width: 100%;
-  }
-  .tools .tool .dl-word {
-    display: none;
   }
 }
 
