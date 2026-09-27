@@ -18,6 +18,10 @@ This task keeps CI.
       `frontend` runs `npm run lint` (tsc -b), `npm run build`, and
       `npm test` (Vitest, including the A12 `build-exclusion` test).
 - [ ] demo timer and contribution evidence are ready.
+      **Open on 2026-09-28.** Every box in the `docs/demo-script.md`
+      rehearsal checklist is still unchecked, and the licence decision for
+      the demo photo sets (that file, "Demo image sources and licences") is
+      unmade.
 
 See `task-plans/09-production-deploy.md` for Render/Vercel deployment, the
 scripted and manual smoke checks, and the public URLs. It supersedes 08g.

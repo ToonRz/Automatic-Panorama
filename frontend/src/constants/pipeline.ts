@@ -46,7 +46,7 @@ export const PIPELINE_STAGES: readonly PipelineStage[] = [
     key: "blend",
     label: "Blend and crop",
     short: "Blend & crop",
-    description: "Multi-band seam blending over overlaps and trimming alpha margins.",
+    description: "Feather blending across overlaps and trimming empty margins.",
   },
   {
     key: "encode",

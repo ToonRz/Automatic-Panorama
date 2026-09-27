@@ -1,6 +1,6 @@
-import { render, screen, within } from "@testing-library/react";
+import { act, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { PIPELINE_STAGES } from "../../constants/pipeline";
 import {
@@ -58,6 +58,37 @@ describe("OutputCanvas", () => {
     expect(container.textContent).not.toMatch(/\d+(\.\d+)?\s?ms\b/);
     expect(container.textContent).not.toMatch(/\d+%/);
     expect(screen.queryByText(/cold start|waking/i)).not.toBeInTheDocument();
+  });
+
+  describe("working state names no stage (ui-spec section 5)", () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("keeps every ribbon stage pending, and shows no stage card or live stage text, after timers advance", () => {
+      vi.useFakeTimers();
+      const { container } = render(
+        <OutputCanvas {...baseProps} state="working" files={[{ name: "a.jpg" }, { name: "b.jpg" }]} />,
+      );
+      const assertNoStageProgress = () => {
+        const cells = container.querySelectorAll(".ribbon li");
+        expect(cells).toHaveLength(7);
+        cells.forEach((cell) => {
+          expect(cell).not.toHaveClass("is-done");
+          expect(cell).not.toHaveClass("is-active");
+        });
+        expect(container.textContent).not.toMatch(/stage\s*\d+\s*of/i);
+        for (const stage of PIPELINE_STAGES) {
+          expect(container.textContent).not.toContain(stage.description);
+        }
+        expect(container.querySelector(".cyber-hud-card")).not.toBeInTheDocument();
+      };
+      assertNoStageProgress();
+      act(() => {
+        vi.advanceTimersByTime(20_000);
+      });
+      assertNoStageProgress();
+    });
   });
 
   it("adds the cold-start note only once the threshold has passed", () => {

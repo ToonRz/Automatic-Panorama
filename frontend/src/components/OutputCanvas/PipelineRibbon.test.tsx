@@ -1,5 +1,5 @@
-import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { act, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { PIPELINE_STAGES } from "../../constants/pipeline";
 import { PipelineRibbon } from "./PipelineRibbon";
@@ -23,5 +23,33 @@ describe("PipelineRibbon", () => {
     expect(container.textContent).not.toMatch(/ms\b|%/);
     rerender(<PipelineRibbon mode="done" />);
     expect(container.querySelector("ol")).toHaveAttribute("data-mode", "done");
+  });
+
+  describe("pending mode (ui-spec section 5)", () => {
+    afterEach(() => {
+      vi.useRealTimers();
+    });
+
+    it("gives all seven stages the same treatment, with none done or active, even as time passes", () => {
+      vi.useFakeTimers();
+      const { container } = render(<PipelineRibbon mode="pending" />);
+      const assertUniform = () => {
+        const items = screen.getAllByRole("listitem");
+        expect(items).toHaveLength(7);
+        items.forEach((item, index) => {
+          expect(item).toHaveClass("is-pending");
+          expect(item).not.toHaveClass("is-done");
+          expect(item).not.toHaveClass("is-active");
+          expect(item).toHaveTextContent(String(index + 1).padStart(2, "0"));
+        });
+        expect(container.querySelector("svg")).not.toBeInTheDocument();
+        expect(container.querySelector(".line-done, .line-active")).not.toBeInTheDocument();
+      };
+      assertUniform();
+      act(() => {
+        vi.advanceTimersByTime(20_000);
+      });
+      assertUniform();
+    });
   });
 });

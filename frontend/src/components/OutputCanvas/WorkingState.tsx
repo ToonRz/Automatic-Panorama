@@ -1,25 +1,16 @@
-import { PIPELINE_STAGES } from "../../constants/pipeline";
 import type { Detector } from "../../types";
 
 export interface WorkingStateProps {
   fileCount: number;
   detector: Detector;
   isColdStart: boolean;
-  activeStageIndex?: number;
 }
 
 /**
- * Concept B: Centered Cyber HUD
- * Dynamic pipeline feedback indicating which OpenCV stage is currently in progress.
+ * docs/ui-spec.md section 5: the server answers once, at the end, so this
+ * state names no current stage and announces nothing as time passes.
  */
-export function WorkingState({
-  fileCount,
-  detector,
-  isColdStart,
-  activeStageIndex = 0,
-}: WorkingStateProps) {
-  const currentStage = PIPELINE_STAGES[activeStageIndex] ?? PIPELINE_STAGES[0];
-
+export function WorkingState({ fileCount, detector, isColdStart }: WorkingStateProps) {
   return (
     <div className="placeholder working cyber-working-hud">
       <svg className="frames" width="352" height="130" viewBox="-26 0 352 130" aria-hidden="true">
@@ -40,29 +31,6 @@ export function WorkingState({
       <h3>
         Stitching {fileCount} frames with {detector}…
       </h3>
-
-      <div className="cyber-hud-card" aria-live="polite">
-        <div className="hud-badge">
-          <span className="hud-pulse-blip" aria-hidden="true" />
-          <span>STAGE 0{activeStageIndex + 1} OF 07</span>
-        </div>
-        <div className="hud-stage-title">{currentStage.label}</div>
-        <p className="hud-stage-desc">{currentStage.description}</p>
-
-        <div className="hud-metrics">
-          <span className="hud-metric">
-            Frames: <b>{fileCount}</b>
-          </span>
-          <span className="hud-sep" aria-hidden="true">·</span>
-          <span className="hud-metric">
-            Detector: <b>{detector}</b>
-          </span>
-          <span className="hud-sep" aria-hidden="true">·</span>
-          <span className="hud-metric status-active">
-            Pipeline Active
-          </span>
-        </div>
-      </div>
 
       <p className="hud-server-note">
         The server answers once, at the end. Real stage timings appear as soon as it does.

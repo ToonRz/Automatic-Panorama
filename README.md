@@ -27,6 +27,10 @@ alignment diagnostics behind it.
   homography is degenerate, or a file cannot be decoded.
 - Adjustable ratio threshold and RANSAC reprojection threshold, a request
   timeout, and cancel.
+- A one-click sample gallery: three photo sets that stitch and three generated
+  sets that show a named rejection, loaded without an upload. Sources and
+  licence status are recorded in
+  [docs/demo-script.md](docs/demo-script.md#demo-image-sources-and-licences).
 
 ## How it works
 

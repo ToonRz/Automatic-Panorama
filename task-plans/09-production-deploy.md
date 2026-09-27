@@ -30,8 +30,20 @@ members who do not yet have a merged PR (`docs/contribution-plan.md`).
 
 ## Parent acceptance
 
+Reviewed on 2026-09-28 against `main` at `9ff021a`.
+
 - [ ] every child is done and linked from the release PR;
+      **Open.** 09a is done. 09b has no measurement. 09c is short of the
+      auto-deploy trigger, the Vercel Preview check, and the commit-author
+      observation. 09d and most of 09e are still open.
 - [ ] every item in `docs/deployment-plan.md` section 9 has recorded evidence;
+      **Partly.** The section 9.1 CORS check is recorded; the smoke script,
+      section 9.2, section 9.3, and section 9.4 are not.
 - [ ] `docs/deployment-plan.md` section 10 is filled in, with no secrets;
+      **Partly.** It holds the URLs, the CORS values, Render's served commit,
+      and the 2026-09-28 checks. The `test` Preview URL, the UptimeRobot
+      monitor, and the keep-alive date are still pending.
 - [ ] `docs/integration-spec.md` I17 is closed by 09e;
-- [ ] `make test`, `make lint`, and `make frontend-build` are green on `main`.
+      **Open**, until 09e's smoke run and manual pass are done.
+- [x] `make test`, `make lint`, and `make frontend-build` are green on `main`.
+      Evidence: CI run 36341167597 on `9ff021a`.

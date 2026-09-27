@@ -55,12 +55,26 @@ and each child edits only its own block, so parallel slices do not conflict.
 
 ## Parent acceptance
 
-- [ ] all five children merged into `develop`;
-- [ ] `docs/ui-spec.md` A1-A17 pass, and A10 and A13-A17 each have a test or
+Boxes checked on 2026-09-28 against `main` at `9ff021a` (CI run 36341167597
+green).
+
+- [x] all five children merged into `develop`;
+      Evidence: merged as commits directly on `main`, since this repository
+      has no `develop` branch: 10a `ea3fffa`, 10b `5281b76`, 10c `b8d4f9b`,
+      10d `ccd3f07`, 10e `4f8bae2`. Every child's acceptance is fully
+      checked.
+- [x] `docs/ui-spec.md` A1-A17 pass, and A10 and A13-A17 each have a test or
       recorded browser evidence linked from the slice that closed them;
+      Evidence: A10 in 10b and 10e, A13 in 10b-10d, A14 and A16 in 10a, A15
+      in 10e, A17 in 10c. Since then, `docs/ui-spec.md` section 13 records
+      departures in later work (G1-G8); G6 touches A11.
 - [ ] the last child's pull request carries screenshots of all seven mock-mode
       states (`Empty`, `Frames loaded`, `Preparing`, `Stitching`,
       `Stitching (cold start)`, `Complete`, `Rejected`) at 1440px, plus
       `Complete` and `Rejected` at 960px and 375px;
-- [ ] `make test`, `make lint`, and `make frontend-build` are green;
-- [ ] the copy guard (`frontend/src/copyGuard.test.tsx`) passes unchanged.
+      **Not recorded.** 10e landed as a direct commit with no pull request.
+- [x] `make test`, `make lint`, and `make frontend-build` are green;
+      Evidence: CI run 36341167597 (Ruff, Pytest 106 passed; `tsc -b`,
+      `vite build`, Vitest 229 passed).
+- [x] the copy guard (`frontend/src/copyGuard.test.tsx`) passes unchanged.
+      Evidence: last changed in `4f6ea31`, before task 10; it passes in CI.

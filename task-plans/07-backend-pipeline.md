@@ -37,13 +37,35 @@ match scores, which are A's output. `docs/contribution-plan.md` records this.
 
 ## Parent acceptance
 
-- [ ] all ten children merged;
-- [ ] every field in section 7 of `docs/backend-spec.md` appears in a real
+Boxes checked on 2026-09-28 against `main` at `9ff021a` (CI run 36341167597:
+106 Pytest tests green).
+
+- [x] all ten children merged;
+      Evidence: 07a-07j landed together as `06f90f5` directly on `main`, with
+      the scaffold removal in `161c687`. Each child file records its own
+      acceptance.
+- [x] every field in section 7 of `docs/backend-spec.md` appears in a real
       response captured in a pull request;
-- [ ] every code in section 9 is raised by at least one test;
-- [ ] every threshold in section 10 is read from settings, with no literal
+      Evidence: captured in the repository rather than a pull request; see
+      `task-plans/07j`, first item.
+- [x] every code in section 9 is raised by at least one test;
+      Evidence: `task-plans/07j`, fourth item.
+- [x] every threshold in section 10 is read from settings, with no literal
       threshold left in route, service, or stage code;
-- [ ] the acceptance table in section 12.3 passes in CI;
-- [ ] `POST /api/v1/stitch` no longer returns 501, and the scaffold state is
+      Evidence: `services/stitcher.py` passes `settings.min_ratio_passed_matches`,
+      `min_inliers`, `min_inlier_ratio`, `max_reprojection_error`,
+      `max_output_pixels`, `max_image_pixels`, and `detector_nfeatures` into
+      the stages. `api/routes.py` falls back to `settings.ratio_threshold`
+      and `ransac_reproj_threshold`.
+- [x] the acceptance table in section 12.3 passes in CI;
+      Evidence: the SIFT and ORB pair tests in `test_homography.py`, and the
+      canvas and border tests in `test_end_to_end.py`, all against the
+      `conftest.py` constants.
+- [x] `POST /api/v1/stitch` no longer returns 501, and the scaffold state is
       gone from the frontend in the same pull request;
+      Evidence: `06f90f5` and `161c687`, consecutive commits with no pull
+      request.
 - [ ] `docs/mockups/backend-design.html` no longer contradicts the spec.
+      **Not done.** It still carries a supersession banner that sends
+      readers to `docs/backend-spec.md` instead of matching it
+      (`task-plans/07j`).
