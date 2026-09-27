@@ -8,11 +8,6 @@ FastAPI/OpenCV pipeline, which returns a stitched PNG together with the
 alignment diagnostics behind it.
 
 - **Web app:** <https://automatic-panorama.vercel.app>
-- **API:** <https://automatic-panorama-api.onrender.com>
-  ([interactive docs](https://automatic-panorama-api.onrender.com/docs))
-
-> The backend runs on Render Free, which sleeps when idle. The first request
-> after a quiet period can take about a minute while the service wakes up.
 
 ## Features
 
