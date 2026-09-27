@@ -1,7 +1,14 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import { Overlay } from "./Overlay";
+import { LABEL_LINE_HEIGHT, LABEL_WIDTH, Overlay } from "./Overlay";
+
+/** A label's baseline and horizontal extent, in output pixels. */
+function labelBox(label: HTMLElement) {
+  const x = Number(label.getAttribute("x"));
+  const left = label.getAttribute("text-anchor") === "end" ? x - LABEL_WIDTH : x;
+  return { y: Number(label.getAttribute("y")), left, right: left + LABEL_WIDTH };
+}
 
 describe("Overlay", () => {
   it("keeps a seam label inside the image when the seam's top point is cropped off", () => {
@@ -56,5 +63,47 @@ describe("Overlay", () => {
 
     expect(screen.getByText(/SEAM 01 · 457 inliers/)).toHaveAttribute("y", "28");
     expect(screen.getByText(/SEAM 02 · 568 inliers/)).toHaveAttribute("y", "60");
+  });
+
+  it("keeps close seams' labels apart when the later seam's top point is a line higher", () => {
+    // The bundled 3-frame boat set: seams about 300px apart, the second
+    // seam's top point 32px above the first's. Staggering each label from its
+    // own top point put both on one line, where the first ran into the second.
+    render(
+      <Overlay
+        width={1875}
+        height={660}
+        seamLines={[
+          { top: [1070, 32], bottom: [1062, 660] },
+          { top: [1370, 0], bottom: [1385, 660] },
+        ]}
+        correspondencesPerPair={[[], []]}
+        inliersPerPair={[461, 342]}
+      />,
+    );
+
+    const first = labelBox(screen.getByText(/SEAM 01 · 461 inliers/));
+    const second = labelBox(screen.getByText(/SEAM 02 · 342 inliers/));
+    const separateLines = Math.abs(first.y - second.y) >= LABEL_LINE_HEIGHT;
+    const separateColumns = first.right <= second.left || second.right <= first.left;
+    expect(separateLines || separateColumns).toBe(true);
+  });
+
+  it("leaves far-apart seams' labels on the same line", () => {
+    render(
+      <Overlay
+        width={1875}
+        height={660}
+        seamLines={[
+          { top: [400, 0], bottom: [410, 660] },
+          { top: [1000, 0], bottom: [990, 660] },
+        ]}
+        correspondencesPerPair={[[], []]}
+        inliersPerPair={[461, 342]}
+      />,
+    );
+
+    expect(screen.getByText(/SEAM 01 · 461 inliers/)).toHaveAttribute("y", "28");
+    expect(screen.getByText(/SEAM 02 · 342 inliers/)).toHaveAttribute("y", "28");
   });
 });

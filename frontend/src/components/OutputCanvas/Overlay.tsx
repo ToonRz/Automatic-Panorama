@@ -2,28 +2,49 @@ import type { SeamLine, StitchCorrespondence } from "../../types";
 
 const LABEL_GAP = 12;
 const LABEL_BASELINE = 28;
-const LABEL_LINE_HEIGHT = 32;
+export const LABEL_LINE_HEIGHT = 32;
 /** Rough rendered width of "SEAM 01 · 999 inliers" at 22px mono, letter-spaced. */
-const LABEL_WIDTH = 330;
+export const LABEL_WIDTH = 330;
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
 }
 
+interface LabelPosition {
+  x: number;
+  y: number;
+  textAnchor: "start" | "end";
+}
+
 /**
- * Anchors the label at the seam's top point, but inside the image: the crop
- * can leave a seam's top point above the panorama, and a seam near the right
- * border has no room for a label on its right, so it flips to the left.
- * Each seam's label drops one line below the previous seam's, so labels of
- * close seams do not overprint each other.
+ * Anchors each label beside its seam's top point, but inside the image: the
+ * crop can leave a seam's top point above the panorama, and a seam near the
+ * right border has no room for a label on its right, so it flips to the left.
+ * All labels sit on lines below one shared top, the highest seam top point
+ * inside the image. A label takes the first line where its box does not
+ * overlap an earlier label's, so labels of close seams do not overprint each
+ * other whatever the seams' own top points are.
  */
-function labelPosition(seam: SeamLine, index: number, width: number, height: number) {
-  const x = clamp(seam.top[0], 0, width);
-  const baseline = LABEL_BASELINE + index * LABEL_LINE_HEIGHT;
-  const y = clamp(seam.top[1], 0, Math.max(0, height - baseline)) + baseline;
-  return x + LABEL_GAP + LABEL_WIDTH <= width
-    ? { x: x + LABEL_GAP, y, textAnchor: "start" as const }
-    : { x: x - LABEL_GAP, y, textAnchor: "end" as const };
+function labelPositions(seamLines: SeamLine[], width: number, height: number): LabelPosition[] {
+  const lines: Array<Array<[number, number]>> = [];
+  const placed = seamLines.map((seam) => {
+    const x = clamp(seam.top[0], 0, width);
+    const start = x + LABEL_GAP + LABEL_WIDTH <= width;
+    const left = start ? x + LABEL_GAP : x - LABEL_GAP - LABEL_WIDTH;
+    const right = left + LABEL_WIDTH;
+    let line = 0;
+    while (lines[line]?.some(([l, r]) => left < r && l < right)) line += 1;
+    (lines[line] ??= []).push([left, right]);
+    return { line, x: start ? left : right, textAnchor: start ? "start" : "end" } as const;
+  });
+  const deepest = LABEL_BASELINE + (lines.length - 1) * LABEL_LINE_HEIGHT;
+  const highest = Math.min(...seamLines.map((seam) => seam.top[1]));
+  const top = clamp(highest, 0, Math.max(0, height - deepest));
+  return placed.map(({ line, x, textAnchor }) => ({
+    x,
+    y: top + LABEL_BASELINE + line * LABEL_LINE_HEIGHT,
+    textAnchor,
+  }));
 }
 
 export interface OverlayProps {
@@ -48,6 +69,7 @@ export function Overlay({
   correspondencesPerPair,
   inliersPerPair,
 }: OverlayProps) {
+  const labels = labelPositions(seamLines, width, height);
   return (
     <svg
       className="overlay"
@@ -102,7 +124,7 @@ export function Overlay({
               </g>
             ))}
             <text
-              {...labelPosition(seam, index, width, height)}
+              {...labels[index]}
               style={{ fill: "var(--pass)", fontFamily: "var(--mono)" }}
               fontSize={22}
               letterSpacing={2}

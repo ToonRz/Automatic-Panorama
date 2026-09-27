@@ -395,6 +395,9 @@ its bottom point, `--fail` circles on both points of each sampled correspondence
 faint connecting line between them, and a mono label reading the seam number and
 the inlier count from `inliers_per_pair`. The label is anchored to the seam's
 top point, so it follows a tilted seam instead of floating away from it.
+Labels sit on shared lines below the highest seam top point; a label whose box
+would overlap an earlier label's drops to the next free line, so labels of
+close seams never overprint each other.
 
 The toggle is a two-state button reflecting `aria-pressed`. It defaults to on,
 because the evidence is the point of the screen. When the overlay fields are
