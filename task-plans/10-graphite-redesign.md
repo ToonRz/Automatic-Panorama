@@ -66,8 +66,10 @@ green).
 - [x] `docs/ui-spec.md` A1-A17 pass, and A10 and A13-A17 each have a test or
       recorded browser evidence linked from the slice that closed them;
       Evidence: A10 in 10b and 10e, A13 in 10b-10d, A14 and A16 in 10a, A15
-      in 10e, A17 in 10c. Since then, `docs/ui-spec.md` section 13 records
-      departures in later work (G1-G8); G6 touches A11.
+      in 10e, A17 in 10c. Since then, `docs/ui-spec.md` section 13 recorded
+      departures in later work (G1-G8); G2, G3, G7, and G8 have since
+      closed, and G6 has narrowed to its hover-only half, which still
+      touches A11.
 - [ ] the last child's pull request carries screenshots of all seven mock-mode
       states (`Empty`, `Frames loaded`, `Preparing`, `Stitching`,
       `Stitching (cold start)`, `Complete`, `Rejected`) at 1440px, plus
