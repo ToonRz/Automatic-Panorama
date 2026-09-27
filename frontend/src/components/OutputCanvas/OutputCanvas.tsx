@@ -137,40 +137,18 @@ export function OutputCanvas({
             )}
           </div>
 
+          {/* One row, left to right: the view toggle, a divider, then the
+              actions on this result. Download is the primary action; the reset
+              is a quiet icon because the rail already offers a labelled one. */}
           {state === "complete" && result && (
-            <div className="tools">
-              <div className="tool-stack">
-                <button
-                  className="tool primary"
-                  type="button"
-                  onClick={handleDownload}
-                  aria-label={`Download PNG ${result.image.width}×${result.image.height}`}
-                >
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    aria-hidden="true"
-                  >
-                    <path d="M12 4v12m0 0-4-4m4 4 4-4M4 20h16" />
-                  </svg>
-                  <span className="dl-word" aria-hidden="true">
-                    Download
-                  </span>{" "}
-                  <span aria-hidden="true">PNG</span>{" "}
-                  <span className="mono" aria-hidden="true">
-                    {result.image.width}×{result.image.height}
-                  </span>
-                </button>
-                {onReset && (
+            <div className="tools" role="group" aria-label="Panorama tools">
+              {hasOverlay && (
+                <>
                   <button
-                    className="tool"
+                    className="tool toggle"
                     type="button"
-                    onClick={onReset}
-                    title="Start a new panorama"
+                    aria-pressed={overlayOn}
+                    onClick={() => setOverlayOn((value) => !value)}
                   >
                     <svg
                       width="14"
@@ -181,33 +159,57 @@ export function OutputCanvas({
                       strokeWidth="2"
                       aria-hidden="true"
                     >
-                      <path d="M12 5v14M5 12h14" />
+                      <path d="M12 3v18" strokeDasharray="3 3" />
+                      <circle cx="6" cy="8" r="2" />
+                      <circle cx="18" cy="15" r="2" />
                     </svg>
-                    <span>New panorama</span>
+                    Seams &amp; inliers
+                    <span className="switch" aria-hidden="true" />
                   </button>
-                )}
-              </div>
-              {hasOverlay && (
+                  <span className="tool-sep" aria-hidden="true" />
+                </>
+              )}
+              <button
+                className="tool primary"
+                type="button"
+                onClick={handleDownload}
+                aria-label={`Download PNG ${result.image.width}×${result.image.height}`}
+              >
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  aria-hidden="true"
+                >
+                  <path d="M12 4v12m0 0-4-4m4 4 4-4M4 20h16" />
+                </svg>
+                <span aria-hidden="true">Download PNG</span>
+                <span className="mono" aria-hidden="true">
+                  {result.image.width}×{result.image.height}
+                </span>
+              </button>
+              {onReset && (
                 <button
-                  className="tool"
+                  className="tool icon"
                   type="button"
-                  aria-pressed={overlayOn}
-                  onClick={() => setOverlayOn((value) => !value)}
+                  onClick={onReset}
+                  aria-label="New panorama"
+                  data-tip="New panorama · clears frames"
                 >
                   <svg
-                    width="14"
-                    height="14"
+                    width="15"
+                    height="15"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="2"
                     aria-hidden="true"
                   >
-                    <path d="M12 3v18" strokeDasharray="3 3" />
-                    <circle cx="6" cy="8" r="2" />
-                    <circle cx="18" cy="15" r="2" />
+                    <path d="M12 5v14M5 12h14" />
                   </svg>
-                  Seams &amp; inliers
                 </button>
               )}
             </div>

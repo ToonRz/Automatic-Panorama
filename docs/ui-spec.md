@@ -173,7 +173,14 @@ From top to bottom:
 | above 1180px | the layout above |
 | 1180px and below | KPI strip becomes 3 × 2; the table and timing panels stack |
 | 960px and below | the workspace becomes one column, rail first; viewport min-height 300px; ribbon wraps 4 + 3; the privacy line hides |
-| 600px and below | shell padding narrows; h1 22px; KPI strip becomes 2 × 3; the stage tools wrap to their own full-width row; the method line hides; the download label drops the word "Download" visually |
+| 600px and below | shell padding narrows; h1 22px; KPI strip becomes 2 × 3; the method line hides |
+
+The stage tools follow the stage's own width (a container query on `.stage`),
+not the window's. When the head is too narrow for the title, the chips and the
+tools on one line, the whole toolbar wraps to its own right-aligned row; it
+never splits. At a stage content width of 440px and below the toolbar spans
+the head: the overlay toggle on the first row, then Download filling the
+second row with the reset icon after it.
 
 The per-pair table scrolls horizontally inside its own container. The page
 never scrolls horizontally.
@@ -209,13 +216,13 @@ trailing content.
 | `preparing` | Panorama | `Preparing` in `--run` | none | placeholder, ready copy | idle |
 | `ready` | Panorama | `Ready · {n} frames` | none | placeholder, ready copy | idle |
 | `working` | Stitching | `Running` in `--run` | none | working illustration | pending |
-| `complete` | Panorama | `Complete` in `--pass`, `{detector}`, `{n} frames`, `order 1 → 2 → 3`, and `Produced with previous settings` in `--run` when stale | overlay toggle when the section 6.2 fields exist; download | panorama plate | done |
+| `complete` | Panorama | `Complete` in `--pass`, `{detector}`, `{n} frames`, `order 1 → 2 → 3`, and `Produced with previous settings` in `--run` when stale | overlay toggle when the section 6.2 fields exist; download; new-panorama reset | panorama plate | done |
 | `failed` | Not stitched | `Rejected` in `--fail` | none | failed card | idle |
 
 | Part | Anatomy |
 | --- | --- |
 | chip | 24px tall, 6px radius, `--surface-2`, `--border`, mono 11.5px `--muted`; a status chip adds a 6px dot and takes the status colour |
-| tools | 32px buttons, 8px radius. Overlay toggle "Seams & inliers": outlined; pressed means an `--accent-soft` fill, an `--accent` border at 45%, and `--accent` text. Download: inverted (`--text` fill, `--bg` label, 500), reading "Download PNG" plus mono `W×H` |
+| tools | one row in a group named "Panorama tools", left to right: the overlay toggle, a 1 × 20px `--border-strong` divider, Download, the reset. 32px buttons, 8px radius, a 12px-padded head so one row stays 56px. Overlay toggle "Seams & inliers": outlined, with a 22 × 12px switch after the label whose knob sits left in `--faint` when off; pressed means an `--accent-soft` fill, an `--accent` border at 45%, `--accent` text, and the knob right in `--accent`. Download: inverted (`--text` fill, `--bg` label, 500), reading "Download PNG" plus mono `W×H`. Reset: a 32px borderless icon (`+`, `--muted`), named "New panorama" by `aria-label`, with a tooltip "New panorama · clears frames" on hover and keyboard focus; it stays quiet because the rail already offers a labelled "+ Start new panorama". The divider is omitted with the toggle |
 | viewport | 14px inset, `--r-md`, `--matte` with the `--dot` grid, `--border`; min-height 460px (300px at 960px, 220px at 600px); content centred |
 | panorama plate | the image at the viewport width minus 48px (minus 20px below 600px), 4px radius, drop shadow; the overlay SVG sits exactly on the image, with label backings in `--scrim`; a caption in the bottom-right corner, mono 11px `--faint`: `W × H · MP · PNG` |
 | placeholder | a decorative 300 × 130 SVG (three outlined frames, `--accent-soft` overlaps, dashed `--accent` match lines, `aria-hidden`); h3; a body line (13.5px `--muted`, 440px max); a legend of the three status colours labelled accepted / in progress / rejected |

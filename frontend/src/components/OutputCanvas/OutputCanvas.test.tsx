@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 
@@ -122,9 +122,12 @@ describe("OutputCanvas", () => {
       expect(screen.queryByRole("img", { name: /seam and inlier overlay/i })).not.toBeInTheDocument();
     });
 
-    it("omits the toggle when the overlay fields are absent, with no error", () => {
-      render(<OutputCanvas {...baseProps} state="complete" result={successWithoutOverlayFixture} />);
+    it("omits the toggle and its divider when the overlay fields are absent, with no error", () => {
+      const { container } = render(
+        <OutputCanvas {...baseProps} state="complete" result={successWithoutOverlayFixture} />,
+      );
       expect(screen.queryByRole("button", { name: /seams & inliers/i })).not.toBeInTheDocument();
+      expect(container.querySelector(".tool-sep")).not.toBeInTheDocument();
       expect(screen.queryByRole("img", { name: /seam and inlier overlay/i })).not.toBeInTheDocument();
       expect(screen.getByRole("img", { name: /stitched panorama/i })).toBeInTheDocument();
     });
@@ -169,6 +172,39 @@ describe("OutputCanvas", () => {
       expect(resetBtn).toBeInTheDocument();
       await user.click(resetBtn);
       expect(onReset).toHaveBeenCalledTimes(1);
+    });
+
+    it("keeps the tools in one group ordered toggle, Download, New panorama", () => {
+      render(
+        <OutputCanvas
+          {...baseProps}
+          state="complete"
+          result={successWithOverlayFixture}
+          onReset={() => {}}
+        />,
+      );
+
+      const group = screen.getByRole("group", { name: "Panorama tools" });
+      expect(within(group).getAllByRole("button")).toEqual([
+        screen.getByRole("button", { name: /seams & inliers/i }),
+        screen.getByRole("button", { name: "Download PNG 1448×588" }),
+        screen.getByRole("button", { name: "New panorama" }),
+      ]);
+    });
+
+    it("shows New panorama as an icon whose label comes from aria-label and a tooltip", () => {
+      render(
+        <OutputCanvas
+          {...baseProps}
+          state="complete"
+          result={successWithOverlayFixture}
+          onReset={() => {}}
+        />,
+      );
+
+      const resetBtn = screen.getByRole("button", { name: "New panorama" });
+      expect(resetBtn).toHaveTextContent(/^$/);
+      expect(resetBtn).toHaveAttribute("data-tip", expect.stringMatching(/^New panorama/));
     });
   });
 });
