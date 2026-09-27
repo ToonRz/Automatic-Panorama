@@ -12,7 +12,11 @@ This task keeps CI.
 
 ## Acceptance
 
-- [ ] GitHub Actions runs backend tests/lint and frontend build;
+- [x] GitHub Actions runs backend tests/lint and frontend typecheck, tests,
+      and build;
+      Evidence: `.github/workflows/ci.yml` — `backend` runs Ruff and Pytest;
+      `frontend` runs `npm run lint` (tsc -b), `npm run build`, and
+      `npm test` (Vitest, including the A12 `build-exclusion` test).
 - [ ] demo timer and contribution evidence are ready.
 
 See `task-plans/09-production-deploy.md` for Render/Vercel deployment, the
