@@ -11,6 +11,8 @@ export interface DiagnosticsProps {
   /** The current run's failure, if any (docs/backend-spec.md section 9.2's `partial_diagnostics`). */
   error?: { status: number; detail: ApiErrorDetail } | null;
   files?: readonly { name: string }[];
+  /** Lowe ratio threshold of the run, for the funnel's ratio-test labels (G3). */
+  ratioThreshold?: number;
 }
 
 /**
@@ -25,7 +27,7 @@ export interface DiagnosticsProps {
  * always `null` on a failed run, so there is nothing left over to bleed
  * through.
  */
-export function Diagnostics({ result, error = null, files = [] }: DiagnosticsProps) {
+export function Diagnostics({ result, error = null, files = [], ratioThreshold }: DiagnosticsProps) {
   const diagnostics = result?.diagnostics ?? null;
   const partialPairs = result ? null : getPartialDiagnostics(error?.detail);
 
@@ -44,7 +46,7 @@ export function Diagnostics({ result, error = null, files = [] }: DiagnosticsPro
 
       <SummaryCards diagnostics={diagnostics} mimeType={result?.image.mime_type} />
 
-      <FeatureSurvivalFunnel diagnostics={diagnostics} files={files} />
+      <FeatureSurvivalFunnel diagnostics={diagnostics} files={files} ratioThreshold={ratioThreshold} />
 
       <div className="diag-row">
         {partialPairs ? (

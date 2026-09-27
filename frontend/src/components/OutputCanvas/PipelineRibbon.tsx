@@ -1,47 +1,29 @@
-import { useEffect, useState } from "react";
 import { PIPELINE_STAGES } from "../../constants/pipeline";
 
 export type RibbonMode = "idle" | "pending" | "done";
 
 export interface PipelineRibbonProps {
   mode: RibbonMode;
-  activeStageIndex?: number;
 }
 
 /**
- * Concept B: Cyber-Conduit Node Flow
- * Seven pipeline stages connected with laser conduits.
- * Displays completed stages with checkmarks, active stage with glowing pulse,
- * and pending laser flow animation.
+ * docs/ui-spec.md section 5: the server answers once, at the end, so in
+ * pending mode every stage gets the same treatment. No stage is ticked or
+ * ahead of another until the result arrives.
  */
-export function PipelineRibbon({ mode, activeStageIndex }: PipelineRibbonProps) {
-  const [internalStage, setInternalStage] = useState(0);
-
-  useEffect(() => {
-    if (mode !== "pending") {
-      setInternalStage(0);
-      return;
-    }
-    const timer = setInterval(() => {
-      setInternalStage((prev) => (prev < PIPELINE_STAGES.length - 1 ? prev + 1 : prev));
-    }, 1200);
-    return () => clearInterval(timer);
-  }, [mode]);
-
-  const currentStage = activeStageIndex ?? internalStage;
-
+export function PipelineRibbon({ mode }: PipelineRibbonProps) {
   return (
     <ol className="ribbon conduit-ribbon" data-mode={mode}>
       {PIPELINE_STAGES.map((stage, index) => {
-        const isDone = mode === "done" || (mode === "pending" && index < currentStage);
-        const isActive = mode === "pending" && index === currentStage;
-        const isQueued = mode === "idle" || (mode === "pending" && index > currentStage);
+        const isDone = mode === "done";
+        const isPending = mode === "pending";
+        const isQueued = mode === "idle";
 
         return (
           <li
             key={stage.key}
             title={stage.label}
-            className={`conduit-step ${isDone ? "is-done" : ""} ${isActive ? "is-active" : ""} ${
+            className={`conduit-step ${isDone ? "is-done" : ""} ${isPending ? "is-pending" : ""} ${
               isQueued ? "is-queued" : ""
             }`}
           >
@@ -69,9 +51,7 @@ export function PipelineRibbon({ mode, activeStageIndex }: PipelineRibbonProps) 
 
             {index < PIPELINE_STAGES.length - 1 && (
               <div
-                className={`conduit-line ${isDone ? "line-done" : ""} ${
-                  isActive ? "line-active" : ""
-                }`}
+                className={`conduit-line ${isDone ? "line-done" : ""}`}
                 aria-hidden="true"
               />
             )}

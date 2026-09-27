@@ -25,9 +25,27 @@ fixture from 04e and degrades to a clean image when the fields are absent.
 
 ## Parent acceptance
 
-- [ ] all five children merged;
+Status: complete, then restyled by `task-plans/10-graphite-redesign.md`.
+Boxes checked on 2026-09-28 against `main` at `9ff021a`.
+
+- [x] all five children merged;
+      Evidence: as commits directly on `main`, with no pull requests:
+      04e `dffbc3e`, 04a `398fd3d`, 04b `5e77218`, 04c `c269d8d`,
+      04d `2a19667`.
 - [ ] every requirement in section 12 of `docs/ui-spec.md` is covered by a test
       or by a screenshot in a child pull request;
-- [ ] the production build contains neither the state switcher nor the fixtures;
-- [ ] `VITE_API_BASE_URL` still configures the public backend URL;
+      **Partly.** A1-A9, A12, A15, and A17-A23 have Vitest cases (named in
+      04b-04e, 10a-10e, and `docs/ui-spec.md` section 12). A10, A11, A13,
+      A14, and A16 rest on browser checks that 10a-10e describe, and no
+      child pull request exists to carry their screenshots.
+- [x] the production build contains neither the state switcher nor the fixtures;
+      Evidence: `src/test/build-exclusion.test.ts` (A12), run in CI.
+- [x] `VITE_API_BASE_URL` still configures the public backend URL;
+      Evidence: on 2026-09-28 the production bundle at
+      `https://automatic-panorama.vercel.app` (`/assets/index-BsA0NQY2.js`)
+      contained `https://automatic-panorama-api.onrender.com` and no
+      state-switcher code, and that API answered CORS for the production
+      origin (`docs/deployment-plan.md` section 10).
 - [ ] the scaffold state is still present and honest while the API returns 501.
+      **Superseded by 07j**: the API stopped returning 501 and the scaffold
+      state was removed (`161c687`), as this item anticipated.

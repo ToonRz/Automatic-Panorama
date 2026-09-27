@@ -17,6 +17,19 @@ Graphite redesign is `task-plans/10-graphite-redesign.md`. The backend contract
 it reads from is `docs/backend-spec.md`; the overlay fields in section 6.2 are
 owed by `task-plans/07h` and `task-plans/07i`.
 
+Five parts were added after the v2 mock and each has its own reference mockup:
+
+| Part | Section | Mockup |
+| --- | --- | --- |
+| intro cover | 3.2 | `docs/mockups/intro-landing-mock.html` |
+| sample gallery | 3.3 | `docs/mockups/example-gallery-redesign-mock.html` |
+| stage toolbar | 3, 3.1 | `docs/mockups/stage-toolbar-redesign-mock.html` |
+| working-state stage display | 5, 13 | `docs/mockups/loader-redesign-mock.html` |
+| feature survival funnel | 6.6 | `docs/mockups/mock_flow_dashboard.html` |
+
+Where one of these parts departs from a rule stated earlier in this document,
+section 13 records the departure instead of leaving it implied.
+
 ## 1. Scope
 
 In scope for v1:
@@ -25,8 +38,10 @@ In scope for v1:
 - detector choice and two geometric thresholds;
 - five screen states plus a cold-start state;
 - the panorama, a toggleable seam/inlier overlay, and a PNG download;
-- the diagnostics evidence block: summary cards, a per-pair table, and a stage
-  timing chart;
+- the diagnostics evidence block: summary cards, a feature survival funnel, a
+  per-pair table, and a stage timing chart;
+- an intro cover that shows the server state while Render wakes;
+- a sample gallery of three sets that stitch and three that are meant to fail;
 - a mock mode that renders every state without a live backend.
 
 Explicitly out of scope for v1, decided against the mock's own open list:
@@ -165,8 +180,12 @@ From top to bottom:
    rail's bottom.
 4. **Diagnostics band.** Full width and rendered in every state (section 6.4):
    a heading row; the KPI strip (one panel, six equal cells split by 1px
-   dividers); then a row holding the per-pair table panel and the stage timing
-   panel at 7fr / 5fr and equal height.
+   dividers); the feature survival funnel (section 6.6); then a row holding
+   the per-pair table panel and the stage timing panel at 7fr / 5fr and equal
+   height.
+
+The intro cover (section 3.2) lies over all four on page load and is gone
+once dismissed.
 
 | Width | Change |
 | --- | --- |
@@ -207,6 +226,7 @@ trailing content.
 | slider field | the label (13px `--text`) on the left and a value box on the right (mono 12px, `--surface-2`, 58px min width); a 4px track in `--surface-3` filled with `--accent` up to the value; a 16px white thumb with an `--accent-soft` halo; a mono 10.5px scale line from `constants/thresholds.ts` ("0.50 strict" / "0.95 loose", "1 px" / "10 px"); a one-line hint |
 | hints | ratio: "Keeps a match only when it clearly beats its runner-up." RANSAC: "Largest reprojection error that still counts as an inlier." |
 | action footer | pinned to the rail bottom, `--surface-2`, top border. Primary button 44px, full width, `--accent` fill, `--accent-ink` 14px / 600 label, no arrow glyph. Disabled: `--surface-3` fill, `--faint` label, no glow. Ghost (failed, busy countdown): transparent with a `--border-strong` border. Cancel: a 36px outlined secondary under it, in `working` only. A meta row (12px `--faint`) reads `{n} frames · {detector}` and mono `≈ {bytes} upload` once any file is chosen |
+| head 3 | `3` · "Try a sample" · aside "no upload needed". It and the sample gallery under it (section 3.3) show whenever the dropzone does (`empty`, `preparing`, `ready`, `failed`) and hide in `working` and `complete` |
 
 **Output stage**
 
@@ -228,7 +248,7 @@ trailing content.
 | placeholder | a decorative 300 × 130 SVG (three outlined frames, `--accent-soft` overlaps, dashed `--accent` match lines, `aria-hidden`); h3; a body line (13.5px `--muted`, 440px max); a legend of the three status colours labelled accepted / in progress / rejected |
 | empty copy | h3 "The panorama lands here"; body: "Add at least two overlapping frames. You'll get the stitched image plus keypoints, matches, inlier ratio and reprojection error for every pair." |
 | ready copy | h3 "{n} frames ready to stitch" (preparing: "Preparing {n} frames…"); body: "Frames will be matched with {detector} at ratio {ratio} and aligned with RANSAC at {tolerance} px." |
-| working | the same illustration, outer frames easing into alignment (2.4s, alternating); h3 "Stitching {n} frames with {detector}…"; body "The server answers once, at the end. Real stage timings appear as soon as it does."; a 240 × 3px indeterminate `--run` bar; the cold-start note (section 9) below it when it applies |
+| working | the same illustration, outer frames easing into alignment (2.4s, alternating); h3 "Stitching {n} frames with {detector}…"; body "The server answers once, at the end. Real stage timings appear as soon as it does."; a 240 × 3px indeterminate `--run` bar; the cold-start note (section 9) below it when it applies. The code also puts a timer-driven "STAGE 0{n} OF 07" card between the h3 and the body; that card breaks section 5 and is recorded as G7 in section 13 |
 | failed card | 520px max, left-aligned: the code eyebrow (mono 12px, `--fail` text on a 12% `--fail` fill with a 30% `--fail` border), the h3 heading, the message in `--muted`, context chips, and the remedy list in a `--surface-2` box (section 7) |
 | ribbon | seven equal cells under the viewport, split by `--border`; each cell holds a mono two-digit index with a 7px dot, then the stage's short label (12.5px). Idle: hollow dot, `--muted` label. Pending: pulsing `--run` ring. Done: filled `--pass` dot, `--text` label. The full stage label is the cell's `title`. The ribbon never shows a timing |
 
@@ -241,8 +261,78 @@ Homography, Warp, Blend & crop, Encode.
 | --- | --- |
 | heading row | h2 "Alignment diagnostics" with the lede (13px `--faint`) beside it; the lede per state is in section 6.4 |
 | KPI cell | 16px 18px 18px padding; the label (12.5px `--muted`) with its qualifier ("lowest pair", "worst pair") right-aligned in 11px `--faint`; the value in mono 26px; a mono 11.5px `--faint` secondary line with ellipsis |
+| survival funnel | a full-width card under the KPI strip: h3 "Feature & Inlier Survival Funnel" with an info mark, a one-line subtitle, and a "View as table" button on the right; the body is the desktop flow or the compact funnel in section 6.6 |
 | pair table panel | head "Per-pair geometry", aside "{k} pairs · all accepted"; headers 12px / 500 `--faint`; cells 13px with 13px 18px padding; numerics right-aligned in mono; the pair cell as two 22px index badges with an arrow; the inlier-ratio cell as a 64px `--pass` bar (width = ratio) with its value; the verdict as a `--pass` pill on a 12% fill |
 | stage timing panel | head "Stage timings", mono aside "{total} ms total"; rows of a 92px short label, an 8px `--surface-2` track with an `--accent` fill (the peak at full opacity, the rest at 85%), and a right-aligned mono `x.x ms`. An unrecognised key uses the key as its label |
+
+### 3.2 Intro cover
+
+`components/IntroCover/`. On page load a fixed, full-viewport cover lies over
+the app. Its job is to spend the first seconds of a visit usefully. The health
+check in section 9 starts at page load underneath the cover, so a sleeping
+Render service is already waking while the visitor reads the title, and the
+cover says so.
+
+| Part | Behaviour |
+| --- | --- |
+| ground | `#0a0a0a`, above every other layer; the app underneath waits at 98% scale, 65% brightness, and a 1px blur |
+| title | "AUTOMATIC", "PANORAMA", "STITCHER" on three lines, sans 800, `clamp(2.4rem, 8vw, 7rem)` (`clamp(2rem, 9vw, 3rem)` at 600px and below), white. After `document.fonts.ready`, each line is typed in turn by a stepped width animation (80, 95, and 100 ms per character, 160 ms between lines) behind a caret that keeps blinking on the last line. The stage is labelled "AUTOMATIC PANORAMA STITCHER" |
+| server line | one pill reading the same availability as the top-bar pill: `SERVER LIVE · Ready to stitch` when online; `SERVER OFFLINE · Tap to proceed anyway` when offline; otherwise `WAKING SERVER · Choose photos while we connect`, announced through a polite live region |
+| enter control | a button named "Swipe up or click to enter application", showing an up chevron, "SWIPE UP TO ENTER", and "or scroll / click / press space" |
+
+Any of these dismisses the cover: a click anywhere on it, the enter control, a
+wheel scroll down (`deltaY` above 15), Space, Enter, or ArrowUp, or a touch
+swipe up of more than 40px. The backend state never gates entry. Frame
+selection and preparation run in the browser, so a visitor can enter and
+choose photos while the server is still waking.
+
+On dismissal the cover slides up out of the viewport (`translateY(-101%)`,
+0.85s) and is `aria-hidden` while it moves; the app settles to full scale,
+brightness, and focus over 0.9s. When the slide ends, the cover leaves the DOM.
+
+### 3.3 Sample gallery
+
+`components/ExampleGallery/`, rail section 3. A visitor with no overlapping
+photos at hand, or a presenter who wants a known result, loads a prepared set
+in one click. The gallery also demonstrates standing rule 4 from `CLAUDE.md`:
+the failure sets show that the stitcher rejects bad input with a named error
+instead of returning a distorted image.
+
+| Part | Anatomy |
+| --- | --- |
+| filter | a group named "Sample type" with two toggle buttons in a segmented `--surface-2` track, the same visual language as the detector: "Stitches" with a `--pass` dot and "Known failures" with a `--fail` dot, each followed by its mono count. `aria-pressed` marks the active one; "Stitches" is active by default |
+| sample row | one button per set, `--surface-2`, `--border`, `--r-md`: a 96 × 44px film strip on `--matte` (thumbnails overlap for a set that stitches and sit apart, with a cross, for a failure set), the name (13px), a mono 10.5px `--faint` meta line, a "why" line (11.5px `--muted`) that opens on hover and focus and is the button's `aria-describedby`, and a trailing chevron |
+| meta line | a set that stitches: `{n} frames · {fact}`. A failure set: `✕ {expected code}` in `--fail`, with "Expected error:" for screen readers. While loading: `Loading…` in `--run`. Once loaded: `Loaded into Source frames` in `--accent` |
+| loaded row | `--accent-soft` fill, `--accent` border at 45%, a check in place of the chevron |
+| load error | the row takes a `--fail` border and a retry glyph; under the list an alert reads "Couldn’t load “{name}”. Check your connection." with a Retry button |
+| footnote | 11.5px. Stitches: "Loads the frames into Source frames, replacing anything already there." Known failures: "These sets are meant to fail. The stitcher rejects them with a named error instead of returning a distorted image." |
+
+| Set | Kind | Frames | Meta, or expected code with SIFT / ORB |
+| --- | --- | --- | --- |
+| Harbour boats (`boat`) | stitches | 3 | `~40% overlap` |
+| Budapest parliament (`budapest`) | stitches | 3 | `same distance` |
+| Newspaper spread (`newspaper`) | stitches | 3 | `low parallax` |
+| Unrelated photos (`unrelated`) | fails | 2 | `INSUFFICIENT_MATCHES` / `INSUFFICIENT_MATCHES` |
+| Blank sky (`blank_sky`) | fails | 2 | `NO_DESCRIPTORS` / `NO_DESCRIPTORS` |
+| Repeating pattern (`repeating`) | fails | 2 | `INSUFFICIENT_MATCHES` / `INSUFFICIENT_INLIERS` |
+
+The expected code follows the detector selected in the rail. Each code was
+measured by running the set through `services/stitcher.py` at the default
+thresholds; a set run at other thresholds may fail differently, or not at all.
+
+Loading a set fetches `/sample_images/{set}/{file}` from the frontend's own
+static assets, so it needs no backend. A response that is not OK, or whose
+type is not `image/*`, is a load error rather than a file: a missing asset
+would otherwise come back as the single-page app's HTML under a `.jpg` name and
+fail later with an unrelated decode error. A loaded set replaces the current
+selection through the same validation as a pick; it never appends. While one
+set loads, the other rows are disabled. A row reads as loaded when the current
+selection is exactly that set's files, in order.
+
+The three sets that stitch are byte-identical copies of OpenCV's own
+stitching test data; the three failure sets are generated by
+`scripts/generate_unsupported_samples.py`. `docs/demo-script.md` records the
+source and licence status of every file.
 
 ## 4. States
 
@@ -466,6 +556,63 @@ nothing aggregate is available yet. A failure with no `partial_diagnostics`
 machine), a failure immediately after a successful run never shows that
 run's numbers alongside or underneath the new failure's evidence.
 
+### 6.6 The feature survival funnel
+
+`components/Diagnostics/FeatureSurvivalFunnel.tsx`. The KPI strip gives the
+totals; the funnel shows how they shrink from stage to stage: how many
+keypoints survive the ratio test, and how many of those matches RANSAC then
+keeps as inliers.
+
+Outside `complete`, including a failed run that carries
+`partial_diagnostics`, the card keeps its head and shows "Filled in after a
+successful stitch run." with no digit (A15).
+
+The layout switches on the `(max-width: 960px)` media query, the same
+breakpoint as the workspace:
+
+- **above 960px, flow.** Three columns headed "Keypoints by frame (points)",
+  "Matching filter outcome (matches)", and "RANSAC alignment status
+  (consensus)", with SVG ribbons between them that are
+  `clamp(3, √value × 0.48, 26)` px thick. Hovering a ribbon or a node dims the
+  others and shows the ribbon's label in a tooltip that follows the pointer.
+  A footer reads "Pipeline Consensus: {n} frames aligned into a {W} × {H} px
+  panorama." above four metrics: Total Keypoints, Ratio-Passed, Mean Inlier
+  Ratio, and Reproj. Error.
+- **960px and below, compact funnel.** A purpose-built layout, not a squeezed
+  copy of the flow: three stacked stages (Keypoints extracted, Passed Lowe's
+  ratio, RANSAC inliers) joined by drop-off chips (`−{n} discarded · {p}%`,
+  `−{n} outliers · {p}%`), a line reading "{inliers} of {keypoints}
+  keypoints survived · {p}%", a collapsible "Frames · {n}" list with one bar
+  per frame, and three outcome chips: RANSAC inliers, Anchor frame, Outliers
+  filtered.
+
+"View as table" opens a modal dialog, a bottom sheet at 960px and below,
+titled "Feature Triage & Alignment Metrics". It has one row per frame: Frame,
+Raw Keypoints, Ratio Pass, Inliers, Inlier Ratio, Reproj. Error, and Status.
+Row `i` reads pair `i`'s arrays, the pair from frame `i` to frame `i + 1`, so
+the last frame's pair columns read `-`. It closes from its close button or a
+click on the backdrop.
+
+| Screen element | Source |
+| --- | --- |
+| keypoints per frame, and their total | `keypoints_per_image`, and its sum |
+| ratio-passed total | sum of `ratio_passed_matches_per_pair` |
+| inliers total | sum of `inliers_per_pair` |
+| anchor frame | `reference_index` |
+| outliers | ratio-passed total minus inliers total, floored at 0 |
+| discarded | keypoint total minus ratio-passed total, floored at 0 |
+| drop-off and survival percentages | discarded over the keypoint total, outliers over the ratio-passed total, and inliers over the keypoint total |
+| each frame's "passed" and "discarded" ribbons | **estimated**: the ratio-passed total split across frames in proportion to each frame's keypoints |
+| "Filtered non-consensus points" ribbon | decorative; its value is the discarded count capped at 120 |
+| Mean Inlier Ratio, Reproj. Error | the arithmetic mean over pairs |
+
+The sums are the same numbers the KPI strip shows. Everything below them in
+this table is computed in the browser. Discarded is a rough measure, because
+a match joins keypoints from two frames and an interior frame takes part in
+two pairs. The per-frame split is an illustration: the backend reports
+ratio-passed matches per pair, not per frame. Section 13 records how these
+rows depart from section 6.1.
+
 ## 7. The failed state
 
 Every failure names what was measured and what was required. No distorted image
@@ -596,7 +743,9 @@ The status pill has four states and names only the server state, not its host.
 | offline | retries exhausted |
 
 The visible labels are `Connecting…`, `Server waking up…`, `Server online`,
-and `Server offline` respectively.
+and `Server offline` respectively. The intro cover (section 3.2) reads the
+same availability and shows its own server line while it is up; checking and
+waking both read as `WAKING SERVER` there.
 
 Health is requested once at page load, which doubles as the warm-up ping, then
 retried with backoff while the pill reads waking. Retries stop after a bounded
@@ -632,7 +781,11 @@ rejection, an `IMAGE_TOO_LARGE` rejection, and an unrecognised code.
 ## 11. Code structure
 
 - `frontend/src/components/` holds one component per region of the mock: the
-  control rail, the output canvas, and the diagnostics block, plus their parts;
+  control rail, the output canvas, and the diagnostics block, plus their parts.
+  `IntroCover/` (section 3.2) sits beside them and is rendered by `App.tsx`
+  over the whole page; `ExampleGallery/` (section 3.3) is a part of the
+  control rail; `Diagnostics/FeatureSurvivalFunnel.tsx` (section 6.6) is a
+  part of the diagnostics block;
 - one hook, `useStitchRun`, owns the state machine, the request, and the result.
   Components receive state and callbacks. There is no second place where a
   boolean can disagree with the current state;
@@ -645,7 +798,10 @@ rejection, an `IMAGE_TOO_LARGE` rejection, and an unrecognised code.
 - colours, radii, and fonts are the section 2 tokens in
   `frontend/src/styles.css`. The stylesheet is split into comment-delimited
   blocks (tokens and base, shell, rail, stage, diagnostics), so slices that
-  touch different regions do not conflict.
+  touch different regions do not conflict. The funnel's rules live in the
+  diagnostics block. The intro cover and the sample gallery each carry their
+  own stylesheet beside the component (`IntroCover.css`,
+  `ExampleGallery.css`); the gallery's stylesheet uses the section 2 tokens.
 
 ## 12. Acceptance
 
@@ -672,7 +828,30 @@ Per state, with the fixture that drives it:
 | A18 | a failed run carrying `partial_diagnostics` (section 6.5) renders one per-pair row per entry with its own status, never a fabricated 0 for a `not_processed` pair, and the six KPI cells stay `—` |
 | A19 | the failed-state measurement list (section 7) shows the exact measured value against the exact threshold, ratios as a percentage and errors in px, for every code that carries one |
 | A20 | a failed run immediately after a successful one shows none of that prior run's numbers in the output panel or the diagnostics band |
+| A21 | the intro cover renders its three title lines, shows the server line for online and for waking, and dismisses from the enter control, Space, or a touch swipe up whether the server is online or still waking (`IntroCover.test.tsx`) |
+| A22 | the sample gallery shows every set without an expand step, loads a set in one click as a replacement for the selection, marks the loaded set, names each failure set's expected code for the selected detector, and turns a missing or non-image asset into a retryable error (`ExampleGallery.test.tsx`, `ControlRail.test.tsx`) |
+| A23 | the survival funnel shows no digit without a result, renders the flow above 960px and the compact funnel at 960px and below, and opens its table in both layouts (`FeatureSurvivalFunnel.test.tsx`) |
 
 Evidence required on every pull request that touches this UI: Vitest green,
 screenshots of the states the change affects at 1440px, and the same states at
 375px when the change touches layout.
+
+## 13. Known gaps
+
+The intro cover, the sample gallery, the survival funnel, and the
+working-state stage display were merged before this document described them.
+Where one of them breaks a rule stated above, the departure is listed here
+instead of being quietly accepted. Each
+row closes in one of two ways: the code changes to meet the rule, or the rule
+is amended here with its reason. Until then it stands as a known gap.
+
+| # | Part | Rule | Departure |
+| --- | --- | --- | --- |
+| G1 | funnel | 6.1: the frontend computes nothing except the listed sums and bar widths | differences, percentages, means, and a proportional per-frame split are computed in the browser (section 6.6) |
+| G2 | funnel | 6.1 and the band's lede: ratio and error show the worst pair, not an average | the flow's footer shows Mean Inlier Ratio and a mean Reproj. Error, directly under a lede that says the band shows the worst pair, not an average |
+| G3 | funnel | values on screen come from the response | the ratio-test labels "≤ 0.75" and "> 0.75" in the flow, and "≤ 0.75 test" in the compact funnel, are fixed text; they do not follow the ratio threshold the run actually used |
+| G4 | funnel, intro cover | 2.1: components refer to tokens only, never to a hex value | the funnel's ribbons and styles and the intro cover's stylesheet use raw hex and `rgba` colours |
+| G5 | intro cover | 2.3: motion is limited to the three working-state cues, and reduced motion stops every animation | the typewriter runs on `requestAnimationFrame`, so the global `prefers-reduced-motion` rule does not stop it. That rule does remove the curtain's transition, so `transitionend` never fires, and a dismissed cover stays in the DOM, invisible and `aria-hidden`, instead of leaving it |
+| G6 | funnel | A11: the keyboard reaches every control | the flow's hover detail (dimming and tooltips) works only with a pointer. Its numbers are reachable through "View as table", but that dialog does not close on Escape |
+| G7 | working state | 5: the frontend cannot know which stage the server is on, so every stage stays in the same pending treatment and none is ahead of another | `OutputCanvas` and `PipelineRibbon` advance a stage index on a 1.2 s timer from the moment the request starts. The ribbon ticks earlier stages done, and a card in the viewport reads "STAGE 0{n} OF 07" with that stage's name and description. The sequence is invented, not reported by the server, and that card is a polite live region, so a screen reader hears each invented step |
+| G8 | working state | the stage descriptions describe the pipeline that runs | the Blend stage's description in `constants/pipeline.ts` says "Multi-band seam blending", but the pipeline feather-blends (`backend/app/cv/blending.py`; multiband is a later option in `docs/cv-pipeline.md`) |

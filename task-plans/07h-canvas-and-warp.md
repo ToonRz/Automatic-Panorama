@@ -20,17 +20,36 @@ measurement the overlay exists to illustrate.
 
 ## Acceptance
 
-- [ ] the union canvas is computed from projected corners, not from a sum of
+Status: shipped with the pipeline in `06f90f5` directly on `main`, with no
+pull request; seam placement for right-to-left pans was fixed in `af98260`.
+Boxes checked on 2026-09-28 against `main` at `9ff021a` (CI run 36341167597:
+106 Pytest tests green). Tests named below are in
+`backend/app/tests/test_warping.py` unless stated.
+
+- [x] the union canvas is computed from projected corners, not from a sum of
       widths, with a test on a deliberately rotated pair;
-- [ ] a canvas exceeding `max_output_pixels` raises `CANVAS_TOO_LARGE` with
+      Evidence: `test_canvas_bounds_come_from_projected_corners_not_summed_widths`.
+- [x] a canvas exceeding `max_output_pixels` raises `CANVAS_TOO_LARGE` with
       `pixels`, `limit`, `width`, and `height`, and no image is returned;
-- [ ] the canvas is never shrunk to fit the ceiling; rejection is the only
+      Evidence: `test_oversized_canvas_raises_canvas_too_large_and_returns_nothing`;
+      `test_end_to_end.py::test_canvas_too_large_carries_partial_diagnostics_for_every_completed_pair`.
+- [x] the canvas is never shrunk to fit the ceiling; rejection is the only
       response, per standing rule 01;
-- [ ] the three-frame chain lands within 5 percent of the modelled canvas size
+      Evidence: `cv/warping.py` has no resize or scale path; the only
+      response to an oversized canvas is the error above.
+- [x] the three-frame chain lands within 5 percent of the modelled canvas size
       in spec section 5.2;
-- [ ] a validity mask is returned per image, and it is empty exactly where the
+      Evidence: `test_end_to_end.py::test_three_frame_chain_lands_within_five_percent_of_the_modelled_canvas`.
+- [x] a validity mask is returned per image, and it is empty exactly where the
       warp wrote nothing;
-- [ ] `seam_lines` has one entry per pair, each two points on the output
+      Evidence: `test_validity_mask_is_empty_exactly_where_the_warp_wrote_nothing`.
+- [x] `seam_lines` has one entry per pair, each two points on the output
       canvas, and a rotated fixture produces a measurably non-vertical line;
-- [ ] no blending or cropping happens in this module;
-- [ ] the warp stage records its own `stage_timings_ms` entry.
+      Evidence: `test_seam_lines_are_non_vertical_for_a_rotated_pair`, plus
+      the four pan-direction seam tests added in `af98260`.
+- [x] no blending or cropping happens in this module;
+      Evidence: the `cv/warping.py` module docstring; blending and cropping
+      live in `cv/blending.py`.
+- [x] the warp stage records its own `stage_timings_ms` entry.
+      Evidence: `_StageTimer(stage_timings_ms, "warp")` in
+      `services/stitcher.py`.

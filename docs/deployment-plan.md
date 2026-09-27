@@ -247,8 +247,11 @@ that failure class is to report the blocked host rather than retry or route
 around it. No peak-memory number is recorded here because none was actually
 measured — inventing one would violate the acceptance criteria for this task
 and the standing rule against distorting a result. `render.yaml` and
-`backend/app/core/config.py` keep their pre-09b defaults (`MAX_UPLOAD_FILES:
-8`, `MAX_OUTPUT_PIXELS: 8000000`, `INPUT_LONG_EDGE_CAP: 1600`) unchanged.
+`backend/app/core/config.py` kept their pre-09b defaults (`MAX_UPLOAD_FILES:
+8`, `MAX_OUTPUT_PIXELS: 8000000`, `INPUT_LONG_EDGE_CAP: 1600`) at the time.
+Since `a0619b2`, `render.yaml` sets `INPUT_LONG_EDGE_CAP` to 1000 as the
+mitigation for the phone-photo memory incident (after section 11), while the
+config default stays 1600; that change had no measured peak behind it.
 Someone with a normal Docker network path (a laptop, a CI runner without this
 proxy policy) should run the two commands above, three times each per the
 method, and fill in the table below with the results before 09c's Render
@@ -375,20 +378,43 @@ solely the D-009 commit-author rule as first suspected.
 | Item | Value |
 | --- | --- |
 | Frontend (Vercel Production) | `https://automatic-panorama.vercel.app` |
-| `test` branch Preview | _pending confirmation — should build correctly now that Root Directory is fixed; verify in the Vercel Deployments tab_ |
+| `test` branch Preview | _pending confirmation_. On 2026-09-28 the expected branch alias `https://automatic-panorama-git-test-toonrzs-projects.vercel.app` returned 404; verify the real Preview URL in the Vercel Deployments tab |
 | Backend (Render) | `https://automatic-panorama-api.onrender.com` (Free, Singapore) |
-| Served commit | `41eea181272b1a13e520e1bbacbb5030a8eff5c5` (merge of PR #5, 09e docs) |
+| Served commit | Render: `9ff021afaa1fd764b4f7a8915a006322b9bbad75` (live since 2026-09-27 18:36 UTC, per the Render API). Vercel: not checked, since this session has no Vercel team access |
 | Preview CORS pattern | `^https://automatic-panorama-[a-z0-9-]+-toonrzs-projects\.vercel\.app$` (set on Render; verified in Python against the branch-preview host, a commit-hash host, an `.evil.com` suffix, another project name, and `http://`, per section 5) |
 | UptimeRobot monitor | _pending — hand-off, requires a human-owned account (09d)_ |
 | Keep-alive enabled on | _pending_ |
 | Keep-alive disabled on | _still on_ |
 
 `BACKEND_CORS_ORIGINS` on Render is now
-`https://automatic-panorama.vercel.app,http://localhost:5173`. Not yet
-verified end to end from this session (network egress to `*.onrender.com`
-and `*.vercel.app` is still blocked here — see the 09e note below); confirm
-with a real browser stitch and/or the curl checks in section 9.1 once
-reachable.
+`https://automatic-panorama.vercel.app,http://localhost:5173`. The CORS half
+of section 9.1 was verified with curl on 2026-09-28 from a machine without the
+egress block:
+
+| Check | Result |
+| --- | --- |
+| `GET /healthz` | 200, `{"status":"ok","service":"automatic-panorama-api","environment":"production"}`, 0.16 s (warm, 9 minutes after a deploy) |
+| `GET /api/v1/config` | 200, the nine client fields; `max_input_long_edge_by_count` is 1000 for every count |
+| `OPTIONS /api/v1/stitch`, `Origin: https://automatic-panorama.vercel.app` | 200, `access-control-allow-origin` echoes the origin |
+| `OPTIONS /api/v1/stitch`, `Origin: https://automatic-panorama-git-test-toonrzs-projects.vercel.app` | 200, `access-control-allow-origin` echoes the origin (the Preview regex) |
+| `OPTIONS /api/v1/stitch`, `Origin: https://example.vercel.app` | 400, no `access-control-allow-origin` |
+| production bundle | `/assets/index-BsA0NQY2.js` contains `https://automatic-panorama-api.onrender.com` |
+
+`scripts/smoke_public.py` was not run in that check: it needs OpenCV and NumPy
+locally, and that machine had neither.
+
+The live Render service does not match the section 3.1 Blueprint, because it
+was created through the Render API rather than from `render.yaml`. The Render
+API reported this on 2026-09-28:
+
+| Setting | `render.yaml` | Live service |
+| --- | --- | --- |
+| `autoDeployTrigger` | `checksPass` | `commit` (deploys on every push, before CI) |
+| `healthCheckPath` | `/healthz` | empty (no health check) |
+| `rootDir` | `backend` | empty, with `cd backend && uvicorn …` as the start command |
+
+The first two need a dashboard change by the account owner: service →
+Settings → Auto-Deploy, and service → Settings → Health Check Path.
 
 ### 09e automated-evidence attempt
 
@@ -425,6 +451,8 @@ exact commands.
 | Date | Event |
 | --- | --- |
 | 2026-09-13 | `automatic-panorama-api` created on Render Free/Singapore and deployed live from `main`; Preview CORS regex set and verified in Python; Vercel side and all of section 9's live checks left to hand-off (see above) |
+| 2026-09-13 | `INPUT_LONG_EDGE_CAP` reduced to 1000 on Render after the phone-photo memory incident (`a0619b2`) |
+| 2026-09-28 | `/healthz`, `/api/v1/config`, and the three CORS preflights checked with curl against production (table above); Render serving `9ff021a`; Blueprint drift recorded |
 
 ## 11. References checked 2026-09-13
 

@@ -35,17 +35,38 @@ The output is a reproducible measurement, not a guess.
 
 ## Acceptance
 
+Status: still blocked on the measurement. Reviewed on 2026-09-28 against
+`main` at `9ff021a`.
+
 - [ ] the script and the exact commands are committed, and a second person can
       reproduce the numbers;
+      **Half done.** `backend/scripts/measure_peak_memory.py` and its commands
+      are committed (PR #3), but there are no numbers to reproduce yet.
 - [ ] section 7 of `docs/deployment-plan.md` records the peak for both requests,
       the settings used, and the image and Python versions;
+      **Not done.** The section 7.1 table is still `_pending_`.
 - [ ] the worst accepted request peaks at or below 410 MB, and the container is
       not OOM-killed;
+      **Not measured.** The phone-photo incident on 2026-09-13
+      (`docs/deployment-plan.md`, after section 11) is the only production
+      evidence: three frames at a 1600 px long edge reached the 512 MiB limit
+      and the process restarted.
 - [ ] if a limit had to change, the order was `MAX_OUTPUT_PIXELS`, then
       `MAX_UPLOAD_FILES`, then `INPUT_LONG_EDGE_CAP`, each change is recorded
       with its measured peak, `render.yaml` and the config defaults agree, and
       the `/api/v1/config` contract snapshots are regenerated;
+      **Not met.** `a0619b2` cut `INPUT_LONG_EDGE_CAP` to 1000 in
+      `render.yaml`, as an incident mitigation, without going through
+      `MAX_OUTPUT_PIXELS` and `MAX_UPLOAD_FILES` first and without a
+      measured peak. The config default stays 1600 on purpose, so
+      `render.yaml` and the defaults disagree, and the committed `config.json`
+      snapshot shows the local 1600-based table. Production answered
+      `/api/v1/config` with 1000 for every count on 2026-09-28.
 - [ ] if the peak is dominated by something those three settings do not
       control, the finding is recorded here and brought to ToonRz for a
       decision before any other setting changes;
-- [ ] `make test` and `make lint` are green.
+      **Open.** The incident notes point at blend-stage float copies, which
+      none of the three settings controls directly. `a0619b2` also reduced
+      those copies. No decision is recorded here.
+- [x] `make test` and `make lint` are green.
+      Evidence: CI run 36341167597.

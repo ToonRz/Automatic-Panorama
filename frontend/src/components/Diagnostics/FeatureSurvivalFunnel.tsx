@@ -4,6 +4,12 @@ import type { StitchDiagnostics } from "../../types";
 export interface FeatureSurvivalFunnelProps {
   diagnostics: StitchDiagnostics | null;
   files?: readonly { name: string }[];
+  /**
+   * Lowe ratio threshold the run was submitted with. The success response
+   * does not echo it (docs/backend-spec.md section 7), so the caller passes
+   * it in; without it the labels name the test but no number.
+   */
+  ratioThreshold?: number;
 }
 
 interface RibbonLink {
@@ -44,8 +50,11 @@ function useIsCompactViewport(): boolean {
   return isCompact;
 }
 
-export function FeatureSurvivalFunnel({ diagnostics, files = EMPTY_FILES }: FeatureSurvivalFunnelProps) {
+export function FeatureSurvivalFunnel({ diagnostics, files = EMPTY_FILES, ratioThreshold }: FeatureSurvivalFunnelProps) {
   const componentId = useId();
+  const dialogTitleId = `${componentId}-table-title`;
+  const tableTriggerRef = useRef<HTMLButtonElement>(null);
+  const dialogCloseRef = useRef<HTMLButtonElement>(null);
   const isCompact = useIsCompactViewport();
   const [showTableModal, setShowTableModal] = useState(false);
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
@@ -65,8 +74,8 @@ export function FeatureSurvivalFunnel({ diagnostics, files = EMPTY_FILES }: Feat
         totalInliers: 0,
         totalOutliers: 0,
         totalDiscarded: 0,
-        inlierRatioAvg: 0,
-        meanReprojError: 0,
+        worstInlierRatio: null as { value: number; pair: number } | null,
+        worstReprojError: null as { value: number; pair: number } | null,
         frames: [],
       };
     }
@@ -77,14 +86,15 @@ export function FeatureSurvivalFunnel({ diagnostics, files = EMPTY_FILES }: Feat
     const totalOutliers = Math.max(0, totalRatioPassed - totalInliers);
     const totalDiscarded = Math.max(0, totalKeypoints - totalRatioPassed);
 
-    const pairCount = diagnostics.inlier_ratio_per_pair.length;
-    const inlierRatioAvg = pairCount > 0
-      ? diagnostics.inlier_ratio_per_pair.reduce((acc, v) => acc + v, 0) / pairCount
-      : 0;
-
-    const meanReprojError = pairCount > 0
-      ? diagnostics.reprojection_error_per_pair.reduce((acc, v) => acc + v, 0) / pairCount
-      : 0;
+    // Same rule as the KPI strip (docs/ui-spec.md section 6.1): the lowest
+    // ratio and the highest error, first pair winning a tie, never a mean.
+    const pickWorst = (values: number[], isWorse: (a: number, b: number) => boolean) =>
+      values.reduce<{ value: number; pair: number } | null>(
+        (worst, value, pair) => (worst === null || isWorse(value, worst.value) ? { value, pair } : worst),
+        null,
+      );
+    const worstInlierRatio = pickWorst(diagnostics.inlier_ratio_per_pair, (a, b) => a < b);
+    const worstReprojError = pickWorst(diagnostics.reprojection_error_per_pair, (a, b) => a > b);
 
     const frames = diagnostics.keypoints_per_image.map((count, index) => {
       const fileName = files[index]?.name ?? `frame_${String(index + 1).padStart(2, "0")}.jpg`;
@@ -98,8 +108,8 @@ export function FeatureSurvivalFunnel({ diagnostics, files = EMPTY_FILES }: Feat
       totalInliers,
       totalOutliers,
       totalDiscarded,
-      inlierRatioAvg,
-      meanReprojError,
+      worstInlierRatio,
+      worstReprojError,
       frames,
     };
   }, [diagnostics, files]);
@@ -223,6 +233,24 @@ export function FeatureSurvivalFunnel({ diagnostics, files = EMPTY_FILES }: Feat
     return () => window.removeEventListener("resize", handleResize);
   }, [updateRibbonLayout]);
 
+  const closeTableModal = useCallback(() => {
+    setShowTableModal(false);
+    tableTriggerRef.current?.focus();
+  }, []);
+
+  // A11 / G6: focus moves into the dialog on open and Escape closes it.
+  useEffect(() => {
+    if (!showTableModal) return;
+    dialogCloseRef.current?.focus();
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeTableModal();
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [showTableModal, closeTableModal]);
+
+  const thresholdText = ratioThreshold === undefined ? null : ratioThreshold.toFixed(2);
+
   const handleMouseMove = (e: React.MouseEvent, label: string) => {
     setTooltip({
       text: label,
@@ -273,6 +301,7 @@ export function FeatureSurvivalFunnel({ diagnostics, files = EMPTY_FILES }: Feat
 
         <div className="funnel-actions">
           <button
+            ref={tableTriggerRef}
             type="button"
             className="funnel-btn-outline"
             onClick={() => setShowTableModal(true)}
@@ -313,7 +342,7 @@ export function FeatureSurvivalFunnel({ diagnostics, files = EMPTY_FILES }: Feat
                 <div className="mtrapezoid-stage s2">
                   <div className="lab">
                     <span className="name">Passed Lowe's ratio</span>
-                    <span className="sub">≤ 0.75 test</span>
+                    <span className="sub">{thresholdText ? `≤ ${thresholdText} test` : "ratio test"}</span>
                   </div>
                   <span className="num">{stats.totalRatioPassed.toLocaleString()}</span>
                 </div>
@@ -489,7 +518,7 @@ export function FeatureSurvivalFunnel({ diagnostics, files = EMPTY_FILES }: Feat
                       onMouseLeave={handleMouseLeave}
                     >
                       <span className="funnel-icon">↗</span>
-                      <span>Passed Lowe's Ratio (≤ 0.75)</span>
+                      <span>Passed Lowe's Ratio{thresholdText ? ` (≤ ${thresholdText})` : ""}</span>
                     </div>
                   </div>
 
@@ -502,7 +531,7 @@ export function FeatureSurvivalFunnel({ diagnostics, files = EMPTY_FILES }: Feat
                       onMouseLeave={handleMouseLeave}
                     >
                       <span className="funnel-icon">↘</span>
-                      <span>Ambiguous / Discarded (&gt; 0.75)</span>
+                      <span>Ambiguous / Discarded{thresholdText ? ` (> ${thresholdText})` : ""}</span>
                     </div>
                   </div>
                 </div>
@@ -561,12 +590,20 @@ export function FeatureSurvivalFunnel({ diagnostics, files = EMPTY_FILES }: Feat
                 <span className="m-val blue">{stats.totalRatioPassed.toLocaleString()}</span>
               </div>
               <div className="funnel-metric">
-                <span className="m-lbl">Mean Inlier Ratio</span>
-                <span className="m-val green">{(stats.inlierRatioAvg * 100).toFixed(1)}%</span>
+                <span className="m-lbl">
+                  Lowest Inlier Ratio{stats.worstInlierRatio ? ` · pair ${stats.worstInlierRatio.pair + 1}` : ""}
+                </span>
+                <span className="m-val green">
+                  {stats.worstInlierRatio ? `${(stats.worstInlierRatio.value * 100).toFixed(1)}%` : "—"}
+                </span>
               </div>
               <div className="funnel-metric">
-                <span className="m-lbl">Reproj. Error</span>
-                <span className="m-val">{stats.meanReprojError.toFixed(2)} px</span>
+                <span className="m-lbl">
+                  Worst Reproj. Error{stats.worstReprojError ? ` · pair ${stats.worstReprojError.pair + 1}` : ""}
+                </span>
+                <span className="m-val">
+                  {stats.worstReprojError ? `${stats.worstReprojError.value.toFixed(2)} px` : "—"}
+                </span>
               </div>
             </div>
           </div>
@@ -582,18 +619,20 @@ export function FeatureSurvivalFunnel({ diagnostics, files = EMPTY_FILES }: Feat
         <div
           className="funnel-modal-backdrop"
           onClick={(e) => {
-            if (e.target === e.currentTarget) setShowTableModal(false);
+            if (e.target === e.currentTarget) closeTableModal();
           }}
           role="dialog"
           aria-modal="true"
+          aria-labelledby={dialogTitleId}
         >
           <div className="funnel-modal-content">
             <div className="funnel-modal-header">
-              <h4>Feature Triage &amp; Alignment Metrics</h4>
+              <h4 id={dialogTitleId}>Feature Triage &amp; Alignment Metrics</h4>
               <button
+                ref={dialogCloseRef}
                 type="button"
                 className="funnel-modal-close"
-                onClick={() => setShowTableModal(false)}
+                onClick={closeTableModal}
                 aria-label="Close modal"
               >
                 &times;

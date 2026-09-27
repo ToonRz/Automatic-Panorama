@@ -22,15 +22,22 @@ Scripted (section 9.1):
       Running the command produces `httpx.ProxyError: 403 Forbidden` before
       any real request goes out. Needs to be run from a machine with normal
       internet access: `python scripts/smoke_public.py https://automatic-panorama-api.onrender.com`.
-- [ ] `curl -si -H "Origin: <origin>" <render-url>/healthz` shows
+      **Still open on 2026-09-28.** Production is reachable (see the next
+      item), but the machine used for that check had no OpenCV or NumPy, which
+      the script imports. Run it after `make install`.
+- [x] `curl -si -H "Origin: <origin>" <render-url>/healthz` shows
       `access-control-allow-origin` for the production origin and the `test`
       Preview origin, and not for `https://example.vercel.app`.
-      **Blocked, same reason.** Also blocked on a second front: the real
-      Vercel production origin and `test` Preview origin are unconfirmed
-      (09c's Vercel steps could not be automated — see that PR). Once both
-      are known, run the three `curl -si -X OPTIONS ... -H "Access-Control-Request-Method: POST"`
-      checks from `docs/deployment-plan.md` section 9.1 from a machine that
-      can reach `*.onrender.com`.
+      Blocked at first, because the deploying session could not reach
+      `*.onrender.com` and did not know the real Vercel origins.
+      **Closed 2026-09-28** with the three `OPTIONS /api/v1/stitch` preflights
+      from section 9.1. `https://automatic-panorama.vercel.app` and
+      `https://automatic-panorama-git-test-toonrzs-projects.vercel.app` were
+      allowed, and `https://example.vercel.app` got a 400 with no header
+      (`docs/deployment-plan.md` section 10). Caveat: the second origin is the
+      alias the Preview pattern predicts for the `test` branch. The allow
+      rule is the regex, so any real Preview host of this project matches,
+      but that alias itself answered 404 on Vercel.
 
 Always on (section 9.2):
 

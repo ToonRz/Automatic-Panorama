@@ -23,17 +23,29 @@ do today.
 
 ## Acceptance
 
-- [ ] with the setting unset, CORS behaviour is unchanged: the configured exact
+Status: complete. Merged as PR #2 (`03518ba`). Boxes checked on 2026-09-28
+against `main` at `9ff021a` (CI run 36341167597 green). Tests named below are
+in `backend/app/tests/test_cors.py`.
+
+- [x] with the setting unset, CORS behaviour is unchanged: the configured exact
       origin gets `access-control-allow-origin`, and any other origin does not;
-- [ ] with the setting `^https://automatic-panorama-[a-z0-9-]+-toonrzs-projects\.vercel\.app$`
+      Evidence: `test_unset_regex_keeps_exact_origin_behaviour_unchanged`.
+- [x] with the setting `^https://automatic-panorama-[a-z0-9-]+-toonrzs-projects\.vercel\.app$`
       (a stand-in for the real names), a preflight and a simple `GET /healthz`
       from `https://automatic-panorama-git-test-toonrzs-projects.vercel.app`
       are allowed;
-- [ ] with the same setting, `https://automatic-panorama-toonrzs-projects.vercel.app.evil.com`,
+      Evidence: `test_regex_allows_a_matching_preview_origin`. Production
+      answered that origin's preflight with `access-control-allow-origin` on
+      2026-09-28 (`docs/deployment-plan.md` section 10).
+- [x] with the same setting, `https://automatic-panorama-toonrzs-projects.vercel.app.evil.com`,
       `https://other-git-test-toonrzs-projects.vercel.app`, and
       `http://automatic-panorama-git-test-toonrzs-projects.vercel.app` are
       rejected;
-- [ ] an invalid regular expression fails at startup with a message naming
+      Evidence: `test_regex_rejects_lookalike_and_wrong_scheme_origins`.
+- [x] an invalid regular expression fails at startup with a message naming
       `BACKEND_CORS_ORIGIN_REGEX`, rather than at the first request;
-- [ ] `render.yaml` declares the variable with `sync: false` and no value;
-- [ ] `make test` and `make lint` are green.
+      Evidence: `test_invalid_regex_fails_at_startup_naming_the_setting`.
+- [x] `render.yaml` declares the variable with `sync: false` and no value;
+      Evidence: `render.yaml`, `BACKEND_CORS_ORIGIN_REGEX` with `sync: false`.
+- [x] `make test` and `make lint` are green.
+      Evidence: CI run 36341167597.

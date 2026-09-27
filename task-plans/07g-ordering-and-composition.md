@@ -22,17 +22,35 @@ Assigned to member A because ordering decides from pairwise match scores, which
 
 ## Acceptance
 
-- [ ] `image_order` is published for every run and equals identity in v1;
-- [ ] `reference_index` equals `len(image_order) // 2`, with a test at two,
+Status: shipped with the pipeline in `06f90f5` directly on `main`, with no
+pull request. Boxes checked on 2026-09-28 against `main` at `9ff021a` (CI run
+36341167597: 106 Pytest tests green). Tests named below are in
+`backend/app/tests/test_pipeline.py`.
+
+- [x] `image_order` is published for every run and equals identity in v1;
+      Evidence: `test_image_order_is_identity_in_v1`;
+      `test_end_to_end.py::test_full_response_has_every_spec_section_7_field`.
+- [x] `reference_index` equals `len(image_order) // 2`, with a test at two,
       three, and eight frames;
-- [ ] composed transforms carry a three-frame chain into one coordinate system
+      Evidence: `test_reference_index_is_the_middle_frame`, parametrized at
+      2, 3, and 8.
+- [x] composed transforms carry a three-frame chain into one coordinate system
       within the corner-error bar in spec section 12.3;
-- [ ] a frame whose neighbouring pair was rejected raises
+      Evidence: `test_three_frame_chain_composes_within_the_corner_error_bar`.
+- [x] a frame whose neighbouring pair was rejected raises
       `DISCONNECTED_IMAGES` naming that frame, rather than dropping it
       silently from the output;
-- [ ] every per-pair array produced here has exactly `image_count - 1` entries,
+      Evidence: `test_disconnected_frame_raises_disconnected_images_naming_it`,
+      and since `0a18ebc`
+      `test_disconnected_images_preserves_the_original_gate_7_cause`.
+- [x] every per-pair array produced here has exactly `image_count - 1` entries,
       and index `i` describes the pair `(image_order[i], image_order[i + 1])`,
       asserted;
-- [ ] no stage math lives in this module; it calls 07e and 07f and composes;
-- [ ] `docs/contribution-plan.md` names member A as the owner of
+      Evidence: `test_per_pair_arrays_have_image_count_minus_one_entries_in_order`.
+- [x] no stage math lives in this module; it calls 07e and 07f and composes;
+      Evidence: `cv/pipeline.py` calls `match_descriptors` and
+      `estimate_homography`; its only arithmetic is composing transforms
+      (matrix products and inverses).
+- [x] `docs/contribution-plan.md` names member A as the owner of
       `cv/pipeline.py`.
+      Evidence: the "A - CV lead" row lists `cv/pipeline.py`.

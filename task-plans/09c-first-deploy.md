@@ -37,35 +37,49 @@ changes are expected; anything found wrong in `render.yaml` becomes a PR.
 
 ## Acceptance
 
-- [ ] Render service is live in Singapore on the Free plan, `/healthz`
+- [x] Render service is live in Singapore on the Free plan, `/healthz`
       returns 200, and the build log shows Python 3.12;
-      **Partially verified**: live, Singapore, Free plan, and the build log
+      Live, Singapore, Free plan, and the build log
       line `Using Python version 3.12.14 via /opt/render/project/src/.python-version`
       were all confirmed via the Render API. `/healthz` returning 200 was
       **not** verified by the deploying session — its network egress policy
-      blocks `*.onrender.com` outright. Run
-      `curl -si https://automatic-panorama-api.onrender.com/healthz` to close
-      this out.
+      blocks `*.onrender.com` outright.
+      **Closed 2026-09-28:** `/healthz` returned 200 to curl
+      (`docs/deployment-plan.md` section 10).
 - [ ] Render auto-deploy is set to deploy after CI checks pass;
       **Not done.** The Render MCP's `create_web_service` tool has no
       `autoDeployTrigger` parameter, so the service was created with the
       default (`commit`, i.e. deploys immediately on push). Set it to
       "After CI Checks Pass" in the dashboard: service → Settings → Auto-Deploy.
+      **Still `commit` on 2026-09-28**, per the Render API. The live
+      service's health check path is also empty; `render.yaml` expects
+      `/healthz` (`docs/deployment-plan.md` section 10).
 - [ ] Vercel Production serves `main`, and the `test` branch Preview exists;
       **Not verified.** A `test` branch was pushed from `main` on GitHub, but
       whether Vercel built Preview/Production deployments for it could not be
       checked: the Vercel MCP connector available to this session had no team
       linked (`list_teams` returned empty) and `npx vercel whoami` was logged
       out, and `*.vercel.app` is also blocked by this session's egress policy.
-- [ ] both CORS values are set, and section 10 of `docs/deployment-plan.md`
+      **2026-09-28:** Production at `https://automatic-panorama.vercel.app`
+      answers 200. The expected `test` alias
+      (`automatic-panorama-git-test-toonrzs-projects.vercel.app`) answers 404,
+      and the Vercel connector still lists no team, so neither half is
+      confirmed.
+- [x] both CORS values are set, and section 10 of `docs/deployment-plan.md`
       records the URLs, the served commit, and the Preview pattern;
-      **Partially done.** `BACKEND_CORS_ORIGIN_REGEX` is set to
+      `BACKEND_CORS_ORIGIN_REGEX` is set to
       `^https://automatic-panorama-[a-z0-9-]+-toonrzs-projects\.vercel\.app$`
       (derived from the real project/team slugs seen in this repo's Vercel
       GitHub-App check runs, and verified in Python against every case in
-      deployment-plan.md section 5). `BACKEND_CORS_ORIGINS` is still
-      `http://localhost:5173` only — the real Vercel production origin is
-      unconfirmed (see above) and must be added once known.
+      deployment-plan.md section 5). `BACKEND_CORS_ORIGINS` was at first
+      `http://localhost:5173` only.
+      **Closed 2026-09-28:** section 10 records
+      `BACKEND_CORS_ORIGINS=https://automatic-panorama.vercel.app,http://localhost:5173`,
+      and curl preflights got `access-control-allow-origin` for the
+      production origin and for a regex-matching Preview origin, but not for
+      `https://example.vercel.app`. Section 10 records the URLs, the Preview
+      pattern, and Render's served commit (`9ff021a`). Vercel's served commit
+      remains unchecked.
 - [ ] a Preview deploy from a teammate-authored commit is observed as blocked,
       and one from a ToonRz merge commit deploys, confirming section 4.1;
       **Half-observed, organically.** Every commit this session pushed is

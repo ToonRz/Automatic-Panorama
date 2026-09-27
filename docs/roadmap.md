@@ -73,6 +73,21 @@ Exit criteria:
 - the backend stays awake under the keep-alive monitor and every item in
   `docs/deployment-plan.md` section 9 has evidence.
 
+Status on 2026-09-28: in progress.
+
+- Reaching the backend: the production bundle calls the Render API, and CORS
+  admits the production origin (`docs/deployment-plan.md` section 10).
+- SIFT/ORB and bad input: the sample gallery's failure sets make the
+  bad-input case one click (`docs/ui-spec.md` section 3.3). No stitch from
+  the public URL is recorded yet; that is 09e's manual pass.
+- No local filesystem or secret: holds, since v1 is stateless.
+- Keep-alive and section 9: open (09d, 09e).
+
+Work added in this phase beyond the plan: the intro cover, the sample
+gallery, the feature survival funnel, and the one-row stage toolbar
+(`docs/ui-spec.md` sections 3.2, 3.3, 6.6, and 3.1). Their departures from the
+spec are listed in `docs/ui-spec.md` section 13.
+
 ## Phase 5 - submission hardening
 
 Owners: coordinator/release + all members.
@@ -85,6 +100,18 @@ Exit criteria:
 - five merged PRs or more, one per member, are attributable;
 - 10-minute recording is timed, balanced, and includes an edge case;
 - README contains the public URL and a concise method explanation.
+
+Status on 2026-09-28: not started as a phase. Progress against each criterion:
+
+- CI is green on `main` (`9ff021a`).
+- Demo assets are recorded in `docs/demo-script.md`, but the licence of the
+  three OpenCV photo sets is unstated upstream and the team has not decided
+  what to do about it.
+- Merged pull requests come from four GitHub accounts: ToonRz,
+  thikamporntuamkaew, pattarathidacharujitchamroen-bit, and bosschaisit.
+  Check that list against the five members in `docs/contribution-plan.md`.
+- The README has the public URL and a method overview.
+- The recording has not been made.
 
 ## Suggested cadence
 

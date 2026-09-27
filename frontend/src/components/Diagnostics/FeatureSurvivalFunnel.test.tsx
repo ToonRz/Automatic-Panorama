@@ -50,8 +50,8 @@ describe("FeatureSurvivalFunnel", () => {
     expect(screen.getByText("880")).toBeInTheDocument();
 
     // Filter pills
-    expect(screen.getByText("Passed Lowe's Ratio (≤ 0.75)")).toBeInTheDocument();
-    expect(screen.getByText("Ambiguous / Discarded (> 0.75)")).toBeInTheDocument();
+    expect(screen.getByText("Passed Lowe's Ratio", { exact: true })).toBeInTheDocument();
+    expect(screen.getByText("Ambiguous / Discarded", { exact: true })).toBeInTheDocument();
 
     // RANSAC inliers
     expect(screen.getByText("RANSAC Inliers")).toBeInTheDocument();
@@ -61,6 +61,18 @@ describe("FeatureSurvivalFunnel", () => {
     expect(screen.getByText("Total Keypoints")).toBeInTheDocument();
     expect(screen.getByText("1,780")).toBeInTheDocument();
     expect(screen.getByText("75.0%")).toBeInTheDocument();
+  });
+
+  it.each([0.75, 0.6])("uses the supplied ratio threshold %s in filter labels", (ratioThreshold) => {
+    render(
+      <FeatureSurvivalFunnel
+        diagnostics={successWithoutOverlayFixture.diagnostics}
+        ratioThreshold={ratioThreshold}
+      />,
+    );
+
+    expect(screen.getByText(`Passed Lowe's Ratio (≤ ${ratioThreshold.toFixed(2)})`)).toBeInTheDocument();
+    expect(screen.getByText(`Ambiguous / Discarded (> ${ratioThreshold.toFixed(2)})`)).toBeInTheDocument();
   });
 
   it("opens and closes the table modal when View as table is clicked", async () => {
@@ -113,12 +125,24 @@ describe("FeatureSurvivalFunnel (compact / mobile layout)", () => {
     expect(trapezoid!.textContent).toContain("1,780");
     expect(trapezoid!.textContent).toContain("200");
     expect(trapezoid!.textContent).toContain("150");
+    expect(screen.getByText("ratio test", { exact: true })).toBeInTheDocument();
 
     const connectors = container.querySelectorAll(".mtrapezoid-conn .chip");
     expect(connectors[0].textContent).toBe("−1,580 discarded · 88.8%");
     expect(connectors[1].textContent).toBe("−50 outliers · 25.0%");
 
     expect(container.querySelector(".mtrapezoid-survival")!.textContent).toContain("8.4%");
+  });
+
+  it.each([0.75, 0.6])("uses the supplied ratio threshold %s in the compact label", (ratioThreshold) => {
+    render(
+      <FeatureSurvivalFunnel
+        diagnostics={successWithoutOverlayFixture.diagnostics}
+        ratioThreshold={ratioThreshold}
+      />,
+    );
+
+    expect(screen.getByText(`≤ ${ratioThreshold.toFixed(2)} test`)).toBeInTheDocument();
   });
 
   it("collapses and expands the frame list", async () => {
