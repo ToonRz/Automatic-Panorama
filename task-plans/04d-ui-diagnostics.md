@@ -23,7 +23,9 @@ checked on 2026-09-28 against `main` at `9ff021a` (CI run 36341167597 green).
       Evidence: `SummaryCards.test.tsx`, `PairTable.test.tsx`, and
       `StageChart.test.tsx` (A3). This holds for the elements the section 6.1
       table lists. The survival funnel added later in `ed832f4` computes
-      more than that; `docs/ui-spec.md` section 13 records it as G1 and G2.
+      more than that; `docs/ui-spec.md` section 13 records the remaining
+      gap as G1 (G2, the funnel's mean-based footer, has since closed: it
+      now shows the worst pair, matching this row's rule).
 - [x] the inlier ratio card shows the minimum and the reprojection card shows the
       maximum, each labelled as the worst pair;
       Evidence: `SummaryCards.test.tsx` › "shows the minimum inlier ratio and

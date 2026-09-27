@@ -31,12 +31,11 @@ A box is checked only where the requirement still holds today.
 - [x] changing the file selection clears the result and the error;
       Evidence: `useStitchRun.test.ts` › "clears the result and error when
       the file selection changes".
-- [ ] the working screen shows the six stages and no numeric timing;
-      **Partly holds.** There are now seven stages (the ribbon), and no
-      millisecond or percentage value appears (`OutputCanvas.test.tsx` ›
-      A2). But since `ac23b2b` the stages advance on a 1.2 s timer and a
-      "STAGE 0{n} OF 07" card names an invented current stage, against
-      `docs/ui-spec.md` section 5 (section 13, G7).
+- [x] the working screen shows the six stages and no numeric timing;
+      Evidence: `OutputCanvas.test.tsx` › "shows the working illustration,
+      the Running chip, and no numeric timing anywhere in the panel (A2)"
+      (there are seven stages, in the ribbon; no ms or percentage value
+      appears).
 - [x] every error code in section 7.1 renders its remedy, and an unknown code
       renders the generic one;
       Evidence: `remedies.test.ts` › "returns remedy text for every live and
@@ -57,11 +56,13 @@ A box is checked only where the requirement still holds today.
       Evidence: `constants/thresholds.ts` and `constants/availability.ts`;
       server file limits come from `ClientConfig` with one `FALLBACK_CONFIG`
       (`task-plans/08b`).
-- [ ] the output panel announces state changes politely and does not narrate
+- [x] the output panel announces state changes politely and does not narrate
       stage changes;
-      **No longer holds.** The panel is `aria-live="polite"`, but the
-      working-state stage card is a polite live region too, and its text
-      changes every 1.2 s (`docs/ui-spec.md` section 13, G7).
+      Evidence: the panel stays `aria-live="polite"` (untested directly); the
+      no-narration half is covered by `OutputCanvas.test.tsx` ›
+      "keeps every ribbon stage pending, and shows no stage card or live
+      stage text, after timers advance" — no stage card, and the panel's
+      text does not change as timers advance.
 - [x] tests cover each state and each transition above;
       Evidence: `useStitchRun.test.ts` (empty → ready → working → complete,
       → failed, stale, selection change, cancel, reset) and one

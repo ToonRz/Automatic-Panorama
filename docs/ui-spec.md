@@ -248,7 +248,7 @@ trailing content.
 | placeholder | a decorative 300 × 130 SVG (three outlined frames, `--accent-soft` overlaps, dashed `--accent` match lines, `aria-hidden`); h3; a body line (13.5px `--muted`, 440px max); a legend of the three status colours labelled accepted / in progress / rejected |
 | empty copy | h3 "The panorama lands here"; body: "Add at least two overlapping frames. You'll get the stitched image plus keypoints, matches, inlier ratio and reprojection error for every pair." |
 | ready copy | h3 "{n} frames ready to stitch" (preparing: "Preparing {n} frames…"); body: "Frames will be matched with {detector} at ratio {ratio} and aligned with RANSAC at {tolerance} px." |
-| working | the same illustration, outer frames easing into alignment (2.4s, alternating); h3 "Stitching {n} frames with {detector}…"; body "The server answers once, at the end. Real stage timings appear as soon as it does."; a 240 × 3px indeterminate `--run` bar; the cold-start note (section 9) below it when it applies. The code also puts a timer-driven "STAGE 0{n} OF 07" card between the h3 and the body; that card breaks section 5 and is recorded as G7 in section 13 |
+| working | the same illustration, outer frames easing into alignment (2.4s, alternating); h3 "Stitching {n} frames with {detector}…"; body "The server answers once, at the end. Real stage timings appear as soon as it does."; a 240 × 3px indeterminate `--run` bar; the cold-start note (section 9) below it when it applies |
 | failed card | 520px max, left-aligned: the code eyebrow (mono 12px, `--fail` text on a 12% `--fail` fill with a 30% `--fail` border), the h3 heading, the message in `--muted`, context chips, and the remedy list in a `--surface-2` box (section 7) |
 | ribbon | seven equal cells under the viewport, split by `--border`; each cell holds a mono two-digit index with a 7px dot, then the stage's short label (12.5px). Idle: hollow dot, `--muted` label. Pending: pulsing `--run` ring. Done: filled `--pass` dot, `--text` label. The full stage label is the cell's `title`. The ribbon never shows a timing |
 
@@ -576,8 +576,10 @@ breakpoint as the workspace:
   `clamp(3, √value × 0.48, 26)` px thick. Hovering a ribbon or a node dims the
   others and shows the ribbon's label in a tooltip that follows the pointer.
   A footer reads "Pipeline Consensus: {n} frames aligned into a {W} × {H} px
-  panorama." above four metrics: Total Keypoints, Ratio-Passed, Mean Inlier
-  Ratio, and Reproj. Error.
+  panorama." above four metrics: Total Keypoints, Ratio-Passed, Lowest Inlier
+  Ratio, and Worst Reproj. Error. The latter two name the one-based pair they
+  came from ("· pair {k}"), the first pair winning a tie, and read "—" when
+  the run has no pairs.
 - **960px and below, compact funnel.** A purpose-built layout, not a squeezed
   copy of the flow: three stacked stages (Keypoints extracted, Passed Lowe's
   ratio, RANSAC inliers) joined by drop-off chips (`−{n} discarded · {p}%`,
@@ -590,8 +592,9 @@ breakpoint as the workspace:
 titled "Feature Triage & Alignment Metrics". It has one row per frame: Frame,
 Raw Keypoints, Ratio Pass, Inliers, Inlier Ratio, Reproj. Error, and Status.
 Row `i` reads pair `i`'s arrays, the pair from frame `i` to frame `i + 1`, so
-the last frame's pair columns read `-`. It closes from its close button or a
-click on the backdrop.
+the last frame's pair columns read `-`. It closes from its close button, a
+click on the backdrop, or Escape; opening it moves focus to the close button,
+and closing it returns focus to the "View as table" button.
 
 | Screen element | Source |
 | --- | --- |
@@ -604,7 +607,8 @@ click on the backdrop.
 | drop-off and survival percentages | discarded over the keypoint total, outliers over the ratio-passed total, and inliers over the keypoint total |
 | each frame's "passed" and "discarded" ribbons | **estimated**: the ratio-passed total split across frames in proportion to each frame's keypoints |
 | "Filtered non-consensus points" ribbon | decorative; its value is the discarded count capped at 120 |
-| Mean Inlier Ratio, Reproj. Error | the arithmetic mean over pairs |
+| Lowest Inlier Ratio, Worst Reproj. Error | minimum of `inlier_ratio_per_pair`, maximum of `reprojection_error_per_pair`, each naming its one-based pair; the first pair wins a tie, same rule as the KPI strip (section 6.1) |
+| ratio-test labels' threshold ("≤ {t}", "> {t}") | the ratio threshold the run was submitted with, passed in by the caller; the response does not echo it, so the labels read with no number until it is |
 
 The sums are the same numbers the KPI strip shows. Everything below them in
 this table is computed in the browser. Discarded is a rough measure, because
@@ -840,18 +844,34 @@ screenshots of the states the change affects at 1440px, and the same states at
 
 The intro cover, the sample gallery, the survival funnel, and the
 working-state stage display were merged before this document described them.
-Where one of them breaks a rule stated above, the departure is listed here
-instead of being quietly accepted. Each
-row closes in one of two ways: the code changes to meet the rule, or the rule
-is amended here with its reason. Until then it stands as a known gap.
+Where one of them broke a rule stated above, the departure was listed here
+instead of being quietly accepted. Each row closes in one of two ways: the
+code changes to meet the rule, or the rule is amended here with its reason.
+The table below holds the gaps still open; closed gaps have moved to the list
+that follows it.
 
 | # | Part | Rule | Departure |
 | --- | --- | --- | --- |
-| G1 | funnel | 6.1: the frontend computes nothing except the listed sums and bar widths | differences, percentages, means, and a proportional per-frame split are computed in the browser (section 6.6) |
-| G2 | funnel | 6.1 and the band's lede: ratio and error show the worst pair, not an average | the flow's footer shows Mean Inlier Ratio and a mean Reproj. Error, directly under a lede that says the band shows the worst pair, not an average |
-| G3 | funnel | values on screen come from the response | the ratio-test labels "≤ 0.75" and "> 0.75" in the flow, and "≤ 0.75 test" in the compact funnel, are fixed text; they do not follow the ratio threshold the run actually used |
+| G1 | funnel | 6.1: the frontend computes nothing except the listed sums and bar widths | differences, percentages, and a proportional per-frame split are computed in the browser (section 6.6) |
 | G4 | funnel, intro cover | 2.1: components refer to tokens only, never to a hex value | the funnel's ribbons and styles and the intro cover's stylesheet use raw hex and `rgba` colours |
 | G5 | intro cover | 2.3: motion is limited to the three working-state cues, and reduced motion stops every animation | the typewriter runs on `requestAnimationFrame`, so the global `prefers-reduced-motion` rule does not stop it. That rule does remove the curtain's transition, so `transitionend` never fires, and a dismissed cover stays in the DOM, invisible and `aria-hidden`, instead of leaving it |
-| G6 | funnel | A11: the keyboard reaches every control | the flow's hover detail (dimming and tooltips) works only with a pointer. Its numbers are reachable through "View as table", but that dialog does not close on Escape |
-| G7 | working state | 5: the frontend cannot know which stage the server is on, so every stage stays in the same pending treatment and none is ahead of another | `OutputCanvas` and `PipelineRibbon` advance a stage index on a 1.2 s timer from the moment the request starts. The ribbon ticks earlier stages done, and a card in the viewport reads "STAGE 0{n} OF 07" with that stage's name and description. The sequence is invented, not reported by the server, and that card is a polite live region, so a screen reader hears each invented step |
-| G8 | working state | the stage descriptions describe the pipeline that runs | the Blend stage's description in `constants/pipeline.ts` says "Multi-band seam blending", but the pipeline feather-blends (`backend/app/cv/blending.py`; multiband is a later option in `docs/cv-pipeline.md`) |
+| G6 | funnel | A11: the keyboard reaches every control | the flow's hover detail (dimming and tooltips) still works only with a pointer; its numbers are reachable through "View as table" instead |
+
+### Closed
+
+- **G2** (funnel showed a mean, not the worst pair): the flow's footer now
+  shows the lowest inlier ratio and the worst reprojection error, each naming
+  its one-based pair, matching the KPI strip's rule.
+- **G3** (ratio-test labels were fixed at "≤ 0.75"): the labels now read the
+  ratio threshold the run was submitted with, and read with no number when
+  none is supplied.
+- **G6, Escape half** (table dialog did not close on Escape): the dialog now
+  closes on Escape as well as its close button and a backdrop click, moves
+  focus to the close button on open, and returns focus to the "View as
+  table" button on close.
+- **G7** (invented per-stage progress on a timer): the ribbon gives every
+  stage the same pending treatment for the whole request, and the working
+  view no longer shows a numbered stage card or names a current stage.
+- **G8** (Blend description named multiband blending): the description now
+  reads "Feather blending across overlaps and trimming empty margins",
+  matching `backend/app/cv/blending.py`.
