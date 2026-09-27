@@ -17,6 +17,7 @@ const baseProps = {
   busySecondsLeft: null,
   hasPreflightErrors: false,
   onFilesSelected: vi.fn(),
+  onSampleSelected: vi.fn(),
   onFileRemoved: vi.fn(),
   detector: "SIFT" as const,
   onDetectorChange: vi.fn(),
@@ -330,6 +331,32 @@ describe("ControlRail frame selection", () => {
     await user.upload(input, frames[0]);
     expect(onFilesSelected).toHaveBeenCalledTimes(2);
     expect(input.value).toBe("");
+  });
+
+  it("replaces the selection with a gallery sample instead of appending it", async () => {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue({
+      ok: true,
+      status: 200,
+      blob: async () => new Blob(["jpeg-bytes"], { type: "image/jpeg" }),
+    } as unknown as Response);
+    const onFilesSelected = vi.fn();
+    const onSampleSelected = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <ControlRail
+        {...baseProps}
+        state="ready"
+        files={frames}
+        onFilesSelected={onFilesSelected}
+        onSampleSelected={onSampleSelected}
+      />,
+    );
+
+    await user.click(screen.getByRole("button", { name: /Harbour boats/ }));
+
+    await vi.waitFor(() => expect(onSampleSelected).toHaveBeenCalledTimes(1));
+    expect(onFilesSelected).not.toHaveBeenCalled();
+    vi.restoreAllMocks();
   });
 
   it("removes a frame by index while the selection is editable", async () => {

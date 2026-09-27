@@ -113,6 +113,7 @@ export default function App() {
             busySecondsLeft={run.busySecondsLeft}
             hasPreflightErrors={run.hasPreflightErrors}
             onFilesSelected={run.addFiles}
+            onSampleSelected={run.setFiles}
             onFileRemoved={run.removeFile}
             detector={run.detector}
             onDetectorChange={run.setDetector}

@@ -1,252 +1,308 @@
-.example-gallery {
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid var(--border);
-}
+/* Rail section 3 — docs/mockups/example-gallery-redesign-mock.html */
 
-/* Toggle Button */
-.gallery-toggle {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 10px 12px;
-  border: 0;
-  background: var(--surface-2);
-  border-radius: var(--r-md);
-  cursor: pointer;
-  transition: background 150ms ease;
-}
-
-.gallery-toggle:hover {
-  background: var(--surface-3);
-}
-
-.gallery-toggle-text {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text);
-}
-
-.gallery-toggle-hint {
-  font-size: 11.5px;
-  color: var(--faint);
-}
-
-.gallery-chevron {
-  flex: none;
-  transition: transform 200ms ease;
-  color: var(--muted);
-}
-
-.gallery-chevron.is-expanded {
-  transform: rotate(180deg);
-}
-
-/* Collapsible Content */
-.gallery-content {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 300ms ease-out, opacity 200ms ease;
-  opacity: 0;
-}
-
-.gallery-content.is-expanded {
-  max-height: 500px;
-  opacity: 1;
-  transition: max-height 400ms ease-in, opacity 200ms ease;
-}
-
-/* Tab Bar */
-.gallery-tabs {
-  display: flex;
+/* Filter, same visual language as the SIFT/ORB .seg control */
+.samples-seg {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 4px;
   padding: 4px;
-  margin-top: 12px;
+  margin-bottom: 12px;
   border-radius: var(--r-md);
   background: var(--surface-2);
   border: 1px solid var(--border);
 }
 
-.gallery-tab {
-  flex: 1;
-  padding: 8px 12px;
+.samples-seg button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  height: 30px;
+  padding: 0 8px;
   border: 0;
+  border-radius: var(--r-sm);
   background: transparent;
-  border-radius: 7px;
-  font-size: 12px;
+  font: inherit;
+  font-size: 12.5px;
   font-weight: 500;
   color: var(--muted);
   cursor: pointer;
-  transition: all 150ms ease;
+  transition: background 150ms ease, color 150ms ease;
 }
 
-.gallery-tab:hover {
+.samples-seg button:hover {
   color: var(--text);
 }
 
-.gallery-tab.is-active {
+.samples-seg button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.samples-seg button[aria-pressed="true"] {
   background: var(--surface-3);
   color: var(--text);
   box-shadow: inset 0 0 0 1px var(--border-strong);
 }
 
-/* Scrollable Area */
-.gallery-scroll-area {
-  max-height: 320px;
-  overflow-y: auto;
-  margin-top: 12px;
-  padding-right: 4px;
-}
-
-.gallery-scroll-area::-webkit-scrollbar {
+.samples-dot {
   width: 6px;
+  height: 6px;
+  border-radius: 50%;
 }
 
-.gallery-scroll-area::-webkit-scrollbar-track {
-  background: var(--surface-2);
-  border-radius: 3px;
+.samples-dot.is-pass {
+  background: var(--pass);
 }
 
-.gallery-scroll-area::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
-  border-radius: 3px;
+.samples-dot.is-fail {
+  background: var(--fail);
 }
 
-.gallery-scroll-area::-webkit-scrollbar-thumb:hover {
-  background: var(--muted);
+.samples-count {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--faint);
 }
 
-/* Gallery Grid */
-.gallery-grid {
+/* Rows, not cards, so three sets fit the 384px rail without inner scrolling */
+.samples-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 10px;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
-.gallery-card {
-  background: var(--surface-2);
+.sample {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr) 18px;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px 8px 8px;
   border: 1px solid var(--border);
   border-radius: var(--r-md);
-  overflow: hidden;
-  transition: border-color 150ms ease, box-shadow 150ms ease;
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 150ms ease, background 150ms ease;
 }
 
-.gallery-card:hover {
-  border-color: var(--accent);
-  box-shadow: 0 4px 12px -4px color-mix(in srgb, var(--accent) 20%, transparent);
-}
-
-.gallery-card-content {
-  padding: 12px;
-}
-
-.gallery-thumbnails {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 10px;
-  min-height: 40px;
-}
-
-.gallery-thumb {
-  flex: 1;
-  height: 40px;
-  border-radius: 4px;
-  overflow: hidden;
+.sample:hover:not(:disabled) {
+  border-color: var(--border-strong);
   background: var(--surface-3);
-  border: 1px solid var(--border);
 }
 
-.gallery-thumb img {
-  width: 100%;
-  height: 100%;
+.sample:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.sample:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.sample[aria-busy="true"] {
+  cursor: progress;
+  border-color: color-mix(in srgb, var(--run) 35%, transparent);
+}
+
+.sample.is-loaded {
+  border-color: color-mix(in srgb, var(--accent) 45%, transparent);
+  background: var(--accent-soft);
+}
+
+.sample.is-error {
+  border-color: color-mix(in srgb, var(--fail) 40%, transparent);
+}
+
+/* Film strip: good sets overlap like the panorama they make; failures sit apart */
+.sample-strip {
+  position: relative;
+  height: 44px;
+  border-radius: 6px;
+  background: var(--matte);
+  overflow: hidden;
+}
+
+.sample-strip img {
+  position: absolute;
+  top: 5px;
+  width: 44px;
+  height: 34px;
   object-fit: cover;
+  border-radius: 3px;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6);
+}
+
+.sample-strip.is-overlap img:nth-child(1) {
+  left: 5px;
+}
+
+.sample-strip.is-overlap img:nth-child(2) {
+  left: 26px;
+}
+
+.sample-strip.is-overlap img:nth-child(3) {
+  left: 47px;
+}
+
+.sample-strip.is-apart img {
+  width: 38px;
+}
+
+.sample-strip.is-apart img:nth-child(1) {
+  left: 5px;
+}
+
+.sample-strip.is-apart img:nth-child(2) {
+  right: 5px;
+}
+
+.sample-broken {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  fill: none;
+  stroke: var(--fail);
+  stroke-width: 2.4;
+}
+
+.sample-body {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.sample-name {
+  font-size: 13px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sample-meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--faint);
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.sample-sep {
+  opacity: 0.5;
+}
+
+.sample-code {
+  color: var(--fail);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sample-meta .is-run {
+  color: var(--run);
+}
+
+.sample-meta .is-accent {
+  color: var(--accent);
+}
+
+/* The reason is always in the accessibility tree (aria-describedby); it is
+   only drawn on hover or keyboard focus to keep the rows short. */
+.sample-why {
+  display: none;
+  font-size: 11.5px;
+  line-height: 1.35;
+  color: var(--muted);
+}
+
+.sample:hover .sample-why,
+.sample:focus-visible .sample-why {
   display: block;
 }
 
-.gallery-thumb-placeholder {
-  flex: 1;
-  height: 40px;
-  border-radius: 4px;
-  background: var(--surface-3);
-  border: 1px solid var(--border);
+.sample-go {
   display: grid;
   place-items: center;
   color: var(--faint);
 }
 
-.gallery-info {
-  margin-bottom: 10px;
+.sample-go svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
 }
 
-.gallery-info strong {
-  display: block;
-  font-size: 13px;
-  font-weight: 600;
+.sample:hover:not(:disabled) .sample-go {
   color: var(--text);
-  margin-bottom: 2px;
 }
 
-.gallery-info small {
-  display: block;
-  font-size: 11.5px;
-  color: var(--muted);
-  margin-bottom: 6px;
-}
-
-.gallery-tooltip {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11px;
-  color: var(--faint);
-  line-height: 1.4;
-}
-
-.gallery-tooltip svg {
-  flex: none;
+.sample.is-loaded .sample-go {
   color: var(--accent);
 }
 
-.btn-try-sample {
-  width: 100%;
-  height: 32px;
-  border-radius: 0 0 var(--r-md) var(--r-md);
-  border: 0;
-  border-top: 1px solid var(--border);
-  background: var(--surface-3);
-  color: var(--text);
-  font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 150ms ease, color 150ms ease;
+.sample.is-error .sample-go {
+  color: var(--fail);
 }
 
-.btn-try-sample:hover:not(:disabled) {
-  background: var(--accent-soft);
-  color: var(--accent);
+.sample-spinner {
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid color-mix(in srgb, var(--run) 25%, transparent);
+  border-top-color: var(--run);
+  border-radius: 50%;
+  animation: sample-spin 0.8s linear infinite;
 }
 
-.btn-try-sample:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  color: var(--faint);
-}
-
-@media (max-width: 600px) {
-  .gallery-grid {
-    grid-template-columns: 1fr;
+@keyframes sample-spin {
+  to {
+    transform: rotate(360deg);
   }
 }
 
-.gallery-error {
+.samples-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
   margin: 10px 0 0;
-  padding: 8px 10px;
-  border-radius: var(--r-md);
-  border: 1px solid color-mix(in srgb, var(--fail) 30%, transparent);
+  padding: 9px 11px;
+  border-radius: var(--r-sm);
   background: color-mix(in srgb, var(--fail) 12%, transparent);
   color: var(--fail);
-  font-size: 11.5px;
+  font-size: 12px;
   line-height: 1.4;
+}
+
+.samples-error button {
+  margin-left: auto;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-weight: 500;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.samples-error button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.samples-foot {
+  margin: 12px 2px 0;
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--faint);
 }

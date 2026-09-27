@@ -21,6 +21,8 @@ export interface ControlRailProps {
   error: FailedDetail | null;
   busySecondsLeft: number | null;
   onFilesSelected: (files: File[]) => void;
+  /** Replaces the whole selection with a sample set from the gallery. */
+  onSampleSelected: (files: File[]) => void;
   onFileRemoved: (index: number) => void;
   detector: Detector;
   onDetectorChange: (detector: Detector) => void;
@@ -85,6 +87,7 @@ export function ControlRail({
   error,
   busySecondsLeft,
   onFilesSelected,
+  onSampleSelected,
   onFileRemoved,
   detector,
   onDetectorChange,
@@ -204,9 +207,13 @@ export function ControlRail({
 
       {showDropzone && (
         <>
-          <PanelHead index={3} title="Example Gallery" aside="Sample datasets" />
+          <PanelHead index={3} title="Try a sample" aside="no upload needed" />
           <div className="section">
-            <ExampleGallery onLoadSample={onFilesSelected} />
+            <ExampleGallery
+              onLoadSample={onSampleSelected}
+              currentFiles={files}
+              detector={detector}
+            />
           </div>
         </>
       )}

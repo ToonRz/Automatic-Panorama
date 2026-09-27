@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -21,10 +21,16 @@ function htmlFallbackResponse(status: number) {
   } as unknown as Response;
 }
 
-async function openGallery() {
-  const user = userEvent.setup();
-  await user.click(screen.getByRole("button", { name: /Sample Datasets/ }));
-  return user;
+function renderGallery(props: Partial<Parameters<typeof ExampleGallery>[0]> = {}) {
+  const onLoadSample = vi.fn();
+  render(
+    <ExampleGallery onLoadSample={onLoadSample} currentFiles={[]} detector="SIFT" {...props} />,
+  );
+  return { onLoadSample, user: userEvent.setup() };
+}
+
+function sampleButton(name: RegExp) {
+  return screen.getByRole("button", { name });
 }
 
 afterEach(() => {
@@ -32,13 +38,11 @@ afterEach(() => {
 });
 
 describe("ExampleGallery", () => {
-  it("hands the fetched sample frames to onLoadSample", async () => {
+  it("shows the samples without an expand step and loads one in a single click", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(jpegResponse());
-    const onLoadSample = vi.fn();
+    const { onLoadSample, user } = renderGallery();
 
-    render(<ExampleGallery onLoadSample={onLoadSample} />);
-    const user = await openGallery();
-    await user.click(screen.getAllByRole("button", { name: "Try this sample" })[0]);
+    await user.click(sampleButton(/Harbour boats/));
 
     await waitFor(() => expect(onLoadSample).toHaveBeenCalledTimes(1));
     const files: File[] = onLoadSample.mock.calls[0][0];
@@ -46,40 +50,58 @@ describe("ExampleGallery", () => {
     expect(files.every((file) => file.type === "image/jpeg")).toBe(true);
   });
 
-  it("reports an actionable error instead of loading a missing asset", async () => {
-    vi.spyOn(globalThis, "fetch").mockResolvedValue(htmlFallbackResponse(404));
-    const onLoadSample = vi.fn();
+  it("reports an actionable error instead of loading a missing asset, and retries", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(htmlFallbackResponse(404));
+    const { onLoadSample, user } = renderGallery();
 
-    render(<ExampleGallery onLoadSample={onLoadSample} />);
-    const user = await openGallery();
-    await user.click(screen.getAllByRole("button", { name: "Try this sample" })[0]);
+    await user.click(sampleButton(/Harbour boats/));
 
-    expect(await screen.findByRole("alert")).toHaveTextContent(
-      /Could not load the "Overlapping Landscape Sequence" sample/,
-    );
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(/Couldn’t load “Harbour boats”/);
     expect(onLoadSample).not.toHaveBeenCalled();
+
+    fetchSpy.mockResolvedValue(jpegResponse());
+    await user.click(within(alert).getByRole("button", { name: "Retry" }));
+
+    await waitFor(() => expect(onLoadSample).toHaveBeenCalledTimes(1));
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
   it("rejects a 200 response that is not an image", async () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue(htmlFallbackResponse(200));
-    const onLoadSample = vi.fn();
+    const { onLoadSample, user } = renderGallery();
 
-    render(<ExampleGallery onLoadSample={onLoadSample} />);
-    const user = await openGallery();
-    await user.click(screen.getAllByRole("button", { name: "Try this sample" })[0]);
+    await user.click(sampleButton(/Harbour boats/));
 
     expect(await screen.findByRole("alert")).toBeInTheDocument();
     expect(onLoadSample).not.toHaveBeenCalled();
   });
 
-  it("switches to the pitfall datasets on the second tab", async () => {
-    render(<ExampleGallery onLoadSample={vi.fn()} />);
-    const user = await openGallery();
+  it("names the error each failure set produces for the selected detector", async () => {
+    const { user } = renderGallery({ detector: "SIFT" });
 
-    expect(screen.getByText("Overlapping Landscape Sequence")).toBeInTheDocument();
-    await user.click(screen.getByRole("button", { name: /Common Pitfalls/ }));
+    await user.click(screen.getByRole("button", { name: /Known failures/ }));
 
-    expect(screen.getByText("Blank Sky/Texture")).toBeInTheDocument();
-    expect(screen.queryByText("Overlapping Landscape Sequence")).not.toBeInTheDocument();
+    expect(screen.queryByText("Harbour boats")).not.toBeInTheDocument();
+    expect(sampleButton(/Blank sky/)).toHaveTextContent("NO_DESCRIPTORS");
+    expect(sampleButton(/Repeating pattern/)).toHaveTextContent("INSUFFICIENT_MATCHES");
+  });
+
+  it("switches the repeating-pattern code to the RANSAC rejection under ORB", async () => {
+    const { user } = renderGallery({ detector: "ORB" });
+
+    await user.click(screen.getByRole("button", { name: /Known failures/ }));
+
+    expect(sampleButton(/Repeating pattern/)).toHaveTextContent("INSUFFICIENT_INLIERS");
+  });
+
+  it("marks the sample whose frames are the current selection", () => {
+    const current = ["budapest1.jpg", "budapest2.jpg", "budapest3.jpg"].map(
+      (name) => new File(["x"], name, { type: "image/jpeg" }),
+    );
+    renderGallery({ currentFiles: current });
+
+    expect(sampleButton(/Budapest parliament/)).toHaveTextContent("Loaded into Source frames");
+    expect(sampleButton(/Harbour boats/)).not.toHaveTextContent("Loaded");
   });
 });
